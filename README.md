@@ -1,4 +1,6 @@
-# Linear algebra library for the Rust programming language.
+# rust-la
+
+Linear algebra library for the Rust programming language.
 
 Features:
 * basic linear algebra operations
@@ -12,5 +14,6 @@ Features:
   * SVD.
 
 To build rust-la:
+
 	$ make
 
