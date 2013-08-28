@@ -202,8 +202,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     // Main iteration loop for the singular values.
     let pp = p - 1;
-    let eps : T = NumCast::from(num::pow(2.0, -52.0));
-    let tiny : T = NumCast::from(num::pow(2.0, -966.0));
+    let eps : T = num::cast(num::pow(2.0, -52.0));
+    let tiny : T = num::cast(num::pow(2.0, -966.0));
     while(p > 0) {
       // Here is where a test for too many iterations would go.
 
@@ -307,7 +307,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         let epm1 = edata[p - 2] / scale;
         let sk = sdata[k] / scale;
         let ek = edata[k] / scale;
-        let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / NumCast::from(2.0);
+        let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / num::cast(2.0);
         let c = (sp * epm1) * (sp * epm1);
         let mut shift = Zero::zero();
         if((b != Zero::zero()) || (c != Zero::zero())) {
@@ -424,8 +424,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   pub fn rank(&self) -> uint {
-    let eps : T = NumCast::from(num::pow(2.0, -52.0));
-    let maxDim : T = NumCast::from(num::max(self.m, self.n));
+    let eps : T = num::cast(num::pow(2.0, -52.0));
+    let maxDim : T = num::cast(num::max(self.m, self.n));
     let tol = maxDim * self.s[0] * eps;
     let mut r = 0;
     for i in range(0u, self.s.len()) {

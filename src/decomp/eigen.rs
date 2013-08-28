@@ -133,7 +133,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     let mut f : T = Zero::zero();
     let mut tst1 : T = Zero::zero();
-    let eps : T = NumCast::from(num::pow(2.0, -52.0));
+    let eps : T = num::cast(num::pow(2.0, -52.0));
     for l in range(0u, n) {
       // Find small subdiagonal element
       tst1 = num::max(tst1, num::abs(ddata[l].clone()) + num::abs(edata[l].clone()));
@@ -150,7 +150,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         loop {
           // Compute implicit shift
           let mut g = ddata[l].clone();
-          let tmp : T = NumCast::from(2.0);
+          let tmp : T = num::cast(2.0);
           let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
           let mut r = hypot::<T>(p.clone(), One::one());
           if(p < Zero::zero()) {
@@ -337,7 +337,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let mut n = nn - 1;
     let low : int = 0;
     let high = nn - 1;
-    let eps : T = NumCast::from(num::pow(2.0, -52.0));
+    let eps : T = num::cast(num::pow(2.0, -52.0));
     let mut exshift = Zero::zero();
     let mut p = Zero::zero();
     let mut q = Zero::zero();
@@ -389,7 +389,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       } else if(l == (n - 1)) {
         // Two roots found
         w = hdata[n * nn + (n - 1)] * hdata[(n - 1) * nn + n];
-        p = (hdata[(n - 1) * nn + (n - 1)] - hdata[n * nn + n]) / NumCast::from(2.0);
+        p = (hdata[(n - 1) * nn + (n - 1)] - hdata[n * nn + n]) / num::cast(2.0);
         q = p * p + w;
         z = num::sqrt(num::abs(q.clone()));
         hdata[n * nn + n] = hdata[n * nn + n] + exshift;
@@ -462,28 +462,28 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             hdata[i * nn + i] = hdata[i * nn + i] - x;
           }
           s = num::abs(hdata[n * nn + (n - 1)].clone()) + num::abs(hdata[(n - 1) * nn + (n - 2)].clone());
-          let tmp : T = NumCast::from(0.75);
+          let tmp : T = num::cast(0.75);
           y = tmp * s;
           x = y.clone();
-          let tmp : T = NumCast::from(-0.4375);
+          let tmp : T = num::cast(-0.4375);
           w = tmp * s * s;
         }
 
         // MATLAB's new ad hoc shift
         if(iter == 30) {
-          s = (y - x) / NumCast::from(2.0);
+          s = (y - x) / num::cast(2.0);
           s = s * s + w;
           if(s > Zero::zero()) {
             s = num::sqrt(s.clone());
             if(y < x) {
               s = - s;
             }
-            s = x - w / ((y - x) / NumCast::from(2.0) + s);
+            s = x - w / ((y - x) / num::cast(2.0) + s);
             for i in range(low, n + 1) {
               hdata[i * nn + i] = hdata[i * nn + i] - s;
             }
             exshift = exshift + s;
-            w = NumCast::from(0.964);
+            w = num::cast(0.964);
             y = w.clone();
             x = y.clone();
           }
@@ -687,7 +687,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
               x = hdata[i * nn + (i + 1)].clone();
               y = hdata[(i + 1) * nn + i].clone();
               vr = (ddata[i] - p) * (ddata[i] - p) + edata[i] * edata[i] - q * q;
-              vi = (ddata[i] - p) * NumCast::from(2.0) * q;
+              vi = (ddata[i] - p) * num::cast(2.0) * q;
               if((vr == Zero::zero()) && (vi == Zero::zero())) {
                 vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
               }

@@ -229,12 +229,12 @@ impl<T : Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     let mut sourceRowIdx = 0u;
     let mut destIdx = 0u;
-    for currentRow in range(0u, self.noRows - 1) {
+    for currentRow in range(0u, self.noRows) {
       if currentRow != row {
-        for currentCol in range(0u, self.noCols - 1) {
+        for currentCol in range(0u, self.noCols) {
           if currentCol != col {
-            d[destIdx] = self.data[sourceRowIdx + currentCol - (if currentCol < col { 0 } else { 1 })].clone();
-            destIdx = destIdx + 1;
+            d[destIdx] = self.data[sourceRowIdx + currentCol].clone();
+            destIdx += 1;
           }
         }
       }
@@ -252,7 +252,7 @@ impl<T : Clone> Matrix<T> {
   pub fn sub_matrix(&self, startRow : uint, startCol : uint, endRow : uint, endCol : uint) -> Matrix<T> {
     assert!(startRow < endRow);
     assert!(startCol < endCol);
-    assert!(endRow < self.noRows && endCol < self.noCols && startRow != endRow && startCol != endCol);
+    assert!((endRow - startRow) < self.noRows && (endCol - startCol) < self.noCols && startRow != endRow && startCol != endCol);
     let rows = endRow - startRow;
     let cols = endCol - startCol;
     let elems = rows * cols;
@@ -575,3 +575,201 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     lu::LUDecomposition::new(self).is_nonsingular()
   }
 }
+
+#[test]
+fn test_id() {
+  let m = id::<uint>(2);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 2);
+  assert!(m.data == ~[1, 0, 0, 1]);
+}
+
+#[test]
+fn test_zero() {
+  let m = zero::<uint>(2, 3);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 3);
+  assert!(m.data == ~[0, 0, 0, 0, 0, 0]);
+}
+
+#[test]
+fn test_vect() {
+  let v = vect::<uint>(~[1, 2, 3]);
+  assert!(v.rows() == 3);
+  assert!(v.cols() == 1);
+  assert!(v.data == ~[1, 2, 3]);
+}
+
+#[test]
+fn test_zero_vect() {
+  let v = zero_vect::<uint>(2);
+  assert!(v.rows() == 2);
+  assert!(v.cols() == 1);
+  assert!(v.data == ~[0, 0]);
+}
+
+#[test]
+fn test_one_vect() {
+  let v = one_vect::<uint>(2);
+
+  assert!(v.rows() == 2);
+  assert!(v.cols() == 1);
+  assert!(v.data == ~[1, 1]);
+}
+
+#[test]
+fn test_row_vect() {
+  let v = row_vect::<uint>(~[1, 2, 3]);
+  assert!(v.rows() == 1);
+  assert!(v.cols() == 3);
+  assert!(v.data == ~[1, 2, 3]);
+}
+
+#[test]
+fn test_get_set() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  assert!(m.get(1, 0) == 3);
+  assert!(m.get(0, 1) == 2);
+
+  assert!(*m.get_ref(1, 1) == 4);
+
+  *m.get_mref(0, 0) = 10;
+  assert!(m.get(0, 0) == 10);
+
+  m.set(1, 1, 5);
+  assert!(m.get(1, 1) == 5);
+}
+
+#[test]
+fn test_map() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  assert!(m.map(|x : &uint| -> uint { *x + 1 }).data == ~[2, 3, 4, 5]);
+
+  m.mmap(|x : &uint| { *x + 2 });
+  assert!(m.data == ~[3, 4, 5, 6]);
+}
+
+#[test]
+fn test_cr() {
+  let v = vect(~[1, 2, 3]);
+  let m = v.cr(&v);
+  assert!(m.rows() == 3);
+  assert!(m.cols() == 2);
+  assert!(m.data == ~[1, 1, 2, 2, 3, 3]);
+}
+
+#[test]
+fn test_cb() {
+  let m = matrix(2, 2, ~[1, 2, 3, 4]);
+  let m2 = m.cb(&m);
+  assert!(m2.rows() == 4);
+  assert!(m2.cols() == 2);
+  assert!(m2.data == ~[1, 2, 3, 4, 1, 2, 3, 4]);
+}
+
+#[test]
+fn test_t() {
+  let mut m = matrix(2, 2, ~[1, 2, 3, 4]);
+  assert!(m.t().data == ~[1, 3, 2, 4]);
+
+  m.mt();
+  assert!(m.data == ~[1, 3, 2, 4]);
+}
+
+#[test]
+fn test_sub() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert!(m.minor(1, 1).data == ~[1, 3, 7, 9]);
+  assert!(m.sub_matrix(1, 1, 3, 3).data == ~[5, 6, 8, 9]);
+}
+
+#[test]
+fn test_permute_rows() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert!(m.permute_rows([1, 0, 2]).data == ~[4, 5, 6, 1, 2, 3, 7, 8, 9]);
+}
+
+#[test]
+fn test_algebra() {
+  let a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let b = matrix(2, 2, ~[3, 4, 5, 6]);
+  assert!(a.neg().data == ~[-1, -2, -3, -4]);
+  assert!(a.scale(2).data == ~[2, 4, 6, 8]);
+  assert!(a.add(&b).data == ~[4, 6, 8, 10]);
+  assert!(b.sub(&a).data == ~[2, 2, 2, 2]);
+  assert!(a.elem_mul(&b).data == ~[3, 8, 15, 24]);
+  assert!(b.elem_div(&a).data == ~[3, 2, 1, 1]);
+
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  a.mneg();
+  assert!(a.data == ~[-1, -2, -3, -4]);
+
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  a.mscale(2);
+  assert!(a.data == ~[2, 4, 6, 8]);
+
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  a.madd(&b);
+  assert!(a.data == ~[4, 6, 8, 10]);
+
+  let a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let mut b = matrix(2, 2, ~[3, 4, 5, 6]);
+  b.msub(&a);
+  assert!(b.data == ~[2, 2, 2, 2]);
+
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let b = matrix(2, 2, ~[3, 4, 5, 6]);
+  a.melem_mul(&b);
+  assert!(a.data == ~[3, 8, 15, 24]);
+
+  let a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let mut b = matrix(2, 2, ~[3, 4, 5, 6]);
+  b.melem_div(&a);
+  assert!(b.data == ~[3, 2, 1, 1]);
+}
+
+#[test]
+fn test_mul() {
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let b = matrix(2, 2, ~[3, 4, 5, 6]);
+  assert!(a.mul(&b).data == ~[13, 16, 29, 36]);
+  a.mmul(&b);
+  assert!(a.data == ~[13, 16, 29, 36]);
+}
+
+#[test]
+fn test_trace() {
+  let a = matrix(2, 2, ~[1, 2, 3, 4]);
+  assert!(a.trace() == 5);
+}
+
+#[test]
+fn test_det() {
+  let a = matrix(3, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
+  assert!(a.det() == -96.0);
+}
+
+#[test]
+fn test_solve() {
+}
+
+#[test]
+fn test_inverse() {
+/*
+  let a = matrix(3, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
+  match(a.inverse()) {
+    None => { assert!(false); }
+    Some(a) => {
+      io::println(fmt!("%?", a));
+      let correct_res = [-16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].map(|x : &float| -> float { *x / 96.0 });
+      io::println(fmt!("%?", correct_res));
+      assert!(a.approx_eq(&matrix(3, 3, correct_res)));
+    }
+  }
+*/
+}
+
+#[test]
+fn test_is_nonsingular() {
+}
+
