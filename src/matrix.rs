@@ -75,19 +75,31 @@ impl<T> Matrix<T> {
 }
 
 impl<T : Clone> Matrix<T> {
-  pub fn get(&self, row : uint, col : uint) -> T { self.data[row * self.noCols + col].clone() }
+  pub fn get(&self, row : uint, col : uint) -> T {
+    assert!(row < self.noRows && col < self.noCols);
+    self.data[row * self.noCols + col].clone()
+  }
 }
 
 impl<T : Clone> Matrix<T> {
-  pub fn get_ref<'lt>(&'lt self, row : uint, col : uint) -> &'lt T { &self.data[row * self.noCols + col] }
+  pub fn get_ref<'lt>(&'lt self, row : uint, col : uint) -> &'lt T {
+    assert!(row < self.noRows && col < self.noCols);
+    &self.data[row * self.noCols + col]
+  }
 }
 
 impl<T : Clone> Matrix<T> {
-  pub fn get_mref<'lt>(&'lt mut self, row : uint, col : uint) -> &'lt mut T { &mut self.data[row * self.noCols + col] }
+  pub fn get_mref<'lt>(&'lt mut self, row : uint, col : uint) -> &'lt mut T {
+    assert!(row < self.noRows && col < self.noCols);
+    &mut self.data[row * self.noCols + col]
+  }
 }
 
 impl<T : Clone> Matrix<T> {
-  pub fn set(&mut self, row : uint, col : uint, val : T) { self.data[row * self.noCols + col] = val.clone() }
+  pub fn set(&mut self, row : uint, col : uint, val : T) {
+    assert!(row < self.noRows && col < self.noCols);
+    self.data[row * self.noCols + col] = val.clone()
+  }
 }
 
 impl<S, T> Matrix<S> {
@@ -581,6 +593,45 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 }
 
+impl<T : Eq + Clone> Matrix<T> {
+  pub fn is_symmetric(&self) -> bool {
+    if(self.noRows != self.noCols) { return false; }
+    for row in range(1, self.noRows) {
+      for col in range(0, row) {
+        if(self.get(row, col) != self.get(col, row)) { return false; }
+      }
+    }
+
+    true
+  }
+}
+
+#[test]
+fn test_matrix() {
+  let m = matrix(2, 2, ~[1, 2, 3, 4]);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 2);
+  assert!(m.data == ~[1, 2, 3, 4]);
+}
+
+#[test]
+#[should_fail]
+fn test_matrix__invalid_data() {
+  matrix(1, 2, ~[1, 2, 3]);
+}
+
+#[test]
+#[should_fail]
+fn test_matrix__invalid_row_count() {
+  matrix::<uint>(0, 2, ~[]);
+}
+
+#[test]
+#[should_fail]
+fn test_matrix__invalid_col_count() {
+  matrix::<uint>(2, 0, ~[]);
+}
+
 #[test]
 fn test_id() {
   let m = id::<uint>(2);
@@ -646,6 +697,62 @@ fn test_get_set() {
 }
 
 #[test]
+#[should_fail]
+fn test_get__out_of_bounds_x() {
+  let m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get(2, 0);
+}
+
+#[test]
+#[should_fail]
+fn test_get__out_of_bounds_y() {
+  let m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get(0, 2);
+}
+
+#[test]
+#[should_fail]
+fn test_get_ref__out_of_bounds_x() {
+  let m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get_ref(2, 0);
+}
+
+#[test]
+#[should_fail]
+fn test_get_ref__out_of_bounds_y() {
+  let m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get_ref(0, 2);
+}
+
+#[test]
+#[should_fail]
+fn test_get_mref__out_of_bounds_x() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get_mref(2, 0);
+}
+
+#[test]
+#[should_fail]
+fn test_get_mref__out_of_bounds_y() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  let _ = m.get_mref(0, 2);
+}
+
+#[test]
+#[should_fail]
+fn test_set__out_of_bounds_x() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  m.set(2, 0, 0);
+}
+
+#[test]
+#[should_fail]
+fn test_set__out_of_bounds_y() {
+  let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
+  m.set(0, 2, 0);
+}
+
+#[test]
 fn test_map() {
   let mut m = matrix::<uint>(2, 2, ~[1, 2, 3, 4]);
   assert!(m.map(|x : &uint| -> uint { *x + 1 }).data == ~[2, 3, 4, 5]);
@@ -679,6 +786,17 @@ fn test_t() {
 
   m.mt();
   assert!(m.data == ~[1, 3, 2, 4]);
+
+  let mut m = matrix(2, 3, ~[1, 2, 3, 4, 5, 6]);
+  let r = m.t();
+  assert!(r.rows() == 3);
+  assert!(r.cols() == 2);
+  assert!(r.data == ~[1, 4, 2, 5, 3, 6]);
+
+  m.mt();
+  assert!(m.rows() == 3);
+  assert!(m.cols() == 2);
+  assert!(m.data == ~[1, 4, 2, 5, 3, 6]);
 }
 
 #[test]
@@ -689,9 +807,30 @@ fn test_sub() {
 }
 
 #[test]
+#[should_fail]
+fn test_minor__out_of_bounds() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let _ = m.minor(1, 4);
+}
+
+#[test]
+#[should_fail]
+fn test_sub__out_of_bounds() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let _ = m.sub_matrix(1, 1, 3, 4);
+}
+
+#[test]
 fn test_permute_rows() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert!(m.permute_rows([1, 0, 2]).data == ~[4, 5, 6, 1, 2, 3, 7, 8, 9]);
+}
+
+#[test]
+#[should_fail]
+fn test_permute_rows__out_of_bounds() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let _ = m.permute_rows([1, 0, 5]);
 }
 
 #[test]
@@ -743,15 +882,43 @@ fn test_mul() {
 }
 
 #[test]
+#[should_fail]
+fn test_mul__incompatible() {
+  let a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let b = matrix(3, 2, ~[1, 2, 3, 4, 5, 6]);
+  let _ = a.mul(&b);
+}
+
+#[test]
+#[should_fail]
+fn test_mmul__incompatible() {
+  let mut a = matrix(2, 2, ~[1, 2, 3, 4]);
+  let b = matrix(3, 2, ~[1, 2, 3, 4, 5, 6]);
+  a.mmul(&b);
+}
+
+#[test]
 fn test_trace() {
   let a = matrix(2, 2, ~[1, 2, 3, 4]);
   assert!(a.trace() == 5);
+
+  let a = matrix(3, 2, ~[1, 2, 3, 4, 5, 6]);
+  assert!(a.trace() == 5);
+
+  let a = matrix(2, 3, ~[1, 2, 3, 4, 5, 6]);
+  assert!(a.trace() == 6);
 }
 
 #[test]
 fn test_det() {
   let a = matrix(3, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
   assert!(a.det() == -96.0);
+}
+
+#[test]
+#[should_fail]
+fn test_det__not_square() {
+  let _ = matrix(2, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0]).det();
 }
 
 #[test]
@@ -763,6 +930,8 @@ fn test_solve() {
     Some(x) => { assert!(x.approx_eq(&vector(~[1.0, 1.0, 1.0]))); }
   }
 }
+
+// TODO: Add more tests for solve
 
 #[test]
 fn test_inverse() {
@@ -776,11 +945,46 @@ fn test_inverse() {
 }
 
 #[test]
-fn test_is_nonsingular() {
+#[should_fail]
+fn test_inverse__not_square() {
+  let a = matrix(2, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0]);
+  let _ = a.inverse();
+}
+
+#[test]
+fn test_inverse__singular() {
+  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+  assert!(a.inverse() == None);
+}
+
+#[test]
+fn test_is_singular() {
   let m = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
   assert!(m.is_singular());
+}
 
+#[test]
+#[should_fail]
+fn test_is_singular__non_square() {
+  let m = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  assert!(m.is_singular());
+}
+
+#[test]
+fn test_is_nonsingular() {
   let m = matrix(2, 2, ~[2.0, 6.0, 6.0, 3.0]);
   assert!(m.is_nonsingular());
+}
+
+#[test]
+fn test_is_symmetric() {
+  let m = matrix(3, 3, ~[1, 2, 3, 2, 4, 5, 3, 5, 6]);
+  assert!(m.is_symmetric());
+
+  let m = matrix(2, 2, ~[1, 2, 3, 4]);
+  assert!(!m.is_symmetric());
+
+  let m = matrix(2, 3, ~[1, 2, 3, 2, 4, 5]);
+  assert!(!m.is_symmetric());
 }
 
