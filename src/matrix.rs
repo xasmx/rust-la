@@ -46,20 +46,20 @@ pub fn zero<T : Zero + Clone>(noRows : uint, noCols : uint) -> Matrix<T> {
   }
 }
 
-pub fn vect<T>(data : ~[T]) -> Matrix<T> {
+pub fn vector<T>(data : ~[T]) -> Matrix<T> {
   assert!(data.len() > 0);
   Matrix { noRows : data.len(), noCols : 1, data : data }
 }
 
-pub fn zero_vect<T : Zero + Clone>(noRows : uint) -> Matrix<T> {
+pub fn zero_vector<T : Zero + Clone>(noRows : uint) -> Matrix<T> {
   Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, Zero::zero()) }
 }
 
-pub fn one_vect<T : One + Clone>(noRows : uint) -> Matrix<T> {
+pub fn one_vector<T : One + Clone>(noRows : uint) -> Matrix<T> {
   Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, One::one()) }
 }
 
-pub fn row_vect<T>(data : ~[T]) -> Matrix<T> {
+pub fn row_vector<T>(data : ~[T]) -> Matrix<T> {
   assert!(data.len() > 0);
   Matrix { noRows : 1, noCols : data.len(), data : data }
 }
@@ -570,6 +570,11 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 }
 
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed + Algebraic> Matrix<T> {
+  #[inline]
+  pub fn is_singular(&self) -> bool {
+    !self.is_nonsingular()
+  }
+
   pub fn is_nonsingular(&self) -> bool {
     assert!(self.noRows == self.noCols);
     lu::LUDecomposition::new(self).is_nonsingular()
@@ -593,24 +598,24 @@ fn test_zero() {
 }
 
 #[test]
-fn test_vect() {
-  let v = vect::<uint>(~[1, 2, 3]);
+fn test_vector() {
+  let v = vector::<uint>(~[1, 2, 3]);
   assert!(v.rows() == 3);
   assert!(v.cols() == 1);
   assert!(v.data == ~[1, 2, 3]);
 }
 
 #[test]
-fn test_zero_vect() {
-  let v = zero_vect::<uint>(2);
+fn test_zero_vector() {
+  let v = zero_vector::<uint>(2);
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
   assert!(v.data == ~[0, 0]);
 }
 
 #[test]
-fn test_one_vect() {
-  let v = one_vect::<uint>(2);
+fn test_one_vector() {
+  let v = one_vector::<uint>(2);
 
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
@@ -618,8 +623,8 @@ fn test_one_vect() {
 }
 
 #[test]
-fn test_row_vect() {
-  let v = row_vect::<uint>(~[1, 2, 3]);
+fn test_row_vector() {
+  let v = row_vector::<uint>(~[1, 2, 3]);
   assert!(v.rows() == 1);
   assert!(v.cols() == 3);
   assert!(v.data == ~[1, 2, 3]);
@@ -651,7 +656,7 @@ fn test_map() {
 
 #[test]
 fn test_cr() {
-  let v = vect(~[1, 2, 3]);
+  let v = vector(~[1, 2, 3]);
   let m = v.cr(&v);
   assert!(m.rows() == 3);
   assert!(m.cols() == 2);
@@ -751,25 +756,31 @@ fn test_det() {
 
 #[test]
 fn test_solve() {
+  let a = matrix(3, 3, ~[1.0, 1.0, 1.0, 1.0, -1.0, 4.0, 2.0, 3.0, -5.0]);
+  let b = vector(~[3.0, 4.0, 0.0]);
+  match(a.solve(&b)) {
+    None => { assert!(false); }
+    Some(x) => { assert!(x.approx_eq(&vector(~[1.0, 1.0, 1.0]))); }
+  }
 }
 
 #[test]
 fn test_inverse() {
-/*
   let a = matrix(3, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
   match(a.inverse()) {
     None => { assert!(false); }
-    Some(a) => {
-      io::println(fmt!("%?", a));
-      let correct_res = [-16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].map(|x : &float| -> float { *x / 96.0 });
-      io::println(fmt!("%?", correct_res));
-      assert!(a.approx_eq(&matrix(3, 3, correct_res)));
+    Some(ainv) => {
+      assert!(ainv.approx_eq(&matrix(3, 3, [16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].map(|x : &float| -> float { *x / 96.0 }))));
     }
   }
-*/
 }
 
 #[test]
 fn test_is_nonsingular() {
+  let m = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+  assert!(m.is_singular());
+
+  let m = matrix(2, 2, ~[2.0, 6.0, 6.0, 3.0]);
+  assert!(m.is_nonsingular());
 }
 
