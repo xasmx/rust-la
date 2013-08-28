@@ -5,7 +5,7 @@ RUST_SRC=${SRC_DIR}/la.rs
 BUILD_DIR=out
 
 .PHONY: all
-all: build test
+all: build
 
 build: $(RUST_SRC)
 	-mkdir $(BUILD_DIR)
