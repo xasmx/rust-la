@@ -3,7 +3,7 @@ use std::num::{One, Zero, NumCast};
 use std::vec;
 
 use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec};
+use super::super::util::{alloc_dirty_vec, hypot};
 
 pub struct SVD<T> {
   u : Matrix<T>,
@@ -13,19 +13,8 @@ pub struct SVD<T> {
   n : uint
 }
 
+// Ported from JAMA.
 impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed + Orderable> SVD<T> {
-  fn hypot(a : T, b : T) -> T {
-    if num::abs(a.clone()) > num::abs(b.clone()) {
-      let r = b / a;
-      return num::abs(a.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else if b != Zero::zero() {
-      let r = a / b;
-      return num::abs(b.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else {
-      return Zero::zero();
-    }
-  }
-
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // Derived from LINPACK code.
     // Initialize.
@@ -63,7 +52,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // Compute 2-norm of k-th column without under/overflow.
         sdata[k] = Zero::zero();
         for i in range(k, m) {
-          sdata[k] = SVD::hypot(sdata[k].clone(), adata[i * n + k].clone());
+          sdata[k] = hypot(sdata[k].clone(), adata[i * n + k].clone());
         }
         if(sdata[k] != Zero::zero()) {
           if(adata[k * n + k] < Zero::zero()) {
@@ -105,7 +94,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // Compute 2-norm without under/overflow.
         edata[k] = Zero::zero();
         for i in range(k + 1, n) {
-          edata[k] = SVD::hypot(edata[k].clone(), edata[i].clone());
+          edata[k] = hypot(edata[k].clone(), edata[i].clone());
         }
         if(edata[k] != Zero::zero()) {
           if(edata[k + 1] < Zero::zero()) {
@@ -268,7 +257,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         edata[p - 2] = Zero::zero();
         let mut j = (p as int) - 2;
         while(j >= k) {
-          let mut t = SVD::hypot(sdata[j].clone(), f.clone());
+          let mut t = hypot(sdata[j].clone(), f.clone());
           let cs = sdata[j] / t;
           let sn = f / t;
           sdata[j] = t;
@@ -289,7 +278,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         let mut f = edata[k - 1].clone();
         edata[k - 1] = Zero::zero();
         for j in range(k, p as int) {
-          let mut t = SVD::hypot(sdata[j].clone(), f.clone());
+          let mut t = hypot(sdata[j].clone(), f.clone());
           let cs = sdata[j] / t;
           let sn = f / t;
           sdata[j] = t;
@@ -334,7 +323,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
         // Chase zeros.
         for j in range(k, (p as int) - 1) {
-          let mut t = SVD::hypot(f.clone(), g.clone());
+          let mut t = hypot(f.clone(), g.clone());
           let mut cs = f / t;
           let mut sn = g / t;
           if(j != k) {
@@ -351,7 +340,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             vdata[i * n + (j as uint)] = t;
           }
 
-          t = SVD::hypot(f.clone(), g.clone());
+          t = hypot(f.clone(), g.clone());
           cs = f / t;
           sn = g / t;
           sdata[j] = t;

@@ -2,7 +2,7 @@ use std::num;
 use std::num::{One, Zero, NumCast};
 
 use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec};
+use super::super::util::{alloc_dirty_vec, hypot};
 
 pub struct EigenDecomposition<T> {
   n : uint,
@@ -12,19 +12,8 @@ pub struct EigenDecomposition<T> {
   h : Option<Matrix<T>>
 }
 
+// Ported from JAMA.
 impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed + Orderable> EigenDecomposition<T> {
-  fn hypot(a : T, b : T) -> T {
-    if num::abs(a.clone()) > num::abs(b.clone()) {
-      let r = b / a;
-      return num::abs(a.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else if b != Zero::zero() {
-      let r = a / b;
-      return num::abs(b.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else {
-      return Zero::zero();
-    }
-  }
-
   // Symmetric Householder reduction to tridiagonal form.
   fn tred2(n : uint, ddata : &mut [T], vdata : &mut [T], edata : &mut [T]) {
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
@@ -163,7 +152,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           let mut g = ddata[l].clone();
           let tmp : T = NumCast::from(2.0);
           let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
-          let mut r = EigenDecomposition::hypot::<T>(p.clone(), One::one());
+          let mut r = hypot::<T>(p.clone(), One::one());
           if(p < Zero::zero()) {
             r = -r;
           }
@@ -190,7 +179,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             s2 = s.clone();
             g = c * edata[i];
             h = c * p;
-            r = EigenDecomposition::hypot::<T>(p.clone(), edata[i].clone());
+            r = hypot::<T>(p.clone(), edata[i].clone());
             edata[i + 1] = s * r;
             s = edata[i] / r;
             c = p / r;

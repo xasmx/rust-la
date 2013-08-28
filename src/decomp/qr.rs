@@ -1,28 +1,15 @@
-use std::num;
 use std::num::{One, Zero};
 
 use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec};
+use super::super::util::{alloc_dirty_vec, hypot};
 
 pub struct QRDecomposition<T> {
   qr : Matrix<T>,
   rdiag : ~[T]
 }
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed> QRDecomposition<T> {
-  // sqrt(a^2 + b^2) without under/overflow.
-  fn hypot(a : T, b : T) -> T {
-    if num::abs(a.clone()) > num::abs(b.clone()) {
-      let r = b / a;
-      return num::abs(a.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else if b != Zero::zero() {
-      let r = a / b;
-      return num::abs(b.clone()) * num::sqrt(One::one::<T>() + r * r);
-    } else {
-      return Zero::zero();
-    }
-  }
-
+// Ported from JAMA.
+impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Orderable + Signed> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
     let mut qrdata = m.data.clone();
     let n = m.noCols;
@@ -33,7 +20,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       // Compute 2-norm of k-th column without under/overflow.
       let mut nrm : T = Zero::zero();
       for i in range(k, m) {
-        nrm = QRDecomposition::hypot(nrm, qrdata[i * n + k].clone());
+        nrm = hypot(nrm, qrdata[i * n + k].clone());
       }
 
       if(nrm != Zero::zero()) {

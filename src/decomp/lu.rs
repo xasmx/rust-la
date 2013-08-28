@@ -10,6 +10,7 @@ pub struct LUDecomposition<T> {
   piv : ~[uint]
 }
 
+// Ported from JAMA.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
     // Use a "left-looking", dot-product, Crout/Doolittle algorithm.

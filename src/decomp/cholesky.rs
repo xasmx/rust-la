@@ -8,6 +8,7 @@ pub struct CholeskyDecomposition<T> {
   l : Matrix<T>
 }
 
+// Ported from JAMA.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic> CholeskyDecomposition<T> {
   fn new(m : &Matrix<T>) -> Option<CholeskyDecomposition<T>> {
     if(m.noRows != m.noCols) {
