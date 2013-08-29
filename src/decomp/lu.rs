@@ -235,4 +235,74 @@ fn test_lu2__m_under_n() {
   assert!(l * u == p * a);
 }
 
-// TODO: Add tests to solve, etc..
+#[test]
+fn lu_solve_test() {
+  let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let lu = LUDecomposition::new(&a);
+  let b = vector(~[1.0, 2.0, 3.0]);
+  match(lu.solve(&b)) {
+    None => { assert!(false); }
+    Some(x) => { assert!(x.approx_eq(&vector(~[-1.0, 3.0, 3.0]))); }
+  }
+}
+
+#[test]
+#[should_fail]
+fn lu_solve_test__incompatible() {
+  let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let lu = LUDecomposition::new(&a);
+  let b = vector(~[1.0, 2.0, 3.0, 4.0]);
+  let _ = lu.solve(&b);
+}
+
+#[test]
+fn lu_solve_test__singular() {
+  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+  let lu = LUDecomposition::new(&a);
+  let b = vector(~[1.0, 2.0]);
+  match(lu.solve(&b)) {
+    None => { }
+    Some(_) => { fail!(); }
+  }
+}
+
+#[test]
+fn lu_is_singular_test() {
+  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(lu.is_singular());
+
+  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 4.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(!lu.is_singular());
+}
+
+#[test]
+fn lu_is_non_singular_test() {
+  let a = matrix(2, 2, ~[4.0, 8.0, 3.0, 4.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(lu.is_non_singular());
+
+  let a = matrix(2, 2, ~[4.0, 6.0, 2.0, 3.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(!lu.is_non_singular());
+}
+
+#[test]
+fn lu_det_test() {
+  let a = matrix(2, 2, ~[4.0, 8.0, 3.0, 4.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(lu.det() == -8.0);
+
+  let a = matrix(2, 2, ~[4.0, 8.0, 2.0, 4.0]);
+  let lu = LUDecomposition::new(&a);
+  assert!(lu.det() == 0.0);
+}
+
+#[test]
+#[should_fail]
+fn lu_det_test__not_square() {
+  let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let lu = LUDecomposition::new(&a);
+  let _ = lu.det();
+}
