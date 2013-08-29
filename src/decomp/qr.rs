@@ -9,6 +9,16 @@ pub struct QRDecomposition<T> {
 }
 
 // Ported from JAMA.
+// QR Decomposition.
+//
+// For an m-by-n matrix A with m >= n, the QR decomposition is an m-by-n
+// orthogonal matrix Q and an n-by-n upper triangular matrix R so that
+// A = Q*R.
+//
+// The QR decompostion always exists, even if the matrix does not have
+// full rank.  The primary use of the QR decomposition is in the least
+// squares solution of nonsquare systems of simultaneous linear equations.
+// This will fail if is_full_rank() returns false.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Orderable + Signed> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
     let mut qrdata = m.data.clone();
@@ -64,19 +74,14 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   // Return the Householder vectors
   // Lower trapezoidal matrix whose columns define the reflections
   pub fn get_h(&self) -> Matrix<T> {
-    let elems = self.qr.noRows * self.qr.noCols;
-    let mut hdata = alloc_dirty_vec(elems);
+    let mut hdata = alloc_dirty_vec(self.qr.noRows * self.qr.noCols);
 
     let m = self.qr.noRows;
     let n = self.qr.noCols;
 
     for i in range(0u, m) {
       for j in range(0u, n) {
-        if(i >= j) {
-          hdata[i * self.qr.noCols + j] = self.qr.data[i * self.qr.noCols + j].clone();
-        } else {
-          hdata[i * self.qr.noCols + j] = Zero::zero();
-        }
+        hdata[i * self.qr.noCols + j] = if(i >= j) { self.qr.data[i * self.qr.noCols + j].clone() } else { Zero::zero() }
       }
     }
 
@@ -86,8 +91,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   // Return the upper triangular factor
   pub fn get_r(&self) -> Matrix<T> {
     let n = self.qr.noCols;
-    let elems = n * n;
-    let mut rdata = alloc_dirty_vec(elems);
+    let mut rdata = alloc_dirty_vec(n * n);
 
     for i in range(0u, n) {
       for j in range(0u, n) {
@@ -108,8 +112,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   pub fn get_q(&self) -> Matrix<T> {
     let n = self.qr.noCols;
     let m = self.qr.noRows;
-    let elems = m * n;
-    let mut qdata = alloc_dirty_vec(elems);
+    let mut qdata = alloc_dirty_vec(m * n);
 
     for k in range(0u, n).invert() {
       for i in range(0u, m) {

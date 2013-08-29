@@ -25,3 +25,16 @@ pub fn hypot<T : Zero + One + Signed + Algebraic + Orderable + Clone>(a : T, b :
   }
 }
 
+#[test]
+fn hypot_test() {
+  assert!(hypot(3.0, 4.0) == 5.0);
+  assert!(hypot(4.0, 3.0) == 5.0);
+  assert!(hypot(4.0, 0.0) == 4.0);
+  assert!(hypot(0.0, 4.0) == 4.0);
+  assert!(hypot(-3.0, 4.0) == 5.0);
+  assert!(hypot(4.0, -3.0) == 5.0);
+  assert!(hypot(-4.0, -3.0) == 5.0);
+  assert!(hypot(-4.0, 0.0) == 4.0);
+  assert!(hypot(0.0, -4.0) == 4.0);
+}
+

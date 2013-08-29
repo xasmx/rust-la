@@ -14,6 +14,17 @@ pub struct SVD<T> {
 }
 
 // Ported from JAMA.
+// Singular Value Decomposition.
+//
+// For an m-by-n matrix A with m >= n, the singular value decomposition is
+// an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
+// an n-by-n orthogonal matrix V so that A = U*S*V'.
+//
+// The singular values, sigma[k] = S[k][k], are ordered so that
+// sigma[0] >= sigma[1] >= ... >= sigma[n-1].
+//
+// The singular value decompostion always exists. The matrix condition number
+// and the effective numerical rank can be computed from this decomposition.
 impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed + Orderable> SVD<T> {
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // Derived from LINPACK code.
