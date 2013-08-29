@@ -114,3 +114,16 @@ fn cholesky_not_square_test() {
     _ => assert!(false)
   }
 }
+
+#[test]
+fn cholesky_solve_test() {
+  let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  match(CholeskyDecomposition::new(&a)) {
+    None => assert!(false),
+    Some(c) => {
+      let b = vector(~[1.0, 2.0, 3.0]);
+      let x = c.solve(&b);
+      assert!(x.approx_eq(&vector(~[-1.0, 3.0, 3.0])));
+    }
+  }
+}
