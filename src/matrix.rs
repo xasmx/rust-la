@@ -584,12 +584,12 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed + Algebraic> Matrix<T> {
   #[inline]
   pub fn is_singular(&self) -> bool {
-    !self.is_nonsingular()
+    !self.is_non_singular()
   }
 
-  pub fn is_nonsingular(&self) -> bool {
+  pub fn is_non_singular(&self) -> bool {
     assert!(self.noRows == self.noCols);
-    lu::LUDecomposition::new(self).is_nonsingular()
+    lu::LUDecomposition::new(self).is_non_singular()
   }
 }
 
@@ -971,9 +971,9 @@ fn test_is_singular__non_square() {
 }
 
 #[test]
-fn test_is_nonsingular() {
+fn test_is_non_singular() {
   let m = matrix(2, 2, ~[2.0, 6.0, 6.0, 3.0]);
-  assert!(m.is_nonsingular());
+  assert!(m.is_non_singular());
 }
 
 #[test]

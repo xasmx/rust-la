@@ -9,14 +9,19 @@ pub struct CholeskyDecomposition<T> {
 }
 
 // Ported from JAMA.
+// Cholesky Decomposition.
+//
+// For a symmetric, positive definite matrix A, the Cholesky decomposition
+// is an lower triangular matrix L so that A = L*L'.
+//
+// If the matrix is not symmetric or positive definite, None is returned.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic> CholeskyDecomposition<T> {
   fn new(m : &Matrix<T>) -> Option<CholeskyDecomposition<T>> {
     if(m.noRows != m.noCols) {
       return None
     }
     let n = m.noRows;
-    let elems = n * n;
-    let mut data : ~[T] = alloc_dirty_vec(elems);
+    let mut data : ~[T] = alloc_dirty_vec(n * n);
 
     for j in range(0u, n) {
       let rowjIdx = j * n;
@@ -84,7 +89,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 }
 
 #[test]
-fn cholesky_square_pd_test() {
+fn cholesky_square_pos_def_test() {
   let a = matrix(3, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, -43.0, -16.0, -43.0, 98.0]);
   match(CholeskyDecomposition::new(&a)) {
     None => assert!(false),
@@ -93,7 +98,7 @@ fn cholesky_square_pd_test() {
 }
 
 #[test]
-fn cholesky_not_pd_test() {
+fn cholesky_not_pos_def_test() {
   let a = matrix(3, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, 43.0, -16.0, 43.0, 98.0]);
   match(CholeskyDecomposition::new(&a)) {
     None => (),
@@ -102,7 +107,7 @@ fn cholesky_not_pd_test() {
 }
 
 #[test]
-fn cholesky_not_sq_test() {
+fn cholesky_not_square_test() {
   let a = matrix(2, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, 43.0]);
   match(CholeskyDecomposition::new(&a)) {
     None => (),

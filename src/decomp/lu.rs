@@ -11,6 +11,17 @@ pub struct LUDecomposition<T> {
 }
 
 // Ported from JAMA.
+// LU Decomposition.
+//
+// For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
+// unit lower triangular matrix L, an n-by-n upper triangular matrix U,
+// and a permutation vector piv of length m so that A(piv,:) = L*U.
+// If m < n, then L is m-by-m and U is m-by-n.
+//
+// The LU decompostion with pivoting always exists, even if the matrix is
+// singular. The primary use of the LU decomposition is in the solution of
+// square systems of simultaneous linear equations. This will fail if the
+// matrix is singular.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
     // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
@@ -83,7 +94,11 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     }
   }
 
-  pub fn is_nonsingular(&self) -> bool {
+  pub fn is_singular(&self) -> bool {
+    !self.is_non_singular()
+  }
+
+  pub fn is_non_singular(&self) -> bool {
     let n = self.lu.noCols;
     for j in range(0, n) {
       if(self.lu.data[j * n + j] == Zero::zero()) {
@@ -95,12 +110,12 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
   pub fn get_l(&self) -> Matrix<T> {
     let m = self.lu.noRows;
-    let n = self.lu.noCols;
+    let n = if self.lu.noRows >= self.lu.noCols { self.lu.noCols } else { self.lu.noRows };
     let mut ldata = alloc_dirty_vec(m * n);
     for i in range(0, m) {
       for j in range(0, n) {
         ldata[i * n + j] = if(i > j) {
-                             self.lu.data[i * n + j].clone()
+                             self.lu.data[i * self.lu.noCols + j].clone()
                            } else if(i == j) {
                              One::one()
                            } else {
@@ -112,15 +127,22 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 
   pub fn get_u(&self) -> Matrix<T> {
+    let m = if self.lu.noRows >= self.lu.noCols { self.lu.noCols as int } else { self.lu.noRows as int };
     let n = self.lu.noCols as int;
-    let mut udata = alloc_dirty_vec((n * n) as uint);
-    for i in range(0, n) {
+    let mut udata = alloc_dirty_vec((m * n) as uint);
+    for i in range(0, m) {
       for j in range(0, n) {
         udata[i * n + j] = if(i <= j) { self.lu.data[i * n + j].clone() } else { Zero::zero() };
       }
     }
-    Matrix { noRows : n as uint, noCols : n as uint, data : udata }
+    Matrix { noRows : m as uint, noCols : n as uint, data : udata }
   }
+
+  pub fn get_p(&self) -> Matrix<T> {
+    id(self.piv.len()).permute_rows(self.piv)
+  }
+
+  pub fn get_piv<'lt>(&'lt self) -> &'lt ~[uint] { &self.piv }
 
   pub fn det(&self) -> T {
     assert!(self.lu.noRows == self.lu.noCols);
@@ -139,7 +161,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     let m = self.lu.noRows as int;
     let n = self.lu.noCols as int;
     assert!(b.noRows == m as uint);
-    if(!self.is_nonsingular()) {
+    if(!self.is_non_singular()) {
       return None
     }
 
@@ -184,8 +206,33 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 }
 
 #[test]
-fn test_lu() {
+fn test_lu__square() {
   let a = matrix(3, 3, ~[1.0, 2.0, 0.0, 3.0, 6.0, -1.0, 1.0, 2.0, 1.0]);
   let lu = LUDecomposition::new(&a);
-  assert!((lu.get_l().permute_rows(lu.piv) * lu.get_u()).approx_eq(&a));
+  let l = lu.get_l();
+  let u = lu.get_u();
+  let p = lu.get_p();
+  assert!(l * u == p * a);
 }
+
+#[test]
+fn test_lu2__m_over_n() {
+  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let lu = LUDecomposition::new(&a);
+  let l = lu.get_l();
+  let u = lu.get_u();
+  let p = lu.get_p();
+  assert!(l * u == p * a);
+}
+
+#[test]
+fn test_lu2__m_under_n() {
+  let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let lu = LUDecomposition::new(&a);
+  let l = lu.get_l();
+  let u = lu.get_u();
+  let p = lu.get_p();
+  assert!(l * u == p * a);
+}
+
+// TODO: Add tests to solve, etc..

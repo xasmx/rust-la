@@ -167,11 +167,13 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           udata[i * nu + k] = - udata[i * nu + k];
         }
         udata[k * nu + k] = One::one::<T>() + udata[k * nu + k];
-        let mut i = 0;
-        while(i < ((k as int) - 1)) {
+        for i in range(0, k) {
           udata[(i as uint) * nu + k] = Zero::zero();
-          i -= 1;
         }
+        //let mut i = 0;
+        //while(i < ((k as int) - 1)) {
+        //  i -= 1;
+        //}
       } else {
         for i in range(0u, m) {
           udata[i * nu + k] = Zero::zero();
