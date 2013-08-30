@@ -91,52 +91,35 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 #[test]
 fn cholesky_square_pos_def_test() {
   let a = matrix(3, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, -43.0, -16.0, -43.0, 98.0]);
-  match(CholeskyDecomposition::new(&a)) {
-    None => assert!(false),
-    Some(c) => { assert!(c.get_l() * c.get_l().t() == a) }
-  }
+  let c = CholeskyDecomposition::new(&a).unwrap();
+  assert!(c.get_l() * c.get_l().t() == a);
 }
 
 #[test]
 fn cholesky_not_pos_def_test() {
   let a = matrix(3, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, 43.0, -16.0, 43.0, 98.0]);
-  match(CholeskyDecomposition::new(&a)) {
-    None => (),
-    _ => assert!(false)
-  }
+  assert!(CholeskyDecomposition::new(&a).is_none());
 }
 
 #[test]
 fn cholesky_not_square_test() {
   let a = matrix(2, 3, ~[4.0, 12.0, -16.0, 12.0, 37.0, 43.0]);
-  match(CholeskyDecomposition::new(&a)) {
-    None => (),
-    _ => assert!(false)
-  }
+  assert!(CholeskyDecomposition::new(&a).is_none());
 }
 
 #[test]
 fn cholesky_solve_test() {
   let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
-  match(CholeskyDecomposition::new(&a)) {
-    None => assert!(false),
-    Some(c) => {
-      let b = vector(~[1.0, 2.0, 3.0]);
-      let x = c.solve(&b);
-      assert!(x.approx_eq(&vector(~[-1.0, 3.0, 3.0])));
-    }
-  }
+  let c = CholeskyDecomposition::new(&a).unwrap();
+  let b = vector(~[1.0, 2.0, 3.0]);
+  assert!(c.solve(&b).approx_eq(&vector(~[-1.0, 3.0, 3.0])));
 }
 
 #[test]
 #[should_fail]
 fn cholesky_solve_test__incompatible() {
   let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
-  match(CholeskyDecomposition::new(&a)) {
-    None => assert!(false),
-    Some(c) => {
-      let b = vector(~[1.0, 2.0, 3.0, 4.0]);
-      let _ = c.solve(&b);
-    }
-  }
+  let c = CholeskyDecomposition::new(&a).unwrap();
+  let b = vector(~[1.0, 2.0, 3.0, 4.0]);
+  let _ = c.solve(&b);
 }

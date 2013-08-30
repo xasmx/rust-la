@@ -240,10 +240,7 @@ fn lu_solve_test() {
   let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
   let lu = LUDecomposition::new(&a);
   let b = vector(~[1.0, 2.0, 3.0]);
-  match(lu.solve(&b)) {
-    None => { assert!(false); }
-    Some(x) => { assert!(x.approx_eq(&vector(~[-1.0, 3.0, 3.0]))); }
-  }
+  assert!(lu.solve(&b).unwrap().approx_eq(&vector(~[-1.0, 3.0, 3.0])));
 }
 
 #[test]
@@ -260,10 +257,7 @@ fn lu_solve_test__singular() {
   let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
   let lu = LUDecomposition::new(&a);
   let b = vector(~[1.0, 2.0]);
-  match(lu.solve(&b)) {
-    None => { }
-    Some(_) => { fail!(); }
-  }
+  assert!(lu.solve(&b).is_none());
 }
 
 #[test]

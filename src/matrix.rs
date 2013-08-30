@@ -925,10 +925,7 @@ fn test_det__not_square() {
 fn test_solve() {
   let a = matrix(3, 3, ~[1.0, 1.0, 1.0, 1.0, -1.0, 4.0, 2.0, 3.0, -5.0]);
   let b = vector(~[3.0, 4.0, 0.0]);
-  match(a.solve(&b)) {
-    None => { assert!(false); }
-    Some(x) => { assert!(x.approx_eq(&vector(~[1.0, 1.0, 1.0]))); }
-  }
+  assert!(a.solve(&b).unwrap().approx_eq(&vector(~[1.0, 1.0, 1.0])));
 }
 
 // TODO: Add more tests for solve
@@ -936,12 +933,7 @@ fn test_solve() {
 #[test]
 fn test_inverse() {
   let a = matrix(3, 3, ~[6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
-  match(a.inverse()) {
-    None => { assert!(false); }
-    Some(ainv) => {
-      assert!(ainv.approx_eq(&matrix(3, 3, [16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].map(|x : &float| -> float { *x / 96.0 }))));
-    }
-  }
+  assert!(a.inverse().unwrap().approx_eq(&matrix(3, 3, [16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].map(|x : &float| -> float { *x / 96.0 }))));
 }
 
 #[test]

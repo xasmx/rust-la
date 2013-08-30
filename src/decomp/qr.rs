@@ -187,3 +187,20 @@ fn qr_test() {
   let qr = QRDecomposition::new(&a);
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }
+
+#[test]
+fn qr_test__m_over_n() {
+  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let qr = QRDecomposition::new(&a);
+  assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
+}
+
+/*
+// FIXME: Add support for n over m case.
+#[test]
+fn qr_test__n_over_m() {
+  let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let qr = QRDecomposition::new(&a);
+  assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
+}
+*/

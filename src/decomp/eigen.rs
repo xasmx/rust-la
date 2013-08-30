@@ -840,6 +840,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
 #[test]
 fn eigen_test() {
-  let a = matrix(3, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+  let a = matrix(3, 3, ~[3.0, 1.0, 6.0, 2.0, 1.0, 0.0, -1.0, 0.0, -3.0]);
   let _eig = EigenDecomposition::new(&a);
+  let r = _eig.get_real_eigenvalues();
+  assert!(vector(r.clone()).approx_eq(&vector(~[3.0, -1.0, -1.0])));
 }

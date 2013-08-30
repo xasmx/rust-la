@@ -33,10 +33,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let m = a.noRows;
     let n = a.noCols;
 
-    // Apparently the failing cases are only a proper subset of (m<n), 
-    //   so let's not throw error.  Correct fix to come later?
-    //if (m<n) {
-    //    throw new IllegalArgumentException("Jama SVD only works for m >= n"); }
+    assert!(m >= n);
 
     let nu = num::min(m, n);
 
@@ -459,3 +456,14 @@ fn svd_test() {
   let v = svd.get_v();
   assert!((u * s * v.t()).approx_eq(&a));
 }
+
+#[test]
+fn svd_test__m_over_n() {
+  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let svd = SVD::new(&a);
+  let u = svd.get_u();
+  let s = svd.get_s();
+  let v = svd.get_v();
+  assert!((u * s * v.t()).approx_eq(&a));
+}
+
