@@ -8,12 +8,11 @@ pub struct QRDecomposition<T> {
   rdiag : ~[T]
 }
 
-// Ported from JAMA.
+// Initial version based on JAMA.
 // QR Decomposition.
 //
-// For an m-by-n matrix A with m >= n, the QR decomposition is an m-by-n
-// orthogonal matrix Q and an n-by-n upper triangular matrix R so that
-// A = Q*R.
+// For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
+// and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.
 //
 // The QR decompostion always exists, even if the matrix does not have
 // full rank.  The primary use of the QR decomposition is in the least
@@ -21,6 +20,9 @@ pub struct QRDecomposition<T> {
 // This will fail if is_full_rank() returns false.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Orderable + Signed> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
+    // NOTE: Currently does not work for m < n.
+    assert!(m.noRows >= m.noCols);
+
     let mut qrdata = m.data.clone();
     let n = m.noCols;
     let m = m.noRows;
