@@ -20,21 +20,21 @@ pub struct QRDecomposition<T> {
 // This will fail if is_full_rank() returns false.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Orderable + Signed> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
-    // NOTE: Currently does not work for m < n.
-    assert!(m.noRows >= m.noCols);
-
     let mut qrdata = m.data.clone();
     let n = m.noCols;
     let m = m.noRows;
     let mut rdiag = alloc_dirty_vec(n);
 
     for k in range(0u, n) {
+      // Zero out elements below the diagonal for the k:th column of m.
+
       // Compute 2-norm of k-th column without under/overflow.
       let mut nrm : T = Zero::zero();
       for i in range(k, m) {
         nrm = hypot(nrm, qrdata[i * n + k].clone());
       }
 
+      // If the length of the column vector is zero, the column is already zero and there's nothing to do.
       if(nrm != Zero::zero()) {
         // Form k-th Householder vector.
         if(qrdata[k * n + k] < Zero::zero()) {
@@ -92,50 +92,53 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
   // Return the upper triangular factor
   pub fn get_r(&self) -> Matrix<T> {
+    let m = self.qr.noRows;
     let n = self.qr.noCols;
-    let mut rdata = alloc_dirty_vec(n * n);
+    let mut rdata = alloc_dirty_vec(m * n);
 
-    for i in range(0u, n) {
+    for i in range(0u, m) {
       for j in range(0u, n) {
-        if(i < j) {
-          rdata[i * n + j] = self.qr.data[i * self.qr.noCols + j].clone();
-        } else if(i == j) {
-          rdata[i * n + j] = self.rdiag[i].clone();
-        } else {
-          rdata[i * n + j] = Zero::zero();
-        }
+        rdata[i * n + j] = if(i < j) { self.qr.data[i * n + j].clone() }
+                           else if(i == j) { self.rdiag[i].clone() }
+                           else { Zero::zero() };
       }
     }
 
-    Matrix { noRows : n, noCols : n, data : rdata }
+    Matrix { noRows : m, noCols : n, data : rdata }
   }
 
   // Generate and return the (economy-sized) orthogonal factor
   pub fn get_q(&self) -> Matrix<T> {
     let n = self.qr.noCols;
     let m = self.qr.noRows;
-    let mut qdata = alloc_dirty_vec(m * n);
+    let mut qdata = alloc_dirty_vec(m * m);
 
-    for k in range(0u, n).invert() {
+    // Iterate over all columns of Q, from (m-1) to 0.
+    for k in range(0u, m).invert() {
+      // Zero out k:th column of Q.
       for i in range(0u, m) {
-        qdata[i * n + k] = Zero::zero();
+        qdata[i * m + k] = Zero::zero();
       }
-      qdata[k * n + k] = One::one();
-      for j in range(k, n) {
-        if(self.qr.data[k * n + k] != Zero::zero()) {
+
+      // Set the diagonal element of k:th column to one.
+      qdata[k * m + k] = One::one();
+
+      // Iterate over columns k .. (m - 1) of Q.
+      for j in range(k, m) {
+        if((k < n) && (self.qr.data[k * n + k] != Zero::zero())) {
           let mut s : T = Zero::zero();
           for i in range(k, m) {
-            s = s + self.qr.data[i * n + k] * qdata[i * n + j];
+            s = s + self.qr.data[i * n + k] * qdata[i * m + j];
           }
           s = - s / self.qr.data[k * n + k];
           for i in range(k, m) {
-            qdata[i * n + j] = qdata[i * n + j] + s * self.qr.data[i * n + k];
+            qdata[i * m + j] = qdata[i * m + j] + s * self.qr.data[i * n + k];
           }
         }
       }
     }
 
-    Matrix { noRows : m, noCols : n, data : qdata }
+    Matrix { noRows : m, noCols : m, data : qdata }
   }
 
   // Least squares solution of A*X = B
@@ -197,12 +200,9 @@ fn qr_test__m_over_n() {
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }
 
-/*
-// FIXME: Add support for n over m case.
 #[test]
 fn qr_test__n_over_m() {
   let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
   let qr = QRDecomposition::new(&a);
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }
-*/
