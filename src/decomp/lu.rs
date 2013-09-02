@@ -139,7 +139,8 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 
   pub fn get_p(&self) -> Matrix<T> {
-    id(self.piv.len()).permute_rows(self.piv)
+    let len = self.piv.len();
+    id(len, len).permute_rows(self.piv)
   }
 
   pub fn get_piv<'lt>(&'lt self) -> &'lt ~[uint] { &self.piv }

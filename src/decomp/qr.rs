@@ -1,14 +1,16 @@
+use std::num;
 use std::num::{One, Zero};
+use std::vec;
 
 use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec, hypot};
+use super::super::util::{alloc_dirty_vec};
 
 pub struct QRDecomposition<T> {
   qr : Matrix<T>,
   rdiag : ~[T]
 }
 
-// Initial version based on JAMA.
+// Based on Apache Commons Math and JAMA.
 // QR Decomposition.
 //
 // For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
@@ -20,48 +22,85 @@ pub struct QRDecomposition<T> {
 // This will fail if is_full_rank() returns false.
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Orderable + Signed> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
+    // qr: The area above the diagonals stores the corresponding parts of the R matrix.
+    //     Each column from diagonal down will store the k:th householder vector in the end. (The elements above are zero for the householder vectors).
     let mut qrdata = m.data.clone();
     let n = m.noCols;
     let m = m.noRows;
-    let mut rdiag = alloc_dirty_vec(n);
+    let diag_count = num::min(m, n);
+    // rdiag: Will store the diagonal elements of the R matrix.
+    let mut rdiag = alloc_dirty_vec(diag_count);
 
-    for k in range(0u, n) {
+    // Iterate over all columns with a diagonal element (columns 0 .. (diag_count - 1)), zeroing out the elements below the diagonal element.
+    for minor in range(0, diag_count) {
       // Zero out elements below the diagonal for the k:th column of m.
-
-      // Compute 2-norm of k-th column without under/overflow.
-      let mut nrm : T = Zero::zero();
-      for i in range(k, m) {
-        nrm = hypot(nrm, qrdata[i * n + k].clone());
-      }
-
-      // If the length of the column vector is zero, the column is already zero and there's nothing to do.
-      if(nrm != Zero::zero()) {
-        // Form k-th Householder vector.
-        if(qrdata[k * n + k] < Zero::zero()) {
-          nrm = - nrm;
-        }
-        for i in range(k, m) {
-          qrdata[i * n + k] = qrdata[i * n + k] / nrm;
-        }
-        qrdata[k * n + k] = qrdata[k * n + k] + One::one();
-
-        // Apply transformation to remaining columns.
-        for j in range(k + 1, n) {
-          let mut s : T = Zero::zero();
-          for i in range(k, m) {
-            s = s + qrdata[i * n + k] * qrdata[i * n + j];
-          }
-          s = - s / qrdata[k * n + k];
-          for i in range(k, m) {
-            qrdata[i * n + j] = qrdata[i * n + j] + s * qrdata[i * n + k];
-          }
-        }
-      }
-
-      rdiag[k] = - nrm;
+      QRDecomposition::perform_householder_reflection(minor, qrdata, m, n, rdiag);
     }
 
     QRDecomposition { qr : Matrix { noRows : m, noCols : n, data : qrdata }, rdiag : rdiag }
+  }
+
+  // Find a reflection hyperplane, that will reflect the minor:th minor vector to (a 0 .. 0)^T and perform the reflection.
+  fn perform_householder_reflection(minor : uint, qrdata : &mut [T], m : uint, n : uint, rdiag : &mut [T]) {
+    // Calculate the length of the minor:th minor column vector. As we are dealing with a sub matrix from the diagonal down and right,
+    // the column vector corresponds to the row range minor .. (m - 1).
+    let mut x_norm_sqr : T = Zero::zero();
+    for i in range(minor, m) {
+      let c = qrdata[i * n + minor].clone();
+      x_norm_sqr = x_norm_sqr + c * c;
+    }
+
+    // We know the size of the reflected coordinate (the lenght of the column vector), but not the sign yet.
+    // Reflection will flip the sign of the corresponding coordinate element, so sign of the reflected
+    // coordinate will be the opposite of the current coordinate element.
+    let a = if(qrdata[minor * n + minor] > Zero::zero()) { - num::sqrt(x_norm_sqr) } else { num::sqrt(x_norm_sqr) };
+    rdiag[minor] = a.clone();
+
+    // If the length of the column vector is zero, the column is already zero and there's nothing to do.
+    if(a != Zero::zero()) {
+      // Transform qrdata[minor .. (m - 1)][minor] to be the minor:th Householder vector.
+
+      // u is the vector from the reflection point (a * e) to the current point (x).
+      // As we are reflecting to an minor:th axis, e = (1 0 0 .. 0 0)^T
+      // u = - a * e + x = x - a * e
+      //
+      // Note that:
+      // |u|^2 = <x - ae, x - ae>
+      //       = <x, x> - 2a<x, e> + a^2<e, e>
+      //       = a^2    - 2a<x, e> + a^2
+      //       = 2a^2 - 2a<x, e>
+      //       = 2a^2 - 2a*qrdata[k * n + k]	// As <x, e> is the projection of x to the axis aligned unit vector e.
+      //       = 2a(a - qrdata[k * n + k])
+      qrdata[minor * n + minor] = qrdata[minor * n + minor] - a;
+
+      // Note that now:
+      // |u|^2 = 2a(a - (qrdata[k * n + k] + a))
+      //       = 2a(- qrdata[k * n + k])
+      //       = -2a*qrdata[k * n + k]
+
+      // Transform the rest of the columns of the minor:
+      // The reflection matrix is:
+      //   H = I - 2uu'/|u|^2.
+      //   Hx = (I - 2uu'/|u|^2)x
+      //      = x - 2uu'x/|u|^2
+      //      = x - 2<x,u>/|u|^2 u
+      //      = x - 2<x,u>/(-2a*qrdata[k * n + k]) u
+      //      = x + <x,u>/(a*qrdata[k * n + k]) u
+      //      = x + factor * u
+      for column in range(minor + 1, n) {
+        // factor = <x, u>/(a * qrdata[k * n + k])
+        let mut x_dot_u : T = Zero::zero();
+        for row in range(minor, m) {
+          x_dot_u = x_dot_u + qrdata[row * n + minor] * qrdata[row * n + column];
+        }
+        let factor = x_dot_u / (a * qrdata[minor * n + minor]);
+
+        // Hx = x + factor * u
+        for row in range(minor, m) {
+          qrdata[row * n + column] = qrdata[row * n + column] + factor * qrdata[row * n + minor];
+        }
+      }
+    }
   }
 
   pub fn is_full_rank(&self) -> bool {
@@ -103,7 +142,6 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
                            else { Zero::zero() };
       }
     }
-
     Matrix { noRows : m, noCols : n, data : rdata }
   }
 
@@ -111,28 +149,40 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   pub fn get_q(&self) -> Matrix<T> {
     let n = self.qr.noCols;
     let m = self.qr.noRows;
-    let mut qdata = alloc_dirty_vec(m * m);
+    let mut qdata = vec::from_elem(m * m, Zero::zero());
 
-    // Iterate over all columns of Q, from (m-1) to 0.
-    for k in range(0u, m).invert() {
-      // Zero out k:th column of Q.
-      for i in range(0u, m) {
-        qdata[i * m + k] = Zero::zero();
-      }
+    // Set the diagonal elements to 1
+    for minor in range(0, num::min(m, n)) {
+      qdata[minor * m + minor] = One::one();
+    }
 
-      // Set the diagonal element of k:th column to one.
-      qdata[k * m + k] = One::one();
-
-      // Iterate over columns k .. (m - 1) of Q.
-      for j in range(k, m) {
-        if((k < n) && (self.qr.data[k * n + k] != Zero::zero())) {
-          let mut s : T = Zero::zero();
-          for i in range(k, m) {
-            s = s + self.qr.data[i * n + k] * qdata[i * m + j];
+    // Successively apply the iverses of the reflections in reverse order to qdata (identity)
+    // to inverse the changes we did to when creating the triangular matrix R, transforming
+    // the identity matrix to Q: (Note that a reflection matrix is it's own inverse).
+    //   Q = Q_1_inv(Q_2_inv(...(Q_m_inv I))) = Q_1(Q_2(...(Q_m I)))
+    for minor in range(0u, num::min(m, n)).invert() {
+      if(self.qr.data[minor * n + minor] != Zero::zero()) {
+        // |u|^2 = -2a*qrdata[minor * n + minor]
+        //       = -2 * rdiag[minor] * qrdata[minor * n + minor]
+        //
+        // The reflection matrix is:
+        //   H = I - 2uu'/|u|^2.
+        //   Hx = (I - 2uu'/|u|^2)x
+        //      = x - 2uu'x/|u|^2
+        //      = x - 2<x,u>/|u|^2 u
+        //      = x - 2<x,u>/(-2a*qrdata[minor * n + minor]) u
+        //      = x + <x,u>/(a*qrdata[minor * n + minor]) u
+        //      = x + factor * u
+        // Iterate over columns k .. (m - 1) of Q.
+        for column in range(minor, m) {
+          let mut x_dot_u : T = Zero::zero();
+          for row in range(minor, m) {
+            x_dot_u = x_dot_u + self.qr.data[row * n + minor] * qdata[row * m + column];
           }
-          s = - s / self.qr.data[k * n + k];
-          for i in range(k, m) {
-            qdata[i * m + j] = qdata[i * m + j] + s * self.qr.data[i * n + k];
+          let factor = x_dot_u / (self.rdiag[minor] * self.qr.data[minor * n + minor]);
+
+          for row in range(minor, m) {
+            qdata[row * m + column] = qdata[row * m + column] + factor * self.qr.data[row * n + minor];
           }
         }
       }

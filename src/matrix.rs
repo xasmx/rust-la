@@ -30,12 +30,12 @@ pub fn random<T : Rand>(noRows : uint, noCols : uint) -> Matrix<T> {
   Matrix { noRows : noRows, noCols : noCols, data : d }
 }
 
-pub fn id<T : One + Zero + Clone>(n : uint) -> Matrix<T> {
-  let mut d = vec::from_elem(n * n, Zero::zero());
-  for i in range(0u, n) {
+pub fn id<T : One + Zero + Clone>(m : uint, n : uint) -> Matrix<T> {
+  let mut d = vec::from_elem(m * n, Zero::zero());
+  for i in range(0u, num::min(m, n)) {
     d[i * n + i] = One::one();
   }
-  Matrix { noRows : n, noCols : n, data : d }
+  Matrix { noRows : m, noCols : n, data : d }
 }
 
 pub fn zero<T : Zero + Clone>(noRows : uint, noCols : uint) -> Matrix<T> {
@@ -577,7 +577,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed + Algebraic> Matrix<T> {
   pub fn inverse(&self) -> Option<Matrix<T>> {
     assert!(self.noRows == self.noCols);
-    lu::LUDecomposition::new(self).solve(&id(self.noRows))
+    lu::LUDecomposition::new(self).solve(&id(self.noRows, self.noRows))
   }
 }
 
@@ -633,11 +633,27 @@ fn test_matrix__invalid_col_count() {
 }
 
 #[test]
-fn test_id() {
-  let m = id::<uint>(2);
+fn test_id__square() {
+  let m = id::<uint>(2, 2);
   assert!(m.rows() == 2);
   assert!(m.cols() == 2);
   assert!(m.data == ~[1, 0, 0, 1]);
+}
+
+#[test]
+fn test_id__m_over_n() {
+  let m = id::<uint>(3, 2);
+  assert!(m.rows() == 3);
+  assert!(m.cols() == 2);
+  assert!(m.data == ~[1, 0, 0, 1, 0, 0]);
+}
+
+#[test]
+fn test_id__n_over_m() {
+  let m = id::<uint>(2, 3);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 3);
+  assert!(m.data == ~[1, 0, 0, 0, 1, 0]);
 }
 
 #[test]
