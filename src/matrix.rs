@@ -6,6 +6,7 @@ use std::rand::{Rand};
 use std::vec;
 
 use super::decomp::lu;
+use super::decomp::qr;
 use super::util::{alloc_dirty_vec};
 
 #[deriving(Clone, Eq)]
@@ -581,6 +582,18 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 }
 
+impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed + Algebraic + Orderable> Matrix<T> {
+  pub fn pinverse(&self) -> Matrix<T> {
+    // A+ = (A' A)^-1 A'
+    //    = ((QR)' QR)^-1 A'
+    //    = (R'Q'QR)^-1 A'
+    //    = (R'R)^-1 A'
+    let qr = qr::QRDecomposition::new(self);
+    let r = qr.get_r();
+    (r.t() * r).inverse().unwrap() * self.t()
+  }
+}
+
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed + Algebraic> Matrix<T> {
   #[inline]
   pub fn is_singular(&self) -> bool {
@@ -963,6 +976,12 @@ fn test_inverse__not_square() {
 fn test_inverse__singular() {
   let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
   assert!(a.inverse() == None);
+}
+
+#[test]
+fn test_pinverse() {
+  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  assert!((a.pinverse() * a).approx_eq(&id::<float>(2, 2)));
 }
 
 #[test]
