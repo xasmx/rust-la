@@ -58,25 +58,25 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // Compute the transformation for the k-th column and
         // place the k-th diagonal in s[k].
         // Compute 2-norm of k-th column without under/overflow.
-        sdata[k] = Zero::zero();
+        sdata[k] = num::zero();
         for i in range(k, m) {
           sdata[k] = hypot(sdata[k].clone(), adata[i * n + k].clone());
         }
-        if(sdata[k] != Zero::zero()) {
-          if(adata[k * n + k] < Zero::zero()) {
+        if(sdata[k] != num::zero()) {
+          if(adata[k * n + k] < num::zero()) {
             sdata[k] = - sdata[k];
           }
           for i in range(k, m) {
             adata[i * n + k] = adata[i * n + k] / sdata[k];
           }
-          adata[k * n + k] = adata[k * n + k] + One::one();
+          adata[k * n + k] = adata[k * n + k] + num::one();
         }
         sdata[k] = - sdata[k];
       }
       for j in range(k + 1, n) {
-        if((k < nct) && (sdata[k] != Zero::zero()))  {
+        if((k < nct) && (sdata[k] != num::zero()))  {
           // Apply the transformation.
-          let mut t : T = Zero::zero();
+          let mut t : T = num::zero();
           for i in range(k, m) {
             t = t + adata[i * n + k] * adata[i * n + j];
           }
@@ -100,24 +100,24 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       if(k < nrt) {
         // Compute the k-th row transformation and place the k-th super-diagonal in e[k].
         // Compute 2-norm without under/overflow.
-        edata[k] = Zero::zero();
+        edata[k] = num::zero();
         for i in range(k + 1, n) {
           edata[k] = hypot(edata[k].clone(), edata[i].clone());
         }
-        if(edata[k] != Zero::zero()) {
-          if(edata[k + 1] < Zero::zero()) {
+        if(edata[k] != num::zero()) {
+          if(edata[k + 1] < num::zero()) {
             edata[k] = - edata[k];
           }
           for i in range(k + 1, n) {
             edata[i] = edata[i] / edata[k];
           }
-          edata[k + 1] = edata[k + 1] + One::one();
+          edata[k + 1] = edata[k + 1] + num::one();
         }
         edata[k] = - edata[k];
-        if((k + 1 < m) && (edata[k] != Zero::zero())) {
+        if((k + 1 < m) && (edata[k] != num::zero())) {
           // Apply the transformation.
           for i in range(k + 1, m) {
-            workdata[i] = Zero::zero();
+            workdata[i] = num::zero();
           }
           for j in range(k + 1, n) {
             for i in range(k + 1, m) {
@@ -145,24 +145,24 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       sdata[nct] = adata[nct * n + nct].clone();
     }
     if(m < p) {
-      sdata[p - 1] = Zero::zero();
+      sdata[p - 1] = num::zero();
     }
     if(nrt + 1 < p) {
       edata[nrt] = adata[nrt * n + (p - 1)].clone();
     }
-    edata[p - 1] = Zero::zero();
+    edata[p - 1] = num::zero();
 
     // Generate U.
     for j in range(nct, nu) {
       for i in range(0u, m) {
-        udata[i * nu + j] = Zero::zero();
+        udata[i * nu + j] = num::zero();
       }
-      udata[j * nu + j] = One::one();
+      udata[j * nu + j] = num::one();
     }
     for k in range(0u, nct).invert() {
-      if(sdata[k] != Zero::zero()) {
+      if(sdata[k] != num::zero()) {
         for j in range(k + 1, nu) {
-          let mut t : T = Zero::zero();
+          let mut t : T = num::zero();
           for i in range(k, m) {
             t = t + udata[i * nu + k] * udata[i * nu + j];
           }
@@ -174,9 +174,9 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         for i in range(k, m) {
           udata[i * nu + k] = - udata[i * nu + k];
         }
-        udata[k * nu + k] = One::one::<T>() + udata[k * nu + k];
+        udata[k * nu + k] = num::one::<T>() + udata[k * nu + k];
         for i in range(0, k) {
-          udata[(i as uint) * nu + k] = Zero::zero();
+          udata[(i as uint) * nu + k] = num::zero();
         }
         //let mut i = 0;
         //while(i < ((k as int) - 1)) {
@@ -184,17 +184,17 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         //}
       } else {
         for i in range(0u, m) {
-          udata[i * nu + k] = Zero::zero();
+          udata[i * nu + k] = num::zero();
         }
-        udata[k * nu + k] = One::one();
+        udata[k * nu + k] = num::one();
       }
     }
 
     // Generate V.
     for k in range(0u, n).invert() {
-      if((k < nrt) && (edata[k] != Zero::zero())) {
+      if((k < nrt) && (edata[k] != num::zero())) {
         for j in range(k + 1, nu) {
-          let mut t : T = Zero::zero();
+          let mut t : T = num::zero();
           for i in range(k + 1, n) {
             t = t + vdata[i * n + k] * vdata[i * n + j];
           }
@@ -205,9 +205,9 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
       }
       for i in range(0u, n) {
-        vdata[i * n + k] = Zero::zero();
+        vdata[i * n + k] = num::zero();
       }
-      vdata[k * n + k] = One::one();
+      vdata[k * n + k] = num::one();
     }
 
     // Main iteration loop for the singular values.
@@ -230,7 +230,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       let mut k = (p as int) - 2;
       while(k >= 0) {
         if(num::abs(edata[k].clone()) <= (tiny + eps * (num::abs(sdata[k].clone()) + num::abs(sdata[k + 1].clone())))) {
-          edata[k] = Zero::zero();
+          edata[k] = num::zero();
           break;
         }
         k -= 1;
@@ -241,10 +241,10 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       } else {
         let mut ks = (p as int) - 1;
         while(ks > k) {
-          let t = (if ks != (p as int) { num::abs(edata[ks].clone()) } else { Zero::zero() })
-                  + (if ks != (k + 1) { num::abs(edata[ks - 1].clone()) } else { Zero::zero() });
+          let t = (if ks != (p as int) { num::abs(edata[ks].clone()) } else { num::zero() })
+                  + (if ks != (k + 1) { num::abs(edata[ks - 1].clone()) } else { num::zero() });
           if(num::abs(sdata[ks].clone()) <= (tiny + eps * t)) {
-            sdata[ks] = Zero::zero();
+            sdata[ks] = num::zero();
             break;
           }
           ks -= 1;
@@ -264,7 +264,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       if(kase == 1) {
         // Deflate negligible s(p).
         let mut f = edata[p - 2].clone();
-        edata[p - 2] = Zero::zero();
+        edata[p - 2] = num::zero();
         let mut j = (p as int) - 2;
         while(j >= k) {
           let mut t = hypot(sdata[j].clone(), f.clone());
@@ -286,7 +286,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       } else if(kase == 2) {
         // Split at negligible s(k).
         let mut f = edata[k - 1].clone();
-        edata[k - 1] = Zero::zero();
+        edata[k - 1] = num::zero();
         for j in range(k, p as int) {
           let mut t = hypot(sdata[j].clone(), f.clone());
           let cs = sdata[j] / t;
@@ -319,10 +319,10 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         let ek = edata[k] / scale;
         let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / num::cast(2.0);
         let c = (sp * epm1) * (sp * epm1);
-        let mut shift = Zero::zero();
-        if((b != Zero::zero()) || (c != Zero::zero())) {
+        let mut shift = num::zero();
+        if((b != num::zero()) || (c != num::zero())) {
           shift = num::sqrt(b * b + c);
-          if(b < Zero::zero()) {
+          if(b < num::zero()) {
             shift = - shift;
           }
           shift = c / (b + shift);
@@ -372,8 +372,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // Convergence.
 
         // Make the singular values positive.
-        if(sdata[k] <= Zero::zero()) {
-          sdata[k] = if(sdata[k] < Zero::zero()) { - sdata[k] } else { Zero::zero() };
+        if(sdata[k] <= num::zero()) {
+          sdata[k] = if(sdata[k] < num::zero()) { - sdata[k] } else { num::zero() };
           for i in range(0u, pp + 1) {
             vdata[i * n + (k as uint)] = - vdata[i * n + (k as uint)];
           }
@@ -426,7 +426,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   pub fn get_s(&self) -> Matrix<T> {
-    let mut d = vec::from_elem(self.n * self.n, Zero::zero());
+    let mut d = vec::from_elem(self.n * self.n, num::zero());
     for i in range(0u, self.n) {
       d[i * self.n + i] = self.s[i].clone();
     }

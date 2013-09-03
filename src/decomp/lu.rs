@@ -49,7 +49,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
         // Most of the time is spent in the following dot product.
         let kmax = num::min(i, j);
-        let mut s : T = Zero::zero();
+        let mut s : T = num::zero();
         for k in range(0, kmax) {
           s = s + ludata[lurowiIdx + k] * lucolj[k];
         }
@@ -80,7 +80,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       }
 
       // Compute multipliers.
-      if((j < m) && (ludata[j * n + j] != Zero::zero())) {
+      if((j < m) && (ludata[j * n + j] != num::zero())) {
         for i in range(j + 1, m) {
           ludata[i * n + j] = ludata[i * n + j] / ludata[j * n + j];
         }
@@ -101,7 +101,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   pub fn is_non_singular(&self) -> bool {
     let n = self.lu.noCols;
     for j in range(0, n) {
-      if(self.lu.data[j * n + j] == Zero::zero()) {
+      if(self.lu.data[j * n + j] == num::zero()) {
         return false;
       }
     }
@@ -117,9 +117,9 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
         ldata[i * n + j] = if(i > j) {
                              self.lu.data[i * self.lu.noCols + j].clone()
                            } else if(i == j) {
-                             One::one()
+                             num::one()
                            } else {
-                             Zero::zero()
+                             num::zero()
                            }
       }
     }
@@ -132,7 +132,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     let mut udata = alloc_dirty_vec((m * n) as uint);
     for i in range(0, m) {
       for j in range(0, n) {
-        udata[i * n + j] = if(i <= j) { self.lu.data[i * n + j].clone() } else { Zero::zero() };
+        udata[i * n + j] = if(i <= j) { self.lu.data[i * n + j].clone() } else { num::zero() };
       }
     }
     Matrix { noRows : m as uint, noCols : n as uint, data : udata }
@@ -148,7 +148,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   pub fn det(&self) -> T {
     assert!(self.lu.noRows == self.lu.noCols);
     let n = self.lu.noCols as int;
-    let mut d = if self.pospivsign { One::one::<T>() } else { - One::one::<T>() };
+    let mut d = if self.pospivsign { num::one::<T>() } else { - num::one::<T>() };
     for j in range(0, n) {
       d = d * self.lu.data[j * n + j];
     }

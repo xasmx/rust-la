@@ -64,7 +64,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       // Solve row L[j].
 
       // d = SUM { L[j][0 .. (j - 1)]^2 }
-      let mut d : T = Zero::zero();
+      let mut d : T = num::zero();
 
       // Solve L[j][0 .. (j - 1)].
       for k in range(0u, j) {
@@ -72,7 +72,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
         // s = SUM { L[k][0 .. (k - 1)] * L'[0 .. (k - 1)][j] }
         //   = SUM { L[k][0 .. (k - 1)] * L[j][0 .. (k - 1) }
-        let mut s : T = Zero::zero();
+        let mut s : T = num::zero();
         for i in range(0u, k) {
           s = s + data[k * n + i] * data[j * n + i];
         }
@@ -93,7 +93,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       // Solve L[j][j]. (Diagonals).
       // L[j][j] = sqrt(A[j][j] - SUM { L[j][0 .. (j - 1)]^2 }).
       d = m.get(j, j) - d;
-      if(d <= Zero::zero()) {
+      if(d <= num::zero()) {
        // A is not positive definite; Cholesky decomposition does not exists.
         return None
       }
@@ -101,7 +101,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
       // Solve L[j][(j + 1) .. (n - 1)]. (Always zero as L is lower triangular).
       for k in range(j + 1, n) {
-        data[j * n + k] = Zero::zero();
+        data[j * n + k] = num::zero();
       }
     }
 

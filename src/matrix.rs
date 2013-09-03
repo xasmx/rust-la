@@ -32,9 +32,9 @@ pub fn random<T : Rand>(noRows : uint, noCols : uint) -> Matrix<T> {
 }
 
 pub fn id<T : One + Zero + Clone>(m : uint, n : uint) -> Matrix<T> {
-  let mut d = vec::from_elem(m * n, Zero::zero());
+  let mut d = vec::from_elem(m * n, num::zero());
   for i in range(0u, num::min(m, n)) {
-    d[i * n + i] = One::one();
+    d[i * n + i] = num::one();
   }
   Matrix { noRows : m, noCols : n, data : d }
 }
@@ -43,7 +43,7 @@ pub fn zero<T : Zero + Clone>(noRows : uint, noCols : uint) -> Matrix<T> {
   Matrix {
     noRows : noRows,
     noCols : noCols,
-    data : vec::from_elem(noRows * noCols, Zero::zero())
+    data : vec::from_elem(noRows * noCols, num::zero())
   }
 }
 
@@ -53,11 +53,11 @@ pub fn vector<T>(data : ~[T]) -> Matrix<T> {
 }
 
 pub fn zero_vector<T : Zero + Clone>(noRows : uint) -> Matrix<T> {
-  Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, Zero::zero()) }
+  Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, num::zero()) }
 }
 
 pub fn one_vector<T : One + Clone>(noRows : uint) -> Matrix<T> {
-  Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, One::one()) }
+  Matrix { noRows : noRows, noCols : 1, data : vec::from_elem(noRows, num::one()) }
 }
 
 pub fn row_vector<T>(data : ~[T]) -> Matrix<T> {
@@ -509,7 +509,7 @@ impl<T : Add<T, T> + Mul<T, T> + Zero + Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     for row in range(0u, self.noRows) {
       for col in range(0u, m.noCols) {
-        let mut res : T = Zero::zero();
+        let mut res : T = num::zero();
         for idx in range(0u, self.noCols) {
           res = res + self.get(row, idx) * m.get(idx, col);
         }
@@ -537,7 +537,7 @@ impl<T : Add<T, T> + Mul<T, T> + Zero + Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     for row in range(0u, self.noRows) {
       for col in range(0u, m.noCols) {
-        let mut res : T = Zero::zero();
+        let mut res : T = num::zero();
         for idx in range(0u, self.noCols) {
           res = res + self.get(row, idx) * m.get(idx, col);
         }
@@ -552,7 +552,7 @@ impl<T : Add<T, T> + Mul<T, T> + Zero + Clone> Matrix<T> {
 
 impl<T : Add<T, T> + Zero> Matrix<T> {
   pub fn trace(&self) -> T {
-    let mut sum : T = Zero::zero();
+    let mut sum : T = num::zero();
     let mut idx = 0;
     for _ in range(0u, num::min(self.noRows, self.noCols)) {
       sum = sum + self.data[idx];

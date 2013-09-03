@@ -37,17 +37,17 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     // Householder reduction to tridiagonal form.
     for i in range(1, n).invert() {
       // Scale to avoid under/overflow.
-      let mut scale : T = Zero::zero();
-      let mut h : T = Zero::zero();
+      let mut scale : T = num::zero();
+      let mut h : T = num::zero();
       for k in range(0u, i) {
         scale = scale + num::abs(ddata[k].clone());
       }
-      if(scale == Zero::zero()) {
+      if(scale == num::zero()) {
         edata[i] = ddata[i - 1].clone();
         for j in range(0u, i) {
           ddata[j] = vdata[(i - 1) * n + j].clone();
-          vdata[i * n + j] = Zero::zero();
-          vdata[j * n + i] = Zero::zero();
+          vdata[i * n + j] = num::zero();
+          vdata[j * n + i] = num::zero();
         }
       } else {
         // Generate Householder vector.
@@ -57,14 +57,14 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
         let mut f = ddata[i - 1].clone();
         let mut g = num::sqrt(h.clone());
-        if(f > Zero::zero()) {
+        if(f > num::zero()) {
           g = - g;
         }
         edata[i] = scale * g;
         h = h - f * g;
         ddata[i - 1] = f - g;
         for j in range(0u, i) {
-          edata[j] = Zero::zero();
+          edata[j] = num::zero();
         }
 
         // Apply similarity transformation to remaining columns.
@@ -78,7 +78,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           }
           edata[j] = g;
         }
-        f = Zero::zero();
+        f = num::zero();
         for j in range(0u, i) {
           edata[j] = edata[j] / h;
           f = f + edata[j] * ddata[j];
@@ -95,7 +95,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             vdata[k * n + j] = orig_val - (f * edata[k] + g * ddata[k]);
           }
           ddata[j] = vdata[(i - 1) * n + j].clone();
-          vdata[i * n + j] = Zero::zero();
+          vdata[i * n + j] = num::zero();
         }
       }
       ddata[i] = h;
@@ -105,14 +105,14 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     for i in range(0u, n - 1) {
       let orig_val = vdata[i * n + i].clone();
       vdata[(n - 1) * n + i] = orig_val;
-      vdata[i * n + i] = One::one();
+      vdata[i * n + i] = num::one();
       let h = ddata[i + 1].clone();
-      if(h != Zero::zero()) {
+      if(h != num::zero()) {
         for k in range(0, i + 1) {
           ddata[k] = vdata[k * n + (i + 1)] / h;
         }
         for j in range(0u, i + 1) {
-          let mut g : T = Zero::zero();
+          let mut g : T = num::zero();
           for k in range(0u, i + 1) {
             g = g + vdata[k * n + (i + 1)] * vdata[k * n + j];
           }
@@ -123,15 +123,15 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
       }
       for k in range(0u, i + 1) {
-        vdata[k * n + (i + 1)] = Zero::zero();
+        vdata[k * n + (i + 1)] = num::zero();
       }
     }
     for j in range(0u, n) {
       ddata[j] = vdata[(n - 1) * n + j].clone();
-      vdata[(n - 1) * n + j] = Zero::zero();
+      vdata[(n - 1) * n + j] = num::zero();
     }
-    vdata[(n - 1) * n + (n - 1)] = One::one();
-    edata[0] = Zero::zero();
+    vdata[(n - 1) * n + (n - 1)] = num::one();
+    edata[0] = num::zero();
   }
 
   // Symmetric tridiagonal QL algorithm.
@@ -141,10 +141,10 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     for i in range(1, n) {
       edata[i - 1] = edata[i].clone();
     }
-    edata[n - 1] = Zero::zero();
+    edata[n - 1] = num::zero();
 
-    let mut f : T = Zero::zero();
-    let mut tst1 : T = Zero::zero();
+    let mut f : T = num::zero();
+    let mut tst1 : T = num::zero();
     let eps : T = num::cast(num::pow(2.0, -52.0));
     for l in range(0u, n) {
       // Find small subdiagonal element
@@ -164,8 +164,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           let mut g = ddata[l].clone();
           let tmp : T = num::cast(2.0);
           let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
-          let mut r = hypot::<T>(p.clone(), One::one());
-          if(p < Zero::zero()) {
+          let mut r = hypot::<T>(p.clone(), num::one());
+          if(p < num::zero()) {
             r = -r;
           }
           ddata[l] = edata[l] / (p + r);
@@ -179,12 +179,12 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
           // Implicit QL transformation.
           p = ddata[m].clone();
-          let mut c : T = One::one();
+          let mut c : T = num::one();
           let mut c2 = c.clone();
           let mut c3 = c.clone();
           let el1 = edata[l + 1].clone();
-          let mut s : T = Zero::zero();
-          let mut s2 = Zero::zero();
+          let mut s : T = num::zero();
+          let mut s2 = num::zero();
           for i in range(l, m).invert() {
             c3 = c2.clone();
             c2 = c.clone();
@@ -215,7 +215,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           }
         }
         ddata[l] = ddata[l] + f;
-        edata[l] = Zero::zero();
+        edata[l] = num::zero();
       }
 
       // Sort eigenvalues and corresponding vectors.
@@ -253,19 +253,19 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     for m in range(low + 1, high) {
       // Scale column.
-      let mut scale : T = Zero::zero();
+      let mut scale : T = num::zero();
       for i in range(m, high + 1) {
         scale = scale + num::abs(hdata[i * n + (m - 1)].clone());
       }
-      if(scale != Zero::zero()) {
+      if(scale != num::zero()) {
         // Compute Householder transformation.
-        let mut h : T = Zero::zero();
+        let mut h : T = num::zero();
         for i in range(m, high + 1).invert() {
           ort[i] = hdata[i * n + (m - 1)] / scale;
           h = h + ort[i] * ort[i];
         }
         let mut g = num::sqrt(h.clone());
-        if(ort[m] > Zero::zero()) {
+        if(ort[m] > num::zero()) {
           g = -g;
         }
         h = h - ort[m] * g;
@@ -274,7 +274,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // Apply Householder similarity transformation
         // H = (I-u*u'/h)*H*(I-u*u')/h)
         for j in range(m, n) {
-          let mut f : T = Zero::zero();
+          let mut f : T = num::zero();
           for i in range(m, high + 1).invert() {
             f = f + ort[i] * hdata[i * n + j];
           }
@@ -285,7 +285,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
 
         for i in range(0u, high + 1) {
-          let mut f : T = Zero::zero();
+          let mut f : T = num::zero();
           for j in range(m, high + 1).invert() {
             f = f + ort[j] * hdata[i * n + j];
           }
@@ -302,17 +302,17 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     // Accumulate transformations (Algol's ortran).
     for i in range(0u, n) {
       for j in range(0u, n) {
-        vdata[i * n + j] = if(i == j) { One::one() } else { Zero::zero() };
+        vdata[i * n + j] = if(i == j) { num::one() } else { num::zero() };
       }
     }
 
     for m in range(low + 1, high).invert() {
-      if(hdata[m * n + (m - 1)] != Zero::zero()) {
+      if(hdata[m * n + (m - 1)] != num::zero()) {
         for i in range(m + 1, high + 1) {
           ort[i] = hdata[i * n + (m - 1)].clone();
         }
         for j in range(m, high + 1) {
-          let mut g : T = Zero::zero();
+          let mut g : T = num::zero();
           for i in range(m, high + 1) {
             g = g + ort[i] * vdata[i * n + j];
           }
@@ -350,23 +350,23 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let low : int = 0;
     let high = nn - 1;
     let eps : T = num::cast(num::pow(2.0, -52.0));
-    let mut exshift = Zero::zero();
-    let mut p = Zero::zero();
-    let mut q = Zero::zero();
-    let mut r = Zero::zero();
-    let mut s = Zero::zero();
-    let mut z = Zero::zero();
+    let mut exshift = num::zero();
+    let mut p = num::zero();
+    let mut q = num::zero();
+    let mut r = num::zero();
+    let mut s = num::zero();
+    let mut z = num::zero();
     let mut t;
     let mut w;
     let mut x;
     let mut y;
 
     // Store roots isolated by balanc and compute matrix norm
-    let mut norm : T = Zero::zero();
+    let mut norm : T = num::zero();
     for i in range(0, nn) {
       if((i < low) || (i > high)) {
         ddata[i] = hdata[i * nn + i].clone();
-        edata[i] = Zero::zero();
+        edata[i] = num::zero();
       }
       for j in range(num::max(i - 1, 0), nn) {
         norm = norm + num::abs(hdata[i * nn + j].clone());
@@ -381,7 +381,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       let mut l = n;
       while(l > low) {
         s = num::abs(hdata[(l - 1) * nn + (l - 1)].clone()) + num::abs(hdata[l * nn + l].clone());
-        if(s == Zero::zero()) {
+        if(s == num::zero()) {
           s = norm.clone();
         }
         if(num::abs(hdata[l * nn + (l - 1)].clone()) < (eps * s)) {
@@ -395,7 +395,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         //One root found.
         hdata[n * nn + n] = hdata[n * nn + n] + exshift;
         ddata[n] = hdata[n * nn + n].clone();
-        edata[n] = Zero::zero();
+        edata[n] = num::zero();
         n -= 1;
         iter = 0;
       } else if(l == (n - 1)) {
@@ -409,15 +409,15 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         x = hdata[n * nn + n].clone();
 
         // Real pair
-        if(q >= Zero::zero()) {
-          z = if(p >= Zero::zero()) { p + z } else { p - z };
+        if(q >= num::zero()) {
+          z = if(p >= num::zero()) { p + z } else { p - z };
           ddata[n - 1] = x + z;
           ddata[n] = ddata[n - 1].clone();
-          if(z != Zero::zero()) {
+          if(z != num::zero()) {
             ddata[n] = x - w / z;
           }
-          edata[n - 1] = Zero::zero();
-          edata[n] = Zero::zero();
+          edata[n - 1] = num::zero();
+          edata[n] = num::zero();
           x = hdata[n * nn + (n - 1)].clone();
           s = num::abs(x.clone()) + num::abs(z.clone());
           p = x / s;
@@ -460,8 +460,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
         // Form shift
         x = hdata[n * nn + n].clone();
-        y = Zero::zero();
-        w = Zero::zero();
+        y = num::zero();
+        w = num::zero();
         if(l < n) {
           y = hdata[(n - 1) * nn + (n - 1)].clone();
           w = hdata[n * nn + (n - 1)] * hdata[(n - 1) * nn + n];
@@ -485,7 +485,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         if(iter == 30) {
           s = (y - x) / num::cast(2.0);
           s = s * s + w;
-          if(s > Zero::zero()) {
+          if(s > num::zero()) {
             s = num::sqrt(s.clone());
             if(y < x) {
               s = - s;
@@ -527,22 +527,21 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
 
         for i in range(m + 2, n + 1) {
-          hdata[i * nn + (i - 2)] = Zero::zero();
+          hdata[i * nn + (i - 2)] = num::zero();
           if(i > (m + 2)) {
-            hdata[i * nn + (i - 3)] = Zero::zero();
+            hdata[i * nn + (i - 3)] = num::zero();
           }
         }
 
-//SAMI: OK this far.
         // Double QR step involving rows l:n and columns m:n
         for k in range(m, n) {
           let notlast = (k != (n - 1));
           if(k != m) {
             p = hdata[k * nn + (k - 1)].clone();
             q = hdata[(k + 1) * nn + (k - 1)].clone();
-            r = if notlast { hdata[(k + 2) * nn + (k - 1)].clone() } else { Zero::zero() };
+            r = if notlast { hdata[(k + 2) * nn + (k - 1)].clone() } else { num::zero() };
             x = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
-            if(x == Zero::zero()) {
+            if(x == num::zero()) {
               loop;
             }
             p = p / x;
@@ -551,10 +550,10 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           }
 
           s = num::sqrt(p * p + q * q + r * r);
-          if(p < Zero::zero()) {
+          if(p < num::zero()) {
             s = - s;
           }
-          if(s != Zero::zero()) {
+          if(s != num::zero()) {
             if(k != m) {
               hdata[k * nn + (k - 1)] = - s * x;
             } else if(l != m) {
@@ -603,10 +602,9 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
       }
     }
-// SAMI: broken here
 
     // Backsubstitute to find vectors of upper triangular form
-    if(norm == Zero::zero()) {
+    if(norm == num::zero()) {
       return;
     }
 
@@ -615,22 +613,22 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       q = edata[n].clone();
 
       // Real vector
-      if(q == Zero::zero()) {
+      if(q == num::zero()) {
         let mut l = n;
-        hdata[n * nn + n] = One::one();
+        hdata[n * nn + n] = num::one();
         for i in range(0, n).invert() {
           w = hdata[i * nn + i] - p;
-          r = Zero::zero();
+          r = num::zero();
           for j in range(l, n + 1) {
             r = r + hdata[i * nn + j] * hdata[j * nn + n];
           }
-          if(edata[i] < Zero::zero()) {
+          if(edata[i] < num::zero()) {
             z = w.clone();
             s = r.clone();
           } else {
             l = i;
-            if(edata[i] == Zero::zero()) {
-              if(w != Zero::zero()) {
+            if(edata[i] == num::zero()) {
+              if(w != num::zero()) {
                 hdata[i * nn + n] = - r / w;
               } else {
                 hdata[i * nn + n] = - r / (eps * norm);
@@ -651,14 +649,14 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
             // Overflow control
             t = num::abs(hdata[i * nn + n].clone());
-            if((eps * t) * t > One::one()) {
+            if((eps * t) * t > num::one()) {
               for j in range(i, n + 1) {
                 hdata[j * nn + n] = hdata[j * nn + n] / t;
               }
             }
           }
         }
-      } else if(q < Zero::zero()) {
+      } else if(q < num::zero()) {
         // Complex vector
         let mut l = n - 1;
 
@@ -667,15 +665,15 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           hdata[(n - 1) * nn + (n - 1)] = q / hdata[n * nn + (n - 1)];
           hdata[(n - 1) * nn + n] = - (hdata[n * nn + n] - p) / hdata[n * nn + (n - 1)];
         } else {
-          let (cdivr, cdivi) = EigenDecomposition::cdiv::<T>(Zero::zero(), - hdata[(n - 1) * nn + n], hdata[(n - 1) * nn + (n - 1)] - p, q.clone());
+          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - hdata[(n - 1) * nn + n], hdata[(n - 1) * nn + (n - 1)] - p, q.clone());
           hdata[(n - 1) * nn + (n - 1)] = cdivr;
           hdata[(n - 1) * nn + n] = cdivi;
         }
-        hdata[n * nn + (n - 1)] = Zero::zero();
-        hdata[n * nn + n] = One::one();
+        hdata[n * nn + (n - 1)] = num::zero();
+        hdata[n * nn + n] = num::one();
         for i in range(0, n - 1).invert() {
-          let mut ra : T = Zero::zero();
-          let mut sa : T = Zero::zero();
+          let mut ra : T = num::zero();
+          let mut sa : T = num::zero();
           let mut vr;
           let mut vi;
           for j in range(l, n + 1) {
@@ -684,13 +682,13 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           }
           w = hdata[i * nn + i] - p;
 
-          if(edata[i] < Zero::zero()) {
+          if(edata[i] < num::zero()) {
             z = w;
             r = ra;
             s = sa;
           } else {
             l = i;
-            if(edata[i] == Zero::zero()) {
+            if(edata[i] == num::zero()) {
               let (cdivr, cdivi) = EigenDecomposition::cdiv(- ra, - sa, w.clone(), q.clone());
               hdata[i * nn + (n - 1)] = cdivr;
               hdata[i * nn + n] = cdivi;
@@ -700,7 +698,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
               y = hdata[(i + 1) * nn + i].clone();
               vr = (ddata[i] - p) * (ddata[i] - p) + edata[i] * edata[i] - q * q;
               vi = (ddata[i] - p) * num::cast(2.0) * q;
-              if((vr == Zero::zero()) && (vi == Zero::zero())) {
+              if((vr == num::zero()) && (vi == num::zero())) {
                 vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
               }
               let (cdivr, cdivi) = EigenDecomposition::cdiv(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
@@ -718,7 +716,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
             // Overflow control
             t = num::max(num::abs(hdata[i * nn + (n - 1)].clone()), num::abs(hdata[i * nn + n].clone()));
-            if((eps * t) * t > One::one()) {
+            if((eps * t) * t > num::one()) {
               for j in range(i, n + 1) {
                 hdata[j * nn + (n - 1)] = hdata[j * nn + (n - 1)] / t;
                 hdata[j * nn + n] = hdata[j * nn + n] / t;
@@ -741,7 +739,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     // Back transformation to get eigenvectors of original matrix
     for j in range(low, nn).invert() {
       for i in range(low, high + 1) {
-        z = Zero::zero();
+        z = num::zero();
         for k in range(low, num::min(j, high) + 1) {
           z = z + vdata[i * nn + k] * hdata[k * nn + j];
         }
@@ -824,12 +822,12 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     for i in range(0u, self.n) {
       for j in range(0u, self.n) {
-        ddata[i * self.n + j] = Zero::zero();
+        ddata[i * self.n + j] = num::zero();
       }
       ddata[i * self.n + i] = self.d[i].clone();
-      if(self.e[i] > Zero::zero()) {
+      if(self.e[i] > num::zero()) {
         ddata[i * self.n + (i + 1)] = self.e[i].clone();
-      } else if(self.e[i] < Zero::zero()) {
+      } else if(self.e[i] < num::zero()) {
         ddata[i * self.n + (i - 1)] = self.e[i].clone();
       }
     }

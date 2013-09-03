@@ -17,7 +17,7 @@ test-compile: $(RUST_SRC)
 
 .PHONY: test
 test: test-compile $(RUST_SRC)
-	RUST_THREADS=1 $(BUILD_DIR)/la
+	RUST_TEST_TASKS=1 $(BUILD_DIR)/la
 
 .PHONY: clean
 clean:
