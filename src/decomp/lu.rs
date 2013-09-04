@@ -4,7 +4,7 @@ use std::num::{One, Zero};
 use super::super::matrix::*;
 use super::super::util::{alloc_dirty_vec};
 
-// Ported from JAMA.
+// Initially based on JAMA.
 // LU Decomposition.
 //
 // For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
@@ -61,11 +61,11 @@ use super::super::util::{alloc_dirty_vec};
 //  
 //  l[i][j] = 1 / u[j][j] * (a[i][j] - <l[0 .. (j - 1)][:], u[:][0 .. (j - 1)]>)
 //
-//  The above algorithm is generally known as Crout's algorithm.
+//  The above algorithm is generally known as Doolittle's method.
 //
 //  Examining the above equations closely, we can determine that the algorithm works as long as u[j][j]
 //  is not zero (which would cause a division by zero). We can generalize this by adding a permutation
-//  matrix P, giving us LUP decomposition, which always exists:
+//  matrix P, giving us LUP decomposition, which always exists: (Doolittle's method with pivoting).
 //
 //  PA = LU,
 //    where P is a permutation matrix,
@@ -99,7 +99,6 @@ pub struct LUDecomposition<T> {
 
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
-    // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
     let mut ludata = a.data.clone();
     let m = a.noRows as int;
     let n = a.noCols as int;
@@ -109,40 +108,32 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     }
 
     let mut pospivsign = true;
-    let mut lucolj = alloc_dirty_vec(m as uint);
 
     // Solve columns 0..(n-1) of L and U in order.
     for j in range(0, n) {
       // Solve column j of L and U.
 
-      // Make a copy of the j-th column to localize references.
+      // Note that apart from the division, both L and U elements are calculated the same way,
+      // so we only need one loop:
+      // lu[i][j] = a[i][j] - <l[0 .. (j - 1)][:], u[:][0 .. (j - 1)]>
       for i in range(0, m) {
-        lucolj[i] = ludata[i * n + j].clone();
-      }
-
-      // Apply previous transformations.
-      for i in range(0, m) {
-        let lurowiIdx = i * n;
-
-        // Most of the time is spent in the following dot product.
-        let kmax = num::min(i, j);
         let mut s : T = num::zero();
-        for k in range(0, kmax) {
-          s = s + ludata[lurowiIdx + k] * lucolj[k];
+        for k in range(0, num::min(i, j)) {
+          s = s + ludata[i * n + k] * ludata[k * n + j];
         }
 
-        lucolj[i] = lucolj[i] - s;
-        ludata[lurowiIdx + j] = lucolj[i].clone();
+        ludata[i * n + j] = ludata[i * n + j] - s;
       }
 
-      // Find pivot and exchange if necessary.
+      // Find row with maximum pivot element at or below the diagonal.
       let mut p = j;
       for i in range(j + 1, m) {
-        if(num::abs(lucolj[i].clone()) > num::abs(lucolj[p].clone())) {
+        if(num::abs(ludata[i * n + j].clone()) > num::abs(ludata[p * n + j].clone())) {
           p = i;
         }
       }
 
+      // Swap pivot row with the maximum row (unless pivot row is the maximum row already).
       if(p != j) {
         for k in range(0, n) {
           let t = ludata[p * n + k].clone();
@@ -153,10 +144,12 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
         let k = pivdata[p];
         pivdata[p] = pivdata[j];
         pivdata[j] = k;
+
         pospivsign = !pospivsign;
       }
 
-      // Compute multipliers.
+      // Complete calculating the elements of the column of L:
+      //  l[i][j] := 1 / u[j][j] * l[i][j]
       if((j < m) && (ludata[j * n + j] != num::zero())) {
         for i in range(j + 1, m) {
           ludata[i * n + j] = ludata[i * n + j] / ludata[j * n + j];
