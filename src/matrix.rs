@@ -617,7 +617,66 @@ impl<T : Eq + Clone> Matrix<T> {
 
     true
   }
+
+  #[inline]
+  pub fn is_non_symmetric(&self) -> bool {
+    !self.is_symmetric()
+  }
 }
+
+impl<T : Add<T, T> + Mul<T, T> + Algebraic + Zero> Matrix<T> {
+  pub fn vector_euclidean_norm(&self) -> T {
+    assert!(self.noCols == 1);
+
+    let mut s : T = num::zero();
+    for i in range(0, self.data.len()) {
+      s = s + self.data[i] * self.data[i];
+    }
+
+    num::sqrt(s)
+  }
+}
+
+impl<T : Add<T, T> + Signed + Zero + Clone> Matrix<T> {
+  pub fn vector_1_norm(&self) -> T {
+    assert!(self.noCols == 1);
+
+    let mut s : T = num::zero();
+    for i in range(0, self.data.len()) {
+      s = s + num::abs(self.data[i].clone());
+    }
+
+    s
+  }
+}
+
+impl<T : Signed + Ord + Clone> Matrix<T> {
+  pub fn vector_inf_norm(&self) -> T {
+    assert!(self.noCols == 1);
+
+    let mut current_max : T = num::abs(self.data[0].clone());
+    for i in range(1, self.data.len()) {
+      let v = num::abs(self.data[i].clone());
+      if(v > current_max) {
+        current_max = v;
+      }
+    }
+
+    current_max
+  }
+}
+
+impl<T : Add<T, T> + Mul<T, T> + Algebraic + Zero> Matrix<T> {
+  pub fn frobenius_norm(&self) -> T {
+    let mut s : T = num::zero();
+    for i in range(0, self.data.len()) {
+      s = s + self.data[i] * self.data[i];
+    }
+
+    num::sqrt(s)
+  }
+}
+
 
 #[test]
 fn test_matrix() {
@@ -1013,5 +1072,49 @@ fn test_is_symmetric() {
 
   let m = matrix(2, 3, ~[1, 2, 3, 2, 4, 5]);
   assert!(!m.is_symmetric());
+}
+
+#[test]
+fn test_vector_euclidean_norm() {
+  assert!(vector(~[1.0, 2.0, 2.0]).vector_euclidean_norm() == 3.0);
+  assert!(vector(~[-2.0, 2.0, 2.0, 2.0]).vector_euclidean_norm() == 4.0);
+}
+
+#[test]
+#[should_fail]
+fn test_vector_euclidean_norm__not_vector() {
+  let _ = matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).vector_euclidean_norm();
+}
+
+#[test]
+fn test_vector_1_norm() {
+  assert!(vector(~[-3.0, 2.0, 2.5]).vector_1_norm() == 7.5);
+  assert!(vector(~[6.0, 8.0, -2.0, 3.0]).vector_1_norm() == 19.0);
+  assert!(vector(~[1.0]).vector_1_norm() == 1.0);
+}
+
+#[test]
+#[should_fail]
+fn test_vector_1_norm__not_vector() {
+  let _ = matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).vector_1_norm();
+}
+
+#[test]
+fn test_vector_inf_norm() {
+  assert!(vector(~[-3.0, 2.0, 2.5]).vector_inf_norm() == 3.0);
+  assert!(vector(~[6.0, 8.0, -2.0, 3.0]).vector_inf_norm() == 8.0);
+  assert!(vector(~[1.0]).vector_inf_norm() == 1.0);
+}
+
+#[test]
+#[should_fail]
+fn test_vector_inf_norm__not_vector() {
+  let _ = matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).vector_inf_norm();
+}
+
+#[test]
+fn test_frobenius_norm() {
+  assert!(matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).frobenius_norm() == num::sqrt(30.0));
+  assert!(vector(~[1.0, 2.0, 2.0]).frobenius_norm() == 3.0);
 }
 

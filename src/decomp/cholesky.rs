@@ -94,7 +94,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       // L[j][j] = sqrt(A[j][j] - SUM { L[j][0 .. (j - 1)]^2 }).
       d = m.get(j, j) - d;
       if(d <= num::zero()) {
-       // A is not positive definite; Cholesky decomposition does not exists.
+        // A is not positive definite; Cholesky decomposition does not exists.
         return None
       }
       data[j * n + j] = num::sqrt(d);
