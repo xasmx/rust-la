@@ -8,11 +8,11 @@ BUILD_DIR=out
 all: build
 
 build: $(RUST_SRC)
-	-mkdir $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 	$(RUSTC) $(RUSTFLAGS) --out-dir $(BUILD_DIR) --lib $(RUST_SRC)
 
 test-compile: $(RUST_SRC)
-	-mkdir $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 	$(RUSTC) --test --out-dir $(BUILD_DIR) $(RUST_SRC)
 
 .PHONY: test
