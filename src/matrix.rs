@@ -5,9 +5,9 @@ use std::rand;
 use std::rand::{Rand};
 use std::vec;
 
-use super::decomp::lu;
-use super::decomp::qr;
-use super::util::{alloc_dirty_vec};
+use decomp::lu;
+use decomp::qr;
+use util::{alloc_dirty_vec};
 
 #[deriving(Clone, Eq)]
 pub struct Matrix<T> {
@@ -282,6 +282,21 @@ impl<T : Clone> Matrix<T> {
     Matrix {
       noRows : rows,
       noCols : cols,
+      data : d
+    }
+  }
+
+  pub fn get_column(&self, column : uint) -> Matrix<T> {
+    assert!(column < self.noCols);
+    let mut d = alloc_dirty_vec(self.noRows);
+    let mut src_idx = 0;
+    for i in range(0, self.noRows) {
+      d[i] = self.data[src_idx].clone();
+      src_idx += self.noCols;
+    }
+    Matrix {
+      noRows : self.noRows,
+      noCols : 1,
       data : d
     }
   }
@@ -606,6 +621,18 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 }
 
+impl<T> Matrix<T> {
+  #[inline]
+  pub fn is_square(&self) -> bool {
+    self.noRows == self.noCols
+  }
+
+  #[inline]
+  pub fn is_not_square(&self) -> bool {
+    !self.is_square()
+  }
+}
+
 impl<T : Eq + Clone> Matrix<T> {
   pub fn is_symmetric(&self) -> bool {
     if(self.noRows != self.noCols) { return false; }
@@ -635,6 +662,16 @@ impl<T : Add<T, T> + Mul<T, T> + Algebraic + Zero> Matrix<T> {
 
     num::sqrt(s)
   }
+
+  #[inline]
+  pub fn length(&self) -> T {
+    self.vector_euclidean_norm()
+  }
+
+  #[inline]
+  pub fn vector_2_norm(&self) -> T {
+    self.vector_euclidean_norm()
+  }
 }
 
 impl<T : Add<T, T> + Signed + Zero + Clone> Matrix<T> {
@@ -647,6 +684,19 @@ impl<T : Add<T, T> + Signed + Zero + Clone> Matrix<T> {
     }
 
     s
+  }
+}
+
+impl<T : Add<T, T> + Div<T, T> + Algebraic + Signed + Zero + Clone> Matrix<T> {
+  pub fn vector_p_norm(&self, p : T) -> T {
+    assert!(self.noCols == 1);
+
+    let mut s : T = num::zero();
+    for i in range(0, self.data.len()) {
+      s = s + num::abs(num::pow(self.data[i].clone(), p.clone()));
+    }
+
+    num::pow(s, num::one::<T>() / p)
   }
 }
 
@@ -677,6 +727,25 @@ impl<T : Add<T, T> + Mul<T, T> + Algebraic + Zero> Matrix<T> {
   }
 }
 
+impl <S : Clone, T> Matrix<T> {
+  pub fn reduce(&self, init: &[S], f: &fn(&S, &T) -> S) -> Matrix<S> {
+    assert!(init.len() == self.noCols);
+
+    let mut data = init.to_owned();
+    let mut dataIdx = 0;
+    for i in range(0, self.data.len()) {
+      data[dataIdx] = f(&data[dataIdx], &self.data[i]);
+      dataIdx += 1;
+      dataIdx %= data.len();
+    }
+
+    Matrix {
+      noRows : 1,
+      noCols : self.noCols,
+      data : data
+    }
+  }
+}
 
 #[test]
 fn test_matrix() {
@@ -892,6 +961,7 @@ fn test_sub() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert!(m.minor(1, 1).data == ~[1, 3, 7, 9]);
   assert!(m.sub_matrix(1, 1, 3, 3).data == ~[5, 6, 8, 9]);
+  assert!(m.get_column(1).data == ~[2, 5, 8]);
 }
 
 #[test]
@@ -906,6 +976,13 @@ fn test_minor__out_of_bounds() {
 fn test_sub__out_of_bounds() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   let _ = m.sub_matrix(1, 1, 3, 4);
+}
+
+#[test]
+#[should_fail]
+fn test_get_column__out_of_bounds() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let _ = m.get_column(3);
 }
 
 #[test]
@@ -1063,6 +1140,21 @@ fn test_is_non_singular() {
 }
 
 #[test]
+fn test_is_square() {
+  let m = matrix(2, 2, ~[1, 2, 3, 4]);
+  assert!(m.is_square());
+  assert!(!m.is_not_square());
+
+  let m = matrix(2, 3, ~[1, 2, 3, 4, 5, 6]);
+  assert(!m.is_square());
+  assert(m.is_not_square());
+
+  let v = vector(~[1, 2, 3]);
+  assert!(!v.is_square());
+  assert!(v.is_not_square());
+}
+
+#[test]
 fn test_is_symmetric() {
   let m = matrix(3, 3, ~[1, 2, 3, 2, 4, 5, 3, 5, 6]);
   assert!(m.is_symmetric());
@@ -1097,6 +1189,19 @@ fn test_vector_1_norm() {
 #[should_fail]
 fn test_vector_1_norm__not_vector() {
   let _ = matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).vector_1_norm();
+}
+
+#[test]
+fn test_vector_p_norm() {
+  assert!(vector(~[-3.0, 2.0, 2.0]).vector_p_norm(3.0) == num::pow(43.0, 1.0 / 3.0));
+  assert!(vector(~[6.0, 8.0, -2.0, 3.0]).vector_p_norm(5.0) == num::pow(40819.0, 1.0 / 5.0));
+  assert!(vector(~[1.0]).vector_p_norm(2.0) == 1.0);
+}
+
+#[test]
+#[should_fail]
+fn test_vector_p_norm__not_vector() {
+  let _ = matrix(2, 2, ~[1.0, 2.0, 3.0, 4.0]).vector_p_norm(1.0);
 }
 
 #[test]

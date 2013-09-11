@@ -1,8 +1,8 @@
 use std::num;
 use std::num::{One, Zero};
 
-use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec};
+use matrix::*;
+use util::{alloc_dirty_vec};
 
 // Initially based on JAMA.
 // LU Decomposition.

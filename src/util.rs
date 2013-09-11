@@ -1,6 +1,6 @@
-use std::vec;
 use std::num;
 use std::num::{Zero, One};
+use std::vec;
 
 #[inline]
 pub fn alloc_dirty_vec<T>(n : uint) -> ~[T] {
@@ -37,4 +37,3 @@ fn hypot_test() {
   assert!(hypot(-4.0, 0.0) == 4.0);
   assert!(hypot(0.0, -4.0) == 4.0);
 }
-

@@ -1,8 +1,8 @@
 use std::num;
 use std::num::{One, Zero, NumCast};
 
-use super::super::matrix::*;
-use super::super::util::{alloc_dirty_vec, hypot};
+use matrix::*;
+use util::{alloc_dirty_vec, hypot};
 
 pub struct EigenDecomposition<T> {
   n : uint,
