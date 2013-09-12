@@ -289,7 +289,7 @@ impl<T : Clone> Matrix<T> {
   pub fn get_column(&self, column : uint) -> Matrix<T> {
     assert!(column < self.noCols);
     let mut d = alloc_dirty_vec(self.noRows);
-    let mut src_idx = 0;
+    let mut src_idx = column;
     for i in range(0, self.noRows) {
       d[i] = self.data[src_idx].clone();
       src_idx += self.noCols;
@@ -1146,8 +1146,8 @@ fn test_is_square() {
   assert!(!m.is_not_square());
 
   let m = matrix(2, 3, ~[1, 2, 3, 4, 5, 6]);
-  assert(!m.is_square());
-  assert(m.is_not_square());
+  assert!(!m.is_square());
+  assert!(m.is_not_square());
 
   let v = vector(~[1, 2, 3]);
   assert!(!v.is_square());

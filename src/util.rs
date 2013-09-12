@@ -1,5 +1,7 @@
+use std::io;
 use std::num;
 use std::num::{Zero, One};
+use std::path;
 use std::vec;
 
 #[inline]
@@ -23,6 +25,37 @@ pub fn hypot<T : Zero + One + Signed + Algebraic + Orderable + Clone>(a : T, b :
   } else {
     return Zero::zero();
   }
+}
+
+pub fn read_csv<T>(file_name : &str, parser : &fn(&str) -> T) -> super::matrix::Matrix<T> {
+  let mut data = vec::with_capacity(16384);
+  let mut row_count = 0;
+  let mut col_count = None;
+  match(io::file_reader(&path::Path(file_name))) {
+    Ok(reader) => {
+      do reader.each_line |line| {
+        let element_count = data.len();
+        for item in line.split_iter(',') {
+          data.push(parser(item))
+        }
+        let line_col_count = data.len() - element_count;
+
+        if(col_count == None) {
+          col_count = Some(line_col_count);
+        } else {
+          assert!(col_count.unwrap() == line_col_count);
+        }
+
+        row_count += 1;
+        true
+      }
+    }
+    _ => { fail!(~"Failed to load file.") }
+  };
+
+  assert!(col_count != None);
+
+  super::matrix::matrix(row_count, col_count.unwrap(), data)
 }
 
 #[test]
