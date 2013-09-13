@@ -332,7 +332,7 @@ impl<T : Clone> Matrix<T> {
     let mut destIdx = 0;
     for row in range(0u, no_rows) {
       for col in range(0u, no_cols) {
-        d[destIdx] = self.data[row * no_cols + columns[col]].clone();
+        d[destIdx] = self.data[row * self.noRows + columns[col]].clone();
         destIdx += 1;
       }
     }
@@ -342,6 +342,28 @@ impl<T : Clone> Matrix<T> {
       noCols : no_cols,
       data : d
     }
+  }
+}
+
+impl<T : Clone> Matrix<T> {
+  pub fn filter_rows(&self, f : &fn(m : &Matrix<T>, row : uint) -> bool) -> Matrix<T> {
+    let mut rows = vec::with_capacity(self.rows());
+    for row in range(0u, self.rows()) {
+      if(f(self, row)) {
+        rows.push(row);
+      }
+    }
+    self.permute_rows(rows)
+  }
+
+  pub fn filter_columns(&self, f : &fn(m : &Matrix<T>, col : uint) -> bool) -> Matrix<T> {
+    let mut cols = vec::with_capacity(self.cols());
+    for col in range(0u, self.cols()) {
+      if(f(self, col)) {
+        cols.push(col);
+      }
+    }
+    self.permute_columns(cols)
   }
 }
 
@@ -1009,6 +1031,7 @@ fn test_get_column__out_of_bounds() {
 fn test_permute_rows() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert!(m.permute_rows([1, 0, 2]).data == ~[4, 5, 6, 1, 2, 3, 7, 8, 9]);
+  assert!(m.permute_rows([2, 1]).data == ~[7, 8, 9, 4, 5, 6]);
 }
 
 #[test]
@@ -1022,6 +1045,7 @@ fn test_permute_rows__out_of_bounds() {
 fn test_permute_columns() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert!(m.permute_columns([1, 0, 2]).data == ~[2, 1, 3, 5, 4, 6, 8, 7, 9]);
+  assert!(m.permute_columns([1, 2]).data == ~[2, 3, 5, 6, 8, 9]);
 }
 
 #[test]
@@ -1029,6 +1053,25 @@ fn test_permute_columns() {
 fn test_permute_columns__out_of_bounds() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   let _ = m.permute_columns([1, 0, 5]);
+}
+
+#[test]
+fn test_filter_rows() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m2 = m.filter_rows(|_, row| { ((row % 2) == 0) });
+  assert!(m2.rows() == 2);
+  assert!(m2.cols() == 3);
+  assert!(m2.data == ~[1, 2, 3, 7, 8, 9]); 
+}
+
+#[test]
+fn test_filter_columns() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m2 = m.filter_columns(|_, col| { (col >= 1) });
+  m2.print();
+  assert!(m2.rows() == 3);
+  assert!(m2.cols() == 2);
+  assert!(m2.data == ~[2, 3, 5, 6, 8, 9]); 
 }
 
 #[test]
