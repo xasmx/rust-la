@@ -323,6 +323,26 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
+
+  pub fn permute_columns(&self, columns : &[uint]) -> Matrix<T> {
+    let no_rows = self.noRows;
+    let no_cols = columns.len();
+    let elems = no_rows * no_cols;
+    let mut d = alloc_dirty_vec(elems);
+    let mut destIdx = 0;
+    for row in range(0u, no_rows) {
+      for col in range(0u, no_cols) {
+        d[destIdx] = self.data[row * no_cols + columns[col]].clone();
+        destIdx += 1;
+      }
+    }
+
+    Matrix {
+      noRows : no_rows,
+      noCols : no_cols,
+      data : d
+    }
+  }
 }
 
 impl<T : Clone> Matrix<T> {
@@ -996,6 +1016,19 @@ fn test_permute_rows() {
 fn test_permute_rows__out_of_bounds() {
   let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
   let _ = m.permute_rows([1, 0, 5]);
+}
+
+#[test]
+fn test_permute_columns() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert!(m.permute_columns([1, 0, 2]).data == ~[2, 1, 3, 5, 4, 6, 8, 7, 9]);
+}
+
+#[test]
+#[should_fail]
+fn test_permute_columns__out_of_bounds() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let _ = m.permute_columns([1, 0, 5]);
 }
 
 #[test]
