@@ -136,6 +136,20 @@ impl<T : ApproxEq<T>> Matrix<T> {
   }
 }
 
+impl<T> Matrix<T> {
+  pub fn elem_predicate(&self, pred : &fn(&T) -> bool) -> Matrix<bool> {
+    let mut d = alloc_dirty_vec(self.data.len());
+    for i in range(0, self.data.len()) {
+      d[i] = pred(&self.data[i]);
+    }
+    Matrix {
+      noRows : self.noRows,
+      noCols : self.noCols,
+      data : d
+    }
+  }
+}
+
 impl<T : Clone> Matrix<T> {
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.noRows == m.noRows);
@@ -1208,6 +1222,14 @@ fn test_solve() {
   let b = vector(~[3.0, 4.0, 0.0]);
   assert!(a.solve(&b).unwrap().approx_eq(&vector(~[1.0, 1.0, 1.0])));
 }
+
+#[test]
+fn test_elem_predicate() {
+  let a = matrix(9, 1, ~[1.0, 1.0, 1.0, 1.0, -1.0, 4.0, 2.0, 3.0, -5.0]);
+  let b = a.elem_predicate(|v : &float| { *v == 1.0 });
+  assert!(b.data == ~[true, true, true, true, false, false, false, false, false]);
+}
+
 
 // TODO: Add more tests for solve
 
