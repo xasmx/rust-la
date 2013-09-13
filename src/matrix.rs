@@ -365,6 +365,28 @@ impl<T : Clone> Matrix<T> {
     }
     self.permute_columns(cols)
   }
+
+  pub fn select_rows(&self, selector : &[bool]) -> Matrix<T> {
+    assert!(self.noRows == selector.len());
+    let mut rows = vec::with_capacity(self.noRows);
+    for i in range(0, selector.len()) {
+      if(selector[i]) {
+        rows.push(i);
+      }
+    }
+    self.permute_rows(rows)
+  }
+
+  pub fn select_columns(&self, selector : &[bool]) -> Matrix<T> {
+    assert!(self.noCols == selector.len());
+    let mut cols = vec::with_capacity(self.noCols);
+    for i in range(0, selector.len()) {
+      if(selector[i]) {
+        cols.push(i);
+      }
+    }
+    self.permute_columns(cols)
+  }
 }
 
 impl<T : Clone> Matrix<T> {
@@ -1072,6 +1094,24 @@ fn test_filter_columns() {
   assert!(m2.rows() == 3);
   assert!(m2.cols() == 2);
   assert!(m2.data == ~[2, 3, 5, 6, 8, 9]); 
+}
+
+#[test]
+fn test_select_rows() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m2 = m.select_rows([false, true, true]);
+  assert!(m2.rows() == 2);
+  assert!(m2.cols() == 3);
+  assert!(m2.data == ~[4, 5, 6, 7, 8, 9]); 
+}
+
+#[test]
+fn test_select_columns() {
+  let m = matrix(3, 3, ~[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m2 = m.select_columns([true, false, true]);
+  assert!(m2.rows() == 3);
+  assert!(m2.cols() == 2);
+  assert!(m2.data == ~[1, 3, 4, 6, 7, 9]); 
 }
 
 #[test]
