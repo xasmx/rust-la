@@ -330,11 +330,13 @@ impl<T : Clone> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
     let mut destIdx = 0;
-    for row in range(0u, no_rows) {
+    let mut row_idx = 0;
+    for _ in range(0u, no_rows) {
       for col in range(0u, no_cols) {
-        d[destIdx] = self.data[row * self.noRows + columns[col]].clone();
+        d[destIdx] = self.data[row_idx + columns[col]].clone();
         destIdx += 1;
       }
+      row_idx += self.noCols;
     }
 
     Matrix {
