@@ -12,3 +12,8 @@ pub mod decomp {
   pub mod qr;
   pub mod svd;
 }
+
+pub mod eig {
+  pub mod powermethod;
+}
+
