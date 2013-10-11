@@ -1,6 +1,8 @@
 #[crate_type = "lib"];
 #[link(name = "la", vers = "0.1")];
 
+#[feature(globs)];
+
 pub mod matrix;
 
 pub mod util;

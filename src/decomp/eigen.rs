@@ -145,7 +145,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     let mut f : T = num::zero();
     let mut tst1 : T = num::zero();
-    let eps : T = num::cast(num::pow(2.0, -52.0));
+    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
     for l in range(0u, n) {
       // Find small subdiagonal element
       tst1 = num::max(tst1, num::abs(ddata[l].clone()) + num::abs(edata[l].clone()));
@@ -162,7 +162,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         loop {
           // Compute implicit shift
           let mut g = ddata[l].clone();
-          let tmp : T = num::cast(2.0);
+          let tmp : T = num::cast(2.0).unwrap();
           let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
           let mut r = hypot::<T>(p.clone(), num::one());
           if(p < num::zero()) {
@@ -349,7 +349,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let mut n = nn - 1;
     let low : int = 0;
     let high = nn - 1;
-    let eps : T = num::cast(num::pow(2.0, -52.0));
+    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
     let mut exshift = num::zero();
     let mut p = num::zero();
     let mut q = num::zero();
@@ -401,7 +401,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       } else if(l == (n - 1)) {
         // Two roots found
         w = hdata[n * nn + (n - 1)] * hdata[(n - 1) * nn + n];
-        p = (hdata[(n - 1) * nn + (n - 1)] - hdata[n * nn + n]) / num::cast(2.0);
+        p = (hdata[(n - 1) * nn + (n - 1)] - hdata[n * nn + n]) / num::cast(2.0).unwrap();
         q = p * p + w;
         z = num::sqrt(num::abs(q.clone()));
         hdata[n * nn + n] = hdata[n * nn + n] + exshift;
@@ -474,28 +474,28 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             hdata[i * nn + i] = hdata[i * nn + i] - x;
           }
           s = num::abs(hdata[n * nn + (n - 1)].clone()) + num::abs(hdata[(n - 1) * nn + (n - 2)].clone());
-          let tmp : T = num::cast(0.75);
+          let tmp : T = num::cast(0.75).unwrap();
           y = tmp * s;
           x = y.clone();
-          let tmp : T = num::cast(-0.4375);
+          let tmp : T = num::cast(-0.4375).unwrap();
           w = tmp * s * s;
         }
 
         // MATLAB's new ad hoc shift
         if(iter == 30) {
-          s = (y - x) / num::cast(2.0);
+          s = (y - x) / num::cast(2.0).unwrap();
           s = s * s + w;
           if(s > num::zero()) {
             s = num::sqrt(s.clone());
             if(y < x) {
               s = - s;
             }
-            s = x - w / ((y - x) / num::cast(2.0) + s);
+            s = x - w / ((y - x) / num::cast(2.0).unwrap() + s);
             for i in range(low, n + 1) {
               hdata[i * nn + i] = hdata[i * nn + i] - s;
             }
             exshift = exshift + s;
-            w = num::cast(0.964);
+            w = num::cast(0.964).unwrap();
             y = w.clone();
             x = y.clone();
           }
@@ -542,7 +542,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             r = if notlast { hdata[(k + 2) * nn + (k - 1)].clone() } else { num::zero() };
             x = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
             if(x == num::zero()) {
-              loop;
+              continue;
             }
             p = p / x;
             q = q / x;
@@ -697,7 +697,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
               x = hdata[i * nn + (i + 1)].clone();
               y = hdata[(i + 1) * nn + i].clone();
               vr = (ddata[i] - p) * (ddata[i] - p) + edata[i] * edata[i] - q * q;
-              vi = (ddata[i] - p) * num::cast(2.0) * q;
+              vi = (ddata[i] - p) * num::cast(2.0).unwrap() * q;
               if((vr == num::zero()) && (vi == num::zero())) {
                 vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
               }

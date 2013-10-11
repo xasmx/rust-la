@@ -211,7 +211,7 @@ impl<T : Clone> Matrix<T> {
 
     for cycleIdx in range(1u, self.data.len() - 1) {
       if(visited[cycleIdx]) {
-        loop;
+        continue;
       }
 
       let mut idx = cycleIdx;
