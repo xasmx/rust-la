@@ -1,6 +1,8 @@
+use std::cmp;
 use std::num;
 use std::num::{One, Zero};
 
+use approxeq::ApproxEq;
 use matrix::*;
 use util::{alloc_dirty_vec};
 
@@ -94,17 +96,17 @@ pub struct LUDecomposition<T> {
   // L is stored below diagonals. Diagonal elements are one for U and elements above diagonals are zero.
   lu : Matrix<T>,
   pospivsign : bool,
-  piv : ~[uint]
+  piv : Vec<uint>
 }
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Signed> LUDecomposition<T> {
+impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
     let mut ludata = a.data.clone();
-    let m = a.noRows as int;
-    let n = a.noCols as int;
+    let m = a.rows() as int;
+    let n = a.cols() as int;
     let mut pivdata = alloc_dirty_vec(m as uint);
     for i in range(0, m) {
-      pivdata[i] = i as uint;
+      *pivdata.get_mut(i as uint) = i as uint;
     }
 
     let mut pospivsign = true;
@@ -118,47 +120,47 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
       // lu[i][j] = a[i][j] - <l[0 .. (j - 1)][:], u[:][0 .. (j - 1)]>
       for i in range(0, m) {
         let mut s : T = num::zero();
-        for k in range(0, num::min(i, j)) {
-          s = s + ludata[i * n + k] * ludata[k * n + j];
+        for k in range(0, cmp::min(i, j)) {
+          s = s + *ludata.get((i * n + k) as uint) * *ludata.get((k * n + j) as uint);
         }
 
-        ludata[i * n + j] = ludata[i * n + j] - s;
+        *ludata.get_mut((i * n + j) as uint) = *ludata.get((i * n + j) as uint) - s;
       }
 
       // Find row with maximum pivot element at or below the diagonal.
       let mut p = j;
       for i in range(j + 1, m) {
-        if(num::abs(ludata[i * n + j].clone()) > num::abs(ludata[p * n + j].clone())) {
+        if num::abs(ludata.get((i * n + j) as uint).clone()) > num::abs(ludata.get((p * n + j) as uint).clone()) {
           p = i;
         }
       }
 
       // Swap pivot row with the maximum row (unless pivot row is the maximum row already).
-      if(p != j) {
+      if p != j {
         for k in range(0, n) {
-          let t = ludata[p * n + k].clone();
-          ludata[p * n + k] = ludata[j * n + k].clone();
-          ludata[j * n + k] = t;
+          let t = ludata.get((p * n + k) as uint).clone();
+          *ludata.get_mut((p * n + k) as uint) = ludata.get((j * n + k) as uint).clone();
+          *ludata.get_mut((j * n + k) as uint) = t;
         }
 
-        let k = pivdata[p];
-        pivdata[p] = pivdata[j];
-        pivdata[j] = k;
+        let k = *pivdata.get(p as uint);
+        *pivdata.get_mut(p as uint) = *pivdata.get(j as uint);
+        *pivdata.get_mut(j as uint) = k;
 
         pospivsign = !pospivsign;
       }
 
       // Complete calculating the elements of the column of L:
       //  l[i][j] := 1 / u[j][j] * l[i][j]
-      if((j < m) && (ludata[j * n + j] != num::zero())) {
+      if (j < m) && (*ludata.get((j * n + j) as uint) != num::zero()) {
         for i in range(j + 1, m) {
-          ludata[i * n + j] = ludata[i * n + j] / ludata[j * n + j];
+          *ludata.get_mut((i * n + j) as uint) = *ludata.get((i * n + j) as uint) / *ludata.get((j * n + j) as uint);
         }
       }
     }
 
     LUDecomposition { 
-      lu : Matrix { noRows : m as uint, noCols : n as uint, data : ludata },
+      lu : matrix(m as uint, n as uint, ludata),
       pospivsign : pospivsign,
       piv : pivdata
     }
@@ -169,9 +171,9 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   }
 
   pub fn is_non_singular(&self) -> bool {
-    let n = self.lu.noCols;
+    let n = self.lu.cols();
     for j in range(0, n) {
-      if(self.lu.data[j * n + j] == num::zero()) {
+      if *self.lu.data.get((j * n + j) as uint) == num::zero() {
         return false;
       }
     }
@@ -180,49 +182,50 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
 
   pub fn get_l(&self) -> Matrix<T> {
     // L is stored below diagonals. Diagonal elements are one for U and elements above diagonals are zero.
-    let m = self.lu.noRows;
-    let n = if self.lu.noRows >= self.lu.noCols { self.lu.noCols } else { self.lu.noRows };
+    let m = self.lu.rows();
+    let n = if self.lu.rows() >= self.lu.cols() { self.lu.cols() } else { self.lu.rows() };
     let mut ldata = alloc_dirty_vec(m * n);
     for i in range(0, m) {
       for j in range(0, n) {
-        ldata[i * n + j] = if(i > j) {
-                             self.lu.data[i * self.lu.noCols + j].clone()
-                           } else if(i == j) {
-                             num::one()
-                           } else {
-                             num::zero()
-                           }
+        *ldata.get_mut((i * n + j) as uint) =
+            if i > j {
+              self.lu.data.get((i * self.lu.cols() + j) as uint).clone()
+            } else if i == j {
+              num::one()
+            } else {
+              num::zero()
+            }
       }
     }
-    Matrix { noRows : m, noCols : n, data : ldata }
+    matrix(m, n, ldata)
   }
 
   pub fn get_u(&self) -> Matrix<T> {
     // U is stored in diagonals and above. Elements below diagonals are zero for U.
-    let m = if self.lu.noRows >= self.lu.noCols { self.lu.noCols as int } else { self.lu.noRows as int };
-    let n = self.lu.noCols as int;
+    let m = if self.lu.rows() >= self.lu.cols() { self.lu.cols() as int } else { self.lu.rows() as int };
+    let n = self.lu.cols() as int;
     let mut udata = alloc_dirty_vec((m * n) as uint);
     for i in range(0, m) {
       for j in range(0, n) {
-        udata[i * n + j] = if(i <= j) { self.lu.data[i * n + j].clone() } else { num::zero() };
+        *udata.get_mut((i * n + j) as uint) = if i <= j { self.lu.data.get((i * n + j) as uint).clone() } else { num::zero() };
       }
     }
-    Matrix { noRows : m as uint, noCols : n as uint, data : udata }
+    matrix(m as uint, n as uint, udata)
   }
 
   pub fn get_p(&self) -> Matrix<T> {
     let len = self.piv.len();
-    id(len, len).permute_rows(self.piv)
+    id(len, len).permute_rows(&self.piv)
   }
 
-  pub fn get_piv<'lt>(&'lt self) -> &'lt ~[uint] { &self.piv }
+  pub fn get_piv<'lt>(&'lt self) -> &'lt Vec<uint> { &self.piv }
 
   pub fn det(&self) -> T {
-    assert!(self.lu.noRows == self.lu.noCols);
-    let n = self.lu.noCols as int;
+    assert!(self.lu.rows() == self.lu.cols());
+    let n = self.lu.cols() as int;
     let mut d = if self.pospivsign { num::one::<T>() } else { - num::one::<T>() };
     for j in range(0, n) {
-      d = d * self.lu.data[j * n + j];
+      d = d * *self.lu.data.get((j * n + j) as uint);
     }
     d
   }
@@ -231,20 +234,20 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
   // B   A Matrix with as many rows as A and any number of columns.
   // Returns X so that L*U*X = B(piv,:)
   pub fn solve(&self, b : &Matrix<T>) -> Option<Matrix<T>> {
-    let m = self.lu.noRows as int;
-    let n = self.lu.noCols as int;
-    assert!(b.noRows == m as uint);
-    if(!self.is_non_singular()) {
+    let m = self.lu.rows() as int;
+    let n = self.lu.cols() as int;
+    assert!(b.rows() == m as uint);
+    if !self.is_non_singular() {
       return None
     }
 
     // Copy right hand side with pivoting
-    let nx = b.noCols as int;
+    let nx = b.cols() as int;
     let mut xdata = alloc_dirty_vec((m * nx) as uint);
     let mut destIdx = 0;
     for i in range(0, self.piv.len()) {
       for j in range(0, nx) {
-        xdata[destIdx] = b.data[(self.piv[i] as int) * (b.noCols as int) + j].clone();
+        *xdata.get_mut(destIdx) = b.data.get(((*self.piv.get(i) as int) * (b.cols() as int) + j) as uint).clone();
         destIdx += 1;
       }
     }
@@ -253,34 +256,30 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + App
     for k in range(0, n) {
       for i in range(k + 1, n) {
         for j in range(0, nx) {
-          xdata[i * nx + j] = xdata[i * nx + j] - xdata[k * nx + j] * self.lu.data[i * (self.lu.noCols as int) + k];
+          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.data.get((i * (self.lu.cols() as int) + k) as uint);
         }
       }
     }
 
     // Solve U*X = Y;
-    for k in range(0, n).invert() {
+    for k in range(0, n).rev() {
       for j in range(0, nx) {
-        xdata[k * nx + j] = xdata[k * nx + j] / self.lu.data[k * (self.lu.noCols as int) + k];
+        *xdata.get_mut((k * nx + j) as uint) = *xdata.get((k * nx + j) as uint) / *self.lu.data.get((k * (self.lu.cols() as int) + k) as uint);
       }
       for i in range(0, k) {
         for j in range(0, nx) {
-          xdata[i * nx + j] = xdata[i * nx + j] - xdata[k * nx + j] * self.lu.data[i * (self.lu.noCols as int) + k];
+          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.data.get((i * (self.lu.cols() as int) + k) as uint);
         }
       }
     }
 
-    Some(Matrix {
-      noRows : self.lu.noRows,
-      noCols : b.noCols,
-      data : xdata
-    })
+    Some(matrix(self.lu.rows(), b.cols(), xdata))
   }
 }
 
 #[test]
-fn test_lu__square() {
-  let a = matrix(3, 3, ~[1.0, 2.0, 0.0, 3.0, 6.0, -1.0, 1.0, 2.0, 1.0]);
+fn test_lu_square() {
+  let a = matrix(3, 3, vec![1.0, 2.0, 0.0, 3.0, 6.0, -1.0, 1.0, 2.0, 1.0]);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -289,8 +288,8 @@ fn test_lu__square() {
 }
 
 #[test]
-fn test_lu2__m_over_n() {
-  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+fn test_lu2_m_over_n() {
+  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -299,8 +298,8 @@ fn test_lu2__m_over_n() {
 }
 
 #[test]
-fn test_lu2__m_under_n() {
-  let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+fn test_lu2_m_under_n() {
+  let a = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -310,66 +309,66 @@ fn test_lu2__m_under_n() {
 
 #[test]
 fn lu_solve_test() {
-  let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
   let lu = LUDecomposition::new(&a);
-  let b = vector(~[1.0, 2.0, 3.0]);
-  assert!(lu.solve(&b).unwrap().approx_eq(&vector(~[-1.0, 3.0, 3.0])));
+  let b = vector(vec![1.0, 2.0, 3.0]);
+  assert!(lu.solve(&b).unwrap().approx_eq(&vector(vec![-1.0, 3.0, 3.0])));
 }
 
 #[test]
 #[should_fail]
-fn lu_solve_test__incompatible() {
-  let a = matrix(3, 3, ~[2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+fn lu_solve_test_incompatible() {
+  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
   let lu = LUDecomposition::new(&a);
-  let b = vector(~[1.0, 2.0, 3.0, 4.0]);
+  let b = vector(vec![1.0, 2.0, 3.0, 4.0]);
   let _ = lu.solve(&b);
 }
 
 #[test]
-fn lu_solve_test__singular() {
-  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+fn lu_solve_test_singular() {
+  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
   let lu = LUDecomposition::new(&a);
-  let b = vector(~[1.0, 2.0]);
+  let b = vector(vec![1.0, 2.0]);
   assert!(lu.solve(&b).is_none());
 }
 
 #[test]
 fn lu_is_singular_test() {
-  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 3.0]);
+  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
   let lu = LUDecomposition::new(&a);
   assert!(lu.is_singular());
 
-  let a = matrix(2, 2, ~[2.0, 6.0, 1.0, 4.0]);
+  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 4.0]);
   let lu = LUDecomposition::new(&a);
   assert!(!lu.is_singular());
 }
 
 #[test]
 fn lu_is_non_singular_test() {
-  let a = matrix(2, 2, ~[4.0, 8.0, 3.0, 4.0]);
+  let a = matrix(2, 2, vec![4.0, 8.0, 3.0, 4.0]);
   let lu = LUDecomposition::new(&a);
   assert!(lu.is_non_singular());
 
-  let a = matrix(2, 2, ~[4.0, 6.0, 2.0, 3.0]);
+  let a = matrix(2, 2, vec![4.0, 6.0, 2.0, 3.0]);
   let lu = LUDecomposition::new(&a);
   assert!(!lu.is_non_singular());
 }
 
 #[test]
 fn lu_det_test() {
-  let a = matrix(2, 2, ~[4.0, 8.0, 3.0, 4.0]);
+  let a = matrix(2, 2, vec![4.0, 8.0, 3.0, 4.0]);
   let lu = LUDecomposition::new(&a);
   assert!(lu.det() == -8.0);
 
-  let a = matrix(2, 2, ~[4.0, 8.0, 2.0, 4.0]);
+  let a = matrix(2, 2, vec![4.0, 8.0, 2.0, 4.0]);
   let lu = LUDecomposition::new(&a);
   assert!(lu.det() == 0.0);
 }
 
 #[test]
 #[should_fail]
-fn lu_det_test__not_square() {
-  let a = matrix(2, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+fn lu_det_test_not_square() {
+  let a = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
   let lu = LUDecomposition::new(&a);
   let _ = lu.det();
 }

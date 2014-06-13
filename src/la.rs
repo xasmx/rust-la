@@ -1,7 +1,10 @@
-#[crate_type = "lib"];
-#[link(name = "la", vers = "0.1")];
+#![crate_type = "lib"]
+#![crate_id = "la#0.1"]
 
-#[feature(globs)];
+#![feature(globs)]
+#![feature(macro_rules)]
+
+pub mod approxeq;
 
 pub mod matrix;
 

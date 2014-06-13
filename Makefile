@@ -9,7 +9,7 @@ all: build
 
 build: $(RUST_SRC)
 	mkdir -p $(BUILD_DIR)
-	$(RUSTC) $(RUSTFLAGS) --out-dir $(BUILD_DIR) --lib $(RUST_SRC)
+	$(RUSTC) $(RUSTFLAGS) --out-dir $(BUILD_DIR) --crate-type lib $(RUST_SRC)
 
 test-compile: $(RUST_SRC)
 	mkdir -p $(BUILD_DIR)

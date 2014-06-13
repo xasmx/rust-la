@@ -1,13 +1,15 @@
+use std::cmp;
 use std::num;
-use std::num::{One, Zero, NumCast};
+use std::num::{One, Zero, NumCast, FloatMath};
 
+use approxeq::ApproxEq;
 use matrix::*;
 use util::{alloc_dirty_vec, hypot};
 
 pub struct EigenDecomposition<T> {
   n : uint,
-  d : ~[T],
-  e : ~[T],
+  d : Vec<T>,
+  e : Vec<T>,
   v : Matrix<T>,
   h : Option<Matrix<T>>
 }
@@ -25,216 +27,216 @@ pub struct EigenDecomposition<T> {
 // columns of V represent the eigenvectors in the sense that A*V = V*D,
 // The matrix V may be badly conditioned, or even singular, so the validity
 // of the equation A = V * D * V^-1 depends upon V.cond().
-impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed + Orderable> EigenDecomposition<T> {
+impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float + FloatMath> EigenDecomposition<T> {
   // Symmetric Householder reduction to tridiagonal form.
-  fn tred2(n : uint, ddata : &mut [T], vdata : &mut [T], edata : &mut [T]) {
+  fn tred2(n : uint, ddata : &mut Vec<T>, vdata : &mut Vec<T>, edata : &mut Vec<T>) {
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.    
     for j in range(0u, n) {
-      ddata[j] = vdata[(n - 1) * n + j].clone();
+      *ddata.get_mut(j as uint) = vdata.get(((n - 1) * n + j) as uint).clone();
     }
 
     // Householder reduction to tridiagonal form.
-    for i in range(1, n).invert() {
+    for i in range(1, n).rev() {
       // Scale to avoid under/overflow.
       let mut scale : T = num::zero();
       let mut h : T = num::zero();
       for k in range(0u, i) {
-        scale = scale + num::abs(ddata[k].clone());
+        scale = scale + num::abs(ddata.get(k as uint).clone());
       }
-      if(scale == num::zero()) {
-        edata[i] = ddata[i - 1].clone();
+      if scale == num::zero() {
+        *edata.get_mut(i as uint) = ddata.get((i - 1) as uint).clone();
         for j in range(0u, i) {
-          ddata[j] = vdata[(i - 1) * n + j].clone();
-          vdata[i * n + j] = num::zero();
-          vdata[j * n + i] = num::zero();
+          *ddata.get_mut(j as uint) = vdata.get(((i - 1) * n + j) as uint).clone();
+          *vdata.get_mut((i * n + j) as uint) = num::zero();
+          *vdata.get_mut((j * n + i) as uint) = num::zero();
         }
       } else {
         // Generate Householder vector.
         for k in range(0u, i) {
-          ddata[k] = ddata[k] / scale;
-          h = h + ddata[k] * ddata[k];
+          *ddata.get_mut(k as uint) = *ddata.get(k as uint) / scale;
+          h = h + *ddata.get(k as uint) * *ddata.get(k as uint);
         }
-        let mut f = ddata[i - 1].clone();
-        let mut g = num::sqrt(h.clone());
-        if(f > num::zero()) {
+        let mut f = ddata.get((i - 1) as uint).clone();
+        let mut g = h.sqrt();
+        if f > num::zero() {
           g = - g;
         }
-        edata[i] = scale * g;
+        *edata.get_mut(i as uint) = scale * g;
         h = h - f * g;
-        ddata[i - 1] = f - g;
+        *ddata.get_mut((i - 1) as uint) = f - g;
         for j in range(0u, i) {
-          edata[j] = num::zero();
+          *edata.get_mut(j as uint) = num::zero();
         }
 
         // Apply similarity transformation to remaining columns.
         for j in range(0u, i) {
-          f = ddata[j].clone();
-          vdata[j * n + i] = f.clone();
-          g = edata[j] + vdata[j * n + j] * f;
+          f = ddata.get(j as uint).clone();
+          *vdata.get_mut((j * n + i) as uint) = f.clone();
+          g = *edata.get(j as uint) + *vdata.get((j * n + j) as uint) * f;
           for k in range(j + 1, i) {
-            g = g + vdata[k * n + j] * ddata[k];
-            edata[k] = edata[k] + vdata[k * n + j] * f;
+            g = g + *vdata.get((k * n + j) as uint) * *ddata.get(k as uint);
+            *edata.get_mut(k as uint) = *edata.get(k as uint) + *vdata.get((k * n + j) as uint) * f;
           }
-          edata[j] = g;
+          *edata.get_mut(j as uint) = g;
         }
         f = num::zero();
         for j in range(0u, i) {
-          edata[j] = edata[j] / h;
-          f = f + edata[j] * ddata[j];
+          *edata.get_mut(j as uint) = *edata.get(j as uint) / h;
+          f = f + *edata.get(j as uint) * *ddata.get(j as uint);
         }
         let hh = f / (h + h);
         for j in range(0u, i) {
-          edata[j] = edata[j] - hh * ddata[j];
+          *edata.get_mut(j as uint) = *edata.get(j as uint) - hh * *ddata.get(j as uint);
         }
         for j in range(0u, i) {
-          f = ddata[j].clone();
-          g = edata[j].clone();
+          f = ddata.get(j as uint).clone();
+          g = edata.get(j as uint).clone();
           for k in range(j, i) {
-            let orig_val = vdata[k * n + j].clone();
-            vdata[k * n + j] = orig_val - (f * edata[k] + g * ddata[k]);
+            let orig_val = vdata.get((k * n + j) as uint).clone();
+            *vdata.get_mut((k * n + j) as uint) = orig_val - (f * *edata.get(k as uint) + g * *ddata.get(k as uint));
           }
-          ddata[j] = vdata[(i - 1) * n + j].clone();
-          vdata[i * n + j] = num::zero();
+          *ddata.get_mut(j as uint) = vdata.get(((i - 1) * n + j) as uint).clone();
+          *vdata.get_mut((i * n + j) as uint) = num::zero();
         }
       }
-      ddata[i] = h;
+      *ddata.get_mut(i as uint) = h;
     }
 
     // Accumulate transformations.
     for i in range(0u, n - 1) {
-      let orig_val = vdata[i * n + i].clone();
-      vdata[(n - 1) * n + i] = orig_val;
-      vdata[i * n + i] = num::one();
-      let h = ddata[i + 1].clone();
-      if(h != num::zero()) {
+      let orig_val = vdata.get((i * n + i) as uint).clone();
+      *vdata.get_mut(((n - 1) * n + i) as uint) = orig_val;
+      *vdata.get_mut((i * n + i) as uint) = num::one();
+      let h = ddata.get((i + 1) as uint).clone();
+      if h != num::zero() {
         for k in range(0, i + 1) {
-          ddata[k] = vdata[k * n + (i + 1)] / h;
+          *ddata.get_mut(k as uint) = *vdata.get((k * n + (i + 1)) as uint) / h;
         }
         for j in range(0u, i + 1) {
           let mut g : T = num::zero();
           for k in range(0u, i + 1) {
-            g = g + vdata[k * n + (i + 1)] * vdata[k * n + j];
+            g = g + *vdata.get((k * n + (i + 1)) as uint) * *vdata.get((k * n + j) as uint);
           }
           for k in range(0u, i + 1) {
-            let orig_val = vdata[k * n + j].clone();
-            vdata[k * n + j] = orig_val - g * ddata[k];
+            let orig_val = vdata.get((k * n + j) as uint).clone();
+            *vdata.get_mut((k * n + j) as uint) = orig_val - g * *ddata.get(k as uint);
           }
         }
       }
       for k in range(0u, i + 1) {
-        vdata[k * n + (i + 1)] = num::zero();
+        *vdata.get_mut((k * n + (i + 1)) as uint) = num::zero();
       }
     }
     for j in range(0u, n) {
-      ddata[j] = vdata[(n - 1) * n + j].clone();
-      vdata[(n - 1) * n + j] = num::zero();
+      *ddata.get_mut(j as uint) = vdata.get(((n - 1) * n + j) as uint).clone();
+      *vdata.get_mut(((n - 1) * n + j) as uint) = num::zero();
     }
-    vdata[(n - 1) * n + (n - 1)] = num::one();
-    edata[0] = num::zero();
+    *vdata.get_mut(((n - 1) * n + (n - 1)) as uint) = num::one();
+    *edata.get_mut(0) = num::zero();
   }
 
   // Symmetric tridiagonal QL algorithm.
-  fn tql2(n : uint, edata : &mut [T], ddata : &mut [T], vdata : &mut [T]) {
+  fn tql2(n : uint, edata : &mut Vec<T>, ddata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedures tql2, by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     // Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
     for i in range(1, n) {
-      edata[i - 1] = edata[i].clone();
+      *edata.get_mut((i - 1) as uint) = edata.get(i as uint).clone();
     }
-    edata[n - 1] = num::zero();
+    *edata.get_mut((n - 1) as uint) = num::zero();
 
     let mut f : T = num::zero();
     let mut tst1 : T = num::zero();
-    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
+    let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
     for l in range(0u, n) {
       // Find small subdiagonal element
-      tst1 = num::max(tst1, num::abs(ddata[l].clone()) + num::abs(edata[l].clone()));
+      tst1 = tst1.max(num::abs(ddata.get(l as uint).clone()) + num::abs(edata.get(l as uint).clone()));
       let mut m = l;
-      while(m < n) {
-        if(num::abs(edata[m].clone()) <= (eps * tst1)) {
+      while m < n {
+        if num::abs(edata.get(m as uint).clone()) <= (eps * tst1) {
           break;
         }
         m += 1;
       }
 
       // If m == l, d[l] is an eigenvalue, otherwise, iterate.
-      if(m > l) {
+      if m > l {
         loop {
           // Compute implicit shift
-          let mut g = ddata[l].clone();
+          let mut g = ddata.get(l as uint).clone();
           let tmp : T = num::cast(2.0).unwrap();
-          let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
+          let mut p = (*ddata.get((l + 1) as uint) - g) / (tmp * *edata.get(l as uint));
           let mut r = hypot::<T>(p.clone(), num::one());
-          if(p < num::zero()) {
+          if p < num::zero() {
             r = -r;
           }
-          ddata[l] = edata[l] / (p + r);
-          ddata[l + 1] = edata[l] * (p + r);
-          let dl1 = ddata[l + 1].clone();
-          let mut h = g - ddata[l];
+          *ddata.get_mut(l as uint) = *edata.get(l as uint) / (p + r);
+          *ddata.get_mut((l + 1) as uint) = *edata.get(l as uint) * (p + r);
+          let dl1 = ddata.get((l + 1) as uint).clone();
+          let mut h = g - *ddata.get(l as uint);
           for i in range(l + 2, n) {
-            ddata[i] = ddata[i] - h;
+            *ddata.get_mut(i as uint) = *ddata.get(i as uint) - h;
           }
           f = f + h;
 
           // Implicit QL transformation.
-          p = ddata[m].clone();
+          p = ddata.get(m as uint).clone();
           let mut c : T = num::one();
           let mut c2 = c.clone();
           let mut c3 = c.clone();
-          let el1 = edata[l + 1].clone();
+          let el1 = edata.get((l + 1) as uint).clone();
           let mut s : T = num::zero();
           let mut s2 = num::zero();
-          for i in range(l, m).invert() {
+          for i in range(l, m).rev() {
             c3 = c2.clone();
             c2 = c.clone();
             s2 = s.clone();
-            g = c * edata[i];
+            g = c * *edata.get(i as uint);
             h = c * p;
-            r = hypot::<T>(p.clone(), edata[i].clone());
-            edata[i + 1] = s * r;
-            s = edata[i] / r;
+            r = hypot::<T>(p.clone(), edata.get(i as uint).clone());
+            *edata.get_mut((i + 1) as uint) = s * r;
+            s = *edata.get(i as uint) / r;
             c = p / r;
-            p = c * ddata[i] - s * g;
-            ddata[i + 1] = h + s * (c * g + s * ddata[i]);
+            p = c * *ddata.get(i as uint) - s * g;
+            *ddata.get_mut((i + 1) as uint) = h + s * (c * g + s * *ddata.get(i as uint));
 
             // Accumulate transformation.
             for k in range(0u, n) {
-              h = vdata[k * n + (i + 1)].clone();
-              vdata[k * n + (i + 1)] = s * vdata[k * n + i] + c * h;
-              vdata[k * n + i] = c * vdata[k * n + i] - s * h;
+              h = vdata.get((k * n + (i + 1)) as uint).clone();
+              *vdata.get_mut((k * n + (i + 1)) as uint) = s * *vdata.get((k * n + i) as uint) + c * h;
+              *vdata.get_mut((k * n + i) as uint) = c * *vdata.get((k * n + i) as uint) - s * h;
             }
           }
-          p = - s * s2 * c3 * el1 * edata[l] / dl1;
-          edata[l] = s * p;
-          ddata[l] = c * p;
+          p = - s * s2 * c3 * el1 * *edata.get(l as uint) / dl1;
+          *edata.get_mut(l as uint) = s * p;
+          *ddata.get_mut(l as uint) = c * p;
 
           // Check for convergence.
-          if(num::abs(edata[l].clone()) > (eps * tst1)) {
+          if num::abs(edata.get(l as uint).clone()) > (eps * tst1) {
             break;
           }
         }
-        ddata[l] = ddata[l] + f;
-        edata[l] = num::zero();
+        *ddata.get_mut(l as uint) = *ddata.get(l as uint) + f;
+        *edata.get_mut(l as uint) = num::zero();
       }
 
       // Sort eigenvalues and corresponding vectors.
       for i in range(0u, n - 1) {
         let mut k = i;
-        let mut p = ddata[i].clone();
+        let mut p = ddata.get(i as uint).clone();
         for j in range(i + 1, n) {
-          if(ddata[j] < p) {
+          if *ddata.get(j as uint) < p {
             k = j;
-            p = ddata[j].clone();
+            p = ddata.get(j as uint).clone();
           }
         }
-        if(k != i) {
-          ddata[k] = ddata[i].clone();
-          ddata[i] = p.clone();
+        if k != i {
+          *ddata.get_mut(k as uint) = ddata.get(i as uint).clone();
+          *ddata.get_mut(i as uint) = p.clone();
           for j in range(0u, n) {
-            p = vdata[j * n + i].clone();
-            vdata[j * n + i] = vdata[j * n + k].clone();
-            vdata[j * n + k] = p;
+            p = vdata.get((j * n + i) as uint).clone();
+            *vdata.get_mut((j * n + i) as uint) = vdata.get((j * n + k) as uint).clone();
+            *vdata.get_mut((j * n + k) as uint) = p;
           }
         }
       }
@@ -242,7 +244,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   // Nonsymmetric reduction to Hessenberg form.
-  fn orthes(n : uint, hdata : &mut [T], vdata : &mut[T]) {
+  fn orthes(n : uint, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedures orthes and ortran, by Martin and Wilkinson, Handbook for Auto. Comp.,
     // Vol.ii-Linear Algebra, and the corresponding Fortran subroutines in EISPACK.
 
@@ -255,71 +257,71 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       // Scale column.
       let mut scale : T = num::zero();
       for i in range(m, high + 1) {
-        scale = scale + num::abs(hdata[i * n + (m - 1)].clone());
+        scale = scale + num::abs(hdata.get((i * n + (m - 1)) as uint).clone());
       }
-      if(scale != num::zero()) {
+      if scale != num::zero() {
         // Compute Householder transformation.
         let mut h : T = num::zero();
-        for i in range(m, high + 1).invert() {
-          ort[i] = hdata[i * n + (m - 1)] / scale;
-          h = h + ort[i] * ort[i];
+        for i in range(m, high + 1).rev() {
+          *ort.get_mut(i) = *hdata.get((i * n + (m - 1)) as uint) / scale;
+          h = h + *ort.get(i) * *ort.get(i);
         }
-        let mut g = num::sqrt(h.clone());
-        if(ort[m] > num::zero()) {
+        let mut g = h.sqrt();
+        if *ort.get(m) > num::zero() {
           g = -g;
         }
-        h = h - ort[m] * g;
-        ort[m] = ort[m] - g;
+        h = h - *ort.get(m) * g;
+        *ort.get_mut(m) = *ort.get(m) - g;
 
         // Apply Householder similarity transformation
         // H = (I-u*u'/h)*H*(I-u*u')/h)
         for j in range(m, n) {
           let mut f : T = num::zero();
-          for i in range(m, high + 1).invert() {
-            f = f + ort[i] * hdata[i * n + j];
+          for i in range(m, high + 1).rev() {
+            f = f + *ort.get(i) * *hdata.get((i * n + j) as uint);
           }
           f = f / h;
           for i in range(m, high + 1) {
-            hdata[i * n + j] = hdata[i * n + j] - f * ort[i];
+            *hdata.get_mut((i * n + j) as uint) = *hdata.get((i * n + j) as uint) - f * *ort.get(i);
           }
         }
 
         for i in range(0u, high + 1) {
           let mut f : T = num::zero();
-          for j in range(m, high + 1).invert() {
-            f = f + ort[j] * hdata[i * n + j];
+          for j in range(m, high + 1).rev() {
+            f = f + *ort.get(j) * *hdata.get((i * n + j) as uint);
           }
           f = f / h;
           for j in range(m, high + 1) {
-            hdata[i * n + j] = hdata[i * n + j] - f * ort[j];
+            *hdata.get_mut((i * n + j) as uint) = *hdata.get((i * n + j) as uint) - f * *ort.get(j);
           }
         }
-        ort[m] = scale * ort[m];
-        hdata[m * n + (m - 1)] = scale * g;
+        *ort.get_mut(m) = scale * *ort.get(m);
+        *hdata.get_mut((m * n + (m - 1)) as uint) = scale * g;
       }
     }
 
     // Accumulate transformations (Algol's ortran).
     for i in range(0u, n) {
       for j in range(0u, n) {
-        vdata[i * n + j] = if(i == j) { num::one() } else { num::zero() };
+        *vdata.get_mut((i * n + j) as uint) = if i == j { num::one() } else { num::zero() };
       }
     }
 
-    for m in range(low + 1, high).invert() {
-      if(hdata[m * n + (m - 1)] != num::zero()) {
+    for m in range(low + 1, high).rev() {
+      if *hdata.get((m * n + (m - 1)) as uint) != num::zero() {
         for i in range(m + 1, high + 1) {
-          ort[i] = hdata[i * n + (m - 1)].clone();
+          *ort.get_mut(i) = hdata.get((i * n + (m - 1)) as uint).clone();
         }
         for j in range(m, high + 1) {
           let mut g : T = num::zero();
           for i in range(m, high + 1) {
-            g = g + ort[i] * vdata[i * n + j];
+            g = g + *ort.get(i) * *vdata.get((i * n + j) as uint);
           }
           // Double division avoids possible underflow
-          g = (g / ort[m]) / hdata[m * n + (m - 1)];
+          g = (g / *ort.get(m)) / *hdata.get((m * n + (m - 1)) as uint);
           for i in range(m, high + 1) {
-            vdata[i * n + j] = vdata[i * n + j] + g * ort[i];
+            *vdata.get_mut((i * n + j) as uint) = *vdata.get((i * n + j) as uint) + g * *ort.get(i);
           }
         }
       }
@@ -328,7 +330,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
   // Complex scalar division.
   fn cdiv(xr : T, xi : T, yr : T, yi : T) -> (T, T) {
-    if(num::abs(yr.clone()) > num::abs(yi.clone())) {
+    if num::abs(yr.clone()) > num::abs(yi.clone()) {
       let r = yi / yr;
       let d = yr + r * yi;
       ((xr + r * xi) / d, (xi - r * xr) / d)
@@ -340,7 +342,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   // Nonsymmetric reduction from Hessenberg to real Schur form.
-  pub fn hqr2(n : uint, ddata : &mut [T], edata : &mut [T], hdata : &mut [T], vdata : &mut [T]) {
+  pub fn hqr2(n : uint, ddata : &mut Vec<T>, edata : &mut Vec<T>, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedure hqr2, by Martin and Wilkinson, Handbook for Auto. Comp.,
     // Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
 
@@ -349,7 +351,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let mut n = nn - 1;
     let low : int = 0;
     let high = nn - 1;
-    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
+    let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
     let mut exshift = num::zero();
     let mut p = num::zero();
     let mut q = num::zero();
@@ -364,94 +366,94 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     // Store roots isolated by balanc and compute matrix norm
     let mut norm : T = num::zero();
     for i in range(0, nn) {
-      if((i < low) || (i > high)) {
-        ddata[i] = hdata[i * nn + i].clone();
-        edata[i] = num::zero();
+      if (i < low) || (i > high) {
+        *ddata.get_mut(i as uint) = hdata.get((i * nn + i) as uint).clone();
+        *edata.get_mut(i as uint) = num::zero();
       }
-      for j in range(num::max(i - 1, 0), nn) {
-        norm = norm + num::abs(hdata[i * nn + j].clone());
+      for j in range(cmp::max(i - 1, 0), nn) {
+        norm = norm + num::abs(hdata.get((i * nn + j) as uint).clone());
       }
     }
 
     // Outer loop over eigenvalue index
     let mut iter = 0;
-    while(n >= low) {
+    while n >= low {
 
       // Look for single small sub-diagonal element
       let mut l = n;
-      while(l > low) {
-        s = num::abs(hdata[(l - 1) * nn + (l - 1)].clone()) + num::abs(hdata[l * nn + l].clone());
-        if(s == num::zero()) {
+      while l > low {
+        s = num::abs(hdata.get(((l - 1) * nn + (l - 1)) as uint).clone()) + num::abs(hdata.get((l * nn + l) as uint).clone());
+        if s == num::zero() {
           s = norm.clone();
         }
-        if(num::abs(hdata[l * nn + (l - 1)].clone()) < (eps * s)) {
+        if num::abs(hdata.get((l * nn + (l - 1)) as uint).clone()) < (eps * s) {
           break;
         }
         l -= 1;
       }
 
       // Check for convergence.
-      if(l == n) {
+      if l == n {
         //One root found.
-        hdata[n * nn + n] = hdata[n * nn + n] + exshift;
-        ddata[n] = hdata[n * nn + n].clone();
-        edata[n] = num::zero();
+        *hdata.get_mut((n * nn + n) as uint) = *hdata.get((n * nn + n) as uint) + exshift;
+        *ddata.get_mut(n as uint) = hdata.get((n * nn + n) as uint).clone();
+        *edata.get_mut(n as uint) = num::zero();
         n -= 1;
         iter = 0;
-      } else if(l == (n - 1)) {
+      } else if l == (n - 1) {
         // Two roots found
-        w = hdata[n * nn + (n - 1)] * hdata[(n - 1) * nn + n];
-        p = (hdata[(n - 1) * nn + (n - 1)] - hdata[n * nn + n]) / num::cast(2.0).unwrap();
+        w = *hdata.get((n * nn + (n - 1)) as uint) * *hdata.get(((n - 1) * nn + n) as uint);
+        p = (*hdata.get(((n - 1) * nn + (n - 1)) as uint) - *hdata.get((n * nn + n) as uint)) / num::cast(2.0).unwrap();
         q = p * p + w;
-        z = num::sqrt(num::abs(q.clone()));
-        hdata[n * nn + n] = hdata[n * nn + n] + exshift;
-        hdata[(n - 1) * nn + (n - 1)] = hdata[(n - 1) * nn + (n - 1)] + exshift;
-        x = hdata[n * nn + n].clone();
+        z = num::abs(q.clone()).sqrt();
+        *hdata.get_mut((n * nn + n) as uint) = *hdata.get((n * nn + n) as uint) + exshift;
+        *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = *hdata.get(((n - 1) * nn + (n - 1)) as uint) + exshift;
+        x = hdata.get((n * nn + n) as uint).clone();
 
         // Real pair
-        if(q >= num::zero()) {
-          z = if(p >= num::zero()) { p + z } else { p - z };
-          ddata[n - 1] = x + z;
-          ddata[n] = ddata[n - 1].clone();
-          if(z != num::zero()) {
-            ddata[n] = x - w / z;
+        if q >= num::zero() {
+          z = if p >= num::zero() { p + z } else { p - z };
+          *ddata.get_mut((n - 1) as uint) = x + z;
+          *ddata.get_mut(n as uint) = ddata.get((n - 1) as uint).clone();
+          if z != num::zero() {
+            *ddata.get_mut(n as uint) = x - w / z;
           }
-          edata[n - 1] = num::zero();
-          edata[n] = num::zero();
-          x = hdata[n * nn + (n - 1)].clone();
+          *edata.get_mut((n - 1) as uint) = num::zero();
+          *edata.get_mut(n as uint) = num::zero();
+          x = hdata.get((n * nn + (n - 1)) as uint).clone();
           s = num::abs(x.clone()) + num::abs(z.clone());
           p = x / s;
           q = z / s;
-          r = num::sqrt(p * p + q * q);
+          r = (p * p + q * q).sqrt();
           p = p / r;
           q = q / r;
 
           // Row modification
           for j in range(n - 1, nn) {
-            z = hdata[(n - 1) * nn + j].clone();
-            hdata[(n - 1) * nn + j] = q * z + p * hdata[n * nn + j];
-            hdata[n * nn + j] = q * hdata[n * nn + j] - p * z;
+            z = hdata.get(((n - 1) * nn + j) as uint).clone();
+            *hdata.get_mut(((n - 1) * nn + j) as uint) = q * z + p * *hdata.get((n * nn + j) as uint);
+            *hdata.get_mut((n * nn + j) as uint) = q * *hdata.get((n * nn + j) as uint) - p * z;
           }
 
           // Column modification
           for i in range(0, n + 1) {
-            z = hdata[i * nn + (n - 1)].clone();
-            hdata[i * nn + (n - 1)] = q * z + p * hdata[i * nn + n];
-            hdata[i * nn + n] = q * hdata[i * nn + n] - p * z;
+            z = hdata.get((i * nn + (n - 1)) as uint).clone();
+            *hdata.get_mut((i * nn + (n - 1)) as uint) = q * z + p * *hdata.get((i * nn + n) as uint);
+            *hdata.get_mut((i * nn + n) as uint) = q * *hdata.get((i * nn + n) as uint) - p * z;
           }
 
           // Accumulate transformations
           for i in range(low, high + 1) {
-            z = vdata[i * nn + (n - 1)].clone();
-            vdata[i * nn + (n - 1)] = q * z + p * vdata[i * nn + n];
-            vdata[i * nn + n] = q * vdata[i * nn + n] - p * z;
+            z = vdata.get((i * nn + (n - 1)) as uint).clone();
+            *vdata.get_mut((i * nn + (n - 1)) as uint) = q * z + p * *vdata.get((i * nn + n) as uint);
+            *vdata.get_mut((i * nn + n) as uint) = q * *vdata.get((i * nn + n) as uint) - p * z;
           }
         } else {
           // Complex pair
-          ddata[n - 1] = x + p;
-          ddata[n] = x + p;
-          edata[n - 1] = z.clone();
-          edata[n] = - z;
+          *ddata.get_mut((n - 1) as uint) = x + p;
+          *ddata.get_mut(n as uint) = x + p;
+          *edata.get_mut((n - 1) as uint) = z.clone();
+          *edata.get_mut(n as uint) = - z;
         }
         n = n - 2;
         iter = 0;
@@ -459,21 +461,21 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         // No convergence yet
 
         // Form shift
-        x = hdata[n * nn + n].clone();
+        x = hdata.get((n * nn + n) as uint).clone();
         y = num::zero();
         w = num::zero();
-        if(l < n) {
-          y = hdata[(n - 1) * nn + (n - 1)].clone();
-          w = hdata[n * nn + (n - 1)] * hdata[(n - 1) * nn + n];
+        if l < n {
+          y = hdata.get(((n - 1) * nn + (n - 1)) as uint).clone();
+          w = *hdata.get((n * nn + (n - 1)) as uint) * *hdata.get(((n - 1) * nn + n) as uint);
         }
 
         // Wilkinson's original ad hoc shift
-        if(iter == 10) {
+        if iter == 10 {
           exshift = exshift + x;
           for i in range(low, n + 1) {
-            hdata[i * nn + i] = hdata[i * nn + i] - x;
+            *hdata.get_mut((i * nn + i) as uint) = *hdata.get((i * nn + i) as uint) - x;
           }
-          s = num::abs(hdata[n * nn + (n - 1)].clone()) + num::abs(hdata[(n - 1) * nn + (n - 2)].clone());
+          s = num::abs(hdata.get((n * nn + (n - 1)) as uint).clone()) + num::abs(hdata.get(((n - 1) * nn + (n - 2)) as uint).clone());
           let tmp : T = num::cast(0.75).unwrap();
           y = tmp * s;
           x = y.clone();
@@ -482,17 +484,17 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         }
 
         // MATLAB's new ad hoc shift
-        if(iter == 30) {
+        if iter == 30 {
           s = (y - x) / num::cast(2.0).unwrap();
           s = s * s + w;
-          if(s > num::zero()) {
-            s = num::sqrt(s.clone());
-            if(y < x) {
+          if s > num::zero() {
+            s = s.sqrt();
+            if y < x {
               s = - s;
             }
             s = x - w / ((y - x) / num::cast(2.0).unwrap() + s);
             for i in range(low, n + 1) {
-              hdata[i * nn + i] = hdata[i * nn + i] - s;
+              *hdata.get_mut((i * nn + i) as uint) = *hdata.get((i * nn + i) as uint) - s;
             }
             exshift = exshift + s;
             w = num::cast(0.964).unwrap();
@@ -505,43 +507,43 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
         // Look for two consecutive small sub-diagonal elements
         let mut m = n - 2;
-        while(m >= l) {
-          z = hdata[m * nn + m].clone();
+        while m >= l {
+          z = hdata.get((m * nn + m) as uint).clone();
           r = x - z;
           s = y - z;
-          p = (r * s - w) / hdata[(m + 1) * nn + m] + hdata[m * nn + (m + 1)];
-          q = hdata[(m + 1) * nn + (m + 1)] - z - r - s;
-          r = hdata[(m + 2) * nn + (m + 1)].clone();
+          p = (r * s - w) / *hdata.get(((m + 1) * nn + m) as uint) + *hdata.get((m * nn + (m + 1)) as uint);
+          q = *hdata.get(((m + 1) * nn + (m + 1)) as uint) - z - r - s;
+          r = hdata.get(((m + 2) * nn + (m + 1)) as uint).clone();
           s = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
           p = p / s;
           q = q / s;
           r = r / s;
-          if(m == l) {
+          if m == l {
             break;
           }
-          if((num::abs(hdata[m * nn + (m - 1)].clone()) * (num::abs(q.clone()) + num::abs(r.clone()))) <
-             eps * (num::abs(p.clone()) * (num::abs(hdata[(m - 1) * nn + (m - 1)].clone()) + num::abs(z.clone()) + num::abs(hdata[(m + 1) * nn + (m + 1)].clone())))) {
+          if (num::abs(hdata.get((m * nn + (m - 1)) as uint).clone()) * (num::abs(q.clone()) + num::abs(r.clone()))) <
+             eps * (num::abs(p.clone()) * (num::abs(hdata.get(((m - 1) * nn + (m - 1)) as uint).clone()) + num::abs(z.clone()) + num::abs(hdata.get(((m + 1) * nn + (m + 1)) as uint).clone()))) {
             break;
           }
           m -= 1;
         }
 
         for i in range(m + 2, n + 1) {
-          hdata[i * nn + (i - 2)] = num::zero();
-          if(i > (m + 2)) {
-            hdata[i * nn + (i - 3)] = num::zero();
+          *hdata.get_mut((i * nn + (i - 2)) as uint) = num::zero();
+          if i > (m + 2) {
+            *hdata.get_mut((i * nn + (i - 3)) as uint) = num::zero();
           }
         }
 
         // Double QR step involving rows l:n and columns m:n
         for k in range(m, n) {
-          let notlast = (k != (n - 1));
-          if(k != m) {
-            p = hdata[k * nn + (k - 1)].clone();
-            q = hdata[(k + 1) * nn + (k - 1)].clone();
-            r = if notlast { hdata[(k + 2) * nn + (k - 1)].clone() } else { num::zero() };
+          let notlast = k != (n - 1);
+          if k != m {
+            p = hdata.get((k * nn + (k - 1)) as uint).clone();
+            q = hdata.get(((k + 1) * nn + (k - 1)) as uint).clone();
+            r = if notlast { hdata.get(((k + 2) * nn + (k - 1)) as uint).clone() } else { num::zero() };
             x = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
-            if(x == num::zero()) {
+            if x == num::zero() {
               continue;
             }
             p = p / x;
@@ -549,15 +551,15 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
             r = r / x;
           }
 
-          s = num::sqrt(p * p + q * q + r * r);
-          if(p < num::zero()) {
+          s = (p * p + q * q + r * r).sqrt();
+          if p < num::zero() {
             s = - s;
           }
-          if(s != num::zero()) {
-            if(k != m) {
-              hdata[k * nn + (k - 1)] = - s * x;
-            } else if(l != m) {
-              hdata[k * nn + (k - 1)] = - hdata[k * nn + (k - 1)];
+          if s != num::zero() {
+            if k != m {
+              *hdata.get_mut((k * nn + (k - 1)) as uint) = - s * x;
+            } else if l != m {
+              *hdata.get_mut((k * nn + (k - 1)) as uint) = - *hdata.get((k * nn + (k - 1)) as uint);
             }
             p = p + s;
             x = p / s;
@@ -568,35 +570,35 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
             // Row modification
             for j in range(k, nn) {
-              p = hdata[k * nn + j] + q * hdata[(k + 1) * nn + j];
+              p = *hdata.get((k * nn + j) as uint) + q * *hdata.get(((k + 1) * nn + j) as uint);
               if notlast {
-                p = p + r * hdata[(k + 2) * nn + j];
-                hdata[(k + 2) * nn + j] = hdata[(k + 2) * nn + j] - p * z;
+                p = p + r * *hdata.get(((k + 2) * nn + j) as uint);
+                *hdata.get_mut(((k + 2) * nn + j) as uint) = *hdata.get(((k + 2) * nn + j) as uint) - p * z;
               }
-              hdata[k * nn + j] = hdata[k * nn + j] - p * x;
-              hdata[(k + 1) * nn + j] = hdata[(k + 1) * nn + j] - p * y;
+              *hdata.get_mut((k * nn + j) as uint) = *hdata.get((k * nn + j) as uint) - p * x;
+              *hdata.get_mut(((k + 1) * nn + j) as uint) = *hdata.get(((k + 1) * nn + j) as uint) - p * y;
             }
 
             // Column modification
-            for i in range(0, num::min(n, k + 3) + 1) {
-              p = x * hdata[i * nn + k] + y * hdata[i * nn + (k + 1)];
+            for i in range(0, cmp::min(n, k + 3) + 1) {
+              p = x * *hdata.get((i * nn + k) as uint) + y * *hdata.get((i * nn + (k + 1)) as uint);
               if notlast {
-                p = p + z * hdata[i * nn + (k + 2)];
-                hdata[i * nn + (k + 2)] = hdata[i * nn + (k + 2)] - p * r;
+                p = p + z * *hdata.get((i * nn + (k + 2)) as uint);
+                *hdata.get_mut((i * nn + (k + 2)) as uint) = *hdata.get((i * nn + (k + 2)) as uint) - p * r;
               }
-              hdata[i * nn + k] = hdata[i * nn + k] - p;
-              hdata[i * nn + (k + 1)] = hdata[i * nn + (k + 1)] - p * q;
+              *hdata.get_mut((i * nn + k) as uint) = *hdata.get((i * nn + k) as uint) - p;
+              *hdata.get_mut((i * nn + (k + 1)) as uint) = *hdata.get((i * nn + (k + 1)) as uint) - p * q;
             }
 
             // Accumulate transformations
             for i in range(low, high + 1) {
-              p = x * vdata[i * nn + k] + y * vdata[i * nn + (k + 1)];
+              p = x * *vdata.get((i * nn + k) as uint) + y * *vdata.get((i * nn + (k + 1)) as uint);
               if notlast {
-                p = p + z * vdata[i * nn + (k + 2)];
-                vdata[i * nn + (k + 2)] = vdata[i * nn + (k + 2)] - p * r;
+                p = p + z * *vdata.get((i * nn + (k + 2)) as uint);
+                *vdata.get_mut((i * nn + (k + 2)) as uint) = *vdata.get((i * nn + (k + 2)) as uint) - p * r;
               }
-              vdata[i * nn + k] = vdata[i * nn + k] - p;
-              vdata[i * nn + (k + 1)] = vdata[i * nn + (k + 1)] - p * q;
+              *vdata.get_mut((i * nn + k) as uint) = *vdata.get((i * nn + k) as uint) - p;
+              *vdata.get_mut((i * nn + (k + 1)) as uint) = *vdata.get((i * nn + (k + 1)) as uint) - p * q;
             }
           }
         }
@@ -604,122 +606,122 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     }
 
     // Backsubstitute to find vectors of upper triangular form
-    if(norm == num::zero()) {
+    if norm == num::zero() {
       return;
     }
 
-    for n in range(0, nn).invert() {
-      p = ddata[n].clone();
-      q = edata[n].clone();
+    for n in range(0, nn).rev() {
+      p = ddata.get(n as uint).clone();
+      q = edata.get(n as uint).clone();
 
       // Real vector
-      if(q == num::zero()) {
+      if q == num::zero() {
         let mut l = n;
-        hdata[n * nn + n] = num::one();
-        for i in range(0, n).invert() {
-          w = hdata[i * nn + i] - p;
+        *hdata.get_mut((n * nn + n) as uint) = num::one();
+        for i in range(0, n).rev() {
+          w = *hdata.get((i * nn + i) as uint) - p;
           r = num::zero();
           for j in range(l, n + 1) {
-            r = r + hdata[i * nn + j] * hdata[j * nn + n];
+            r = r + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + n) as uint);
           }
-          if(edata[i] < num::zero()) {
+          if *edata.get(i as uint) < num::zero() {
             z = w.clone();
             s = r.clone();
           } else {
             l = i;
-            if(edata[i] == num::zero()) {
-              if(w != num::zero()) {
-                hdata[i * nn + n] = - r / w;
+            if *edata.get(i as uint) == num::zero() {
+              if w != num::zero() {
+                *hdata.get_mut((i * nn + n) as uint) = - r / w;
               } else {
-                hdata[i * nn + n] = - r / (eps * norm);
+                *hdata.get_mut((i * nn + n) as uint) = - r / (eps * norm);
               }
             } else {
               // Solve real equations
-              x = hdata[i * nn + (i + 1)].clone();
-              y = hdata[(i + 1) * nn + i].clone();
-              q = (ddata[i] - p) * (ddata[i] - p) + edata[i] * edata[i];
+              x = hdata.get((i * nn + (i + 1)) as uint).clone();
+              y = hdata.get(((i + 1) * nn + i) as uint).clone();
+              q = (*ddata.get(i as uint) - p) * (*ddata.get(i as uint) - p) + *edata.get(i as uint) * *edata.get(i as uint);
               t = (x * s - z * r) / q;
-              hdata[i * nn + n] = t.clone();
-              if(num::abs(x.clone()) > num::abs(z.clone())) {
-                hdata[(i + 1) * nn + n] = (-r - w * t) / x;
+              *hdata.get_mut((i * nn + n) as uint) = t.clone();
+              if num::abs(x.clone()) > num::abs(z.clone()) {
+                *hdata.get_mut(((i + 1) * nn + n) as uint) = (-r - w * t) / x;
               } else {
-                hdata[(i + 1) * nn + n] = (-s - y * t) / z;
+                *hdata.get_mut(((i + 1) * nn + n) as uint) = (-s - y * t) / z;
               }
             }
 
             // Overflow control
-            t = num::abs(hdata[i * nn + n].clone());
-            if((eps * t) * t > num::one()) {
+            t = num::abs(hdata.get((i * nn + n) as uint).clone());
+            if (eps * t) * t > num::one() {
               for j in range(i, n + 1) {
-                hdata[j * nn + n] = hdata[j * nn + n] / t;
+                *hdata.get_mut((j * nn + n) as uint) = *hdata.get((j * nn + n) as uint) / t;
               }
             }
           }
         }
-      } else if(q < num::zero()) {
+      } else if q < num::zero() {
         // Complex vector
         let mut l = n - 1;
 
         // Last vector component imaginary so matrix is triangular
-        if(num::abs(hdata[n * nn + (n - 1)].clone()) > num::abs(hdata[(n - 1) * nn + n].clone())) {
-          hdata[(n - 1) * nn + (n - 1)] = q / hdata[n * nn + (n - 1)];
-          hdata[(n - 1) * nn + n] = - (hdata[n * nn + n] - p) / hdata[n * nn + (n - 1)];
+        if num::abs(hdata.get((n * nn + (n - 1)) as uint).clone()) > num::abs(hdata.get(((n - 1) * nn + n) as uint).clone()) {
+          *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = q / *hdata.get((n * nn + (n - 1)) as uint);
+          *hdata.get_mut(((n - 1) * nn + n) as uint) = - (*hdata.get((n * nn + n) as uint) - p) / *hdata.get((n * nn + (n - 1)) as uint);
         } else {
-          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - hdata[(n - 1) * nn + n], hdata[(n - 1) * nn + (n - 1)] - p, q.clone());
-          hdata[(n - 1) * nn + (n - 1)] = cdivr;
-          hdata[(n - 1) * nn + n] = cdivi;
+          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - *hdata.get(((n - 1) * nn + n) as uint), *hdata.get(((n - 1) * nn + (n - 1)) as uint) - p, q.clone());
+          *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = cdivr;
+          *hdata.get_mut(((n - 1) * nn + n) as uint) = cdivi;
         }
-        hdata[n * nn + (n - 1)] = num::zero();
-        hdata[n * nn + n] = num::one();
-        for i in range(0, n - 1).invert() {
+        *hdata.get_mut((n * nn + (n - 1)) as uint) = num::zero();
+        *hdata.get_mut((n * nn + n) as uint) = num::one();
+        for i in range(0, n - 1).rev() {
           let mut ra : T = num::zero();
           let mut sa : T = num::zero();
           let mut vr;
           let mut vi;
           for j in range(l, n + 1) {
-            ra = ra + hdata[i * nn + j] * hdata[j * nn + (n - 1)];
-            sa = sa + hdata[i * nn + j] * hdata[j * nn + n];
+            ra = ra + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + (n - 1)) as uint);
+            sa = sa + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + n) as uint);
           }
-          w = hdata[i * nn + i] - p;
+          w = *hdata.get((i * nn + i) as uint) - p;
 
-          if(edata[i] < num::zero()) {
+          if *edata.get(i as uint) < num::zero() {
             z = w;
             r = ra;
             s = sa;
           } else {
             l = i;
-            if(edata[i] == num::zero()) {
+            if *edata.get(i as uint) == num::zero() {
               let (cdivr, cdivi) = EigenDecomposition::cdiv(- ra, - sa, w.clone(), q.clone());
-              hdata[i * nn + (n - 1)] = cdivr;
-              hdata[i * nn + n] = cdivi;
+              *hdata.get_mut((i * nn + (n - 1)) as uint) = cdivr;
+              *hdata.get_mut((i * nn + n) as uint) = cdivi;
             } else {
               // Solve complex equations
-              x = hdata[i * nn + (i + 1)].clone();
-              y = hdata[(i + 1) * nn + i].clone();
-              vr = (ddata[i] - p) * (ddata[i] - p) + edata[i] * edata[i] - q * q;
-              vi = (ddata[i] - p) * num::cast(2.0).unwrap() * q;
-              if((vr == num::zero()) && (vi == num::zero())) {
+              x = hdata.get((i * nn + (i + 1)) as uint).clone();
+              y = hdata.get(((i + 1) * nn + i) as uint).clone();
+              vr = (*ddata.get(i as uint) - p) * (*ddata.get(i as uint) - p) + *edata.get(i as uint) * *edata.get(i as uint) - q * q;
+              vi = (*ddata.get(i as uint) - p) * num::cast(2.0).unwrap() * q;
+              if (vr == num::zero()) && (vi == num::zero()) {
                 vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
               }
               let (cdivr, cdivi) = EigenDecomposition::cdiv(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
-              hdata[i * nn + (n - 1)] = cdivr;
-              hdata[i * nn + n] = cdivi;
-              if(num::abs(x.clone()) > (num::abs(z.clone()) + num::abs(q.clone()))) {
-                hdata[(i + 1) * nn + (n - 1)] = (- ra - w * hdata[i * nn + (n - 1)] + q * hdata[i * nn + n]) / x;
-                hdata[(i + 1) * nn + n] = (- sa - w * hdata[i * nn + n] - q * hdata[i * nn + (n - 1)]) / x;
+              *hdata.get_mut((i * nn + (n - 1)) as uint) = cdivr;
+              *hdata.get_mut((i * nn + n) as uint) = cdivi;
+              if num::abs(x.clone()) > (num::abs(z.clone()) + num::abs(q.clone())) {
+                *hdata.get_mut(((i + 1) * nn + (n - 1)) as uint) = (- ra - w * *hdata.get((i * nn + (n - 1)) as uint) + q * *hdata.get((i * nn + n) as uint)) / x;
+                *hdata.get_mut(((i + 1) * nn + n) as uint) = (- sa - w * *hdata.get((i * nn + n) as uint) - q * *hdata.get((i * nn + (n - 1)) as uint)) / x;
               } else {
-                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * hdata[i * nn + (n - 1)], - s - y * hdata[i * nn + n], z.clone(), q.clone());
-                hdata[(i + 1) * nn + (n - 1)] = cdivr;
-                hdata[(i + 1) * nn + n] = cdivi;
+                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * *hdata.get((i * nn + (n - 1)) as uint), - s - y * *hdata.get((i * nn + n) as uint), z.clone(), q.clone());
+                *hdata.get_mut(((i + 1) * nn + (n - 1)) as uint) = cdivr;
+                *hdata.get_mut(((i + 1) * nn + n) as uint) = cdivi;
               }
             }
 
             // Overflow control
-            t = num::max(num::abs(hdata[i * nn + (n - 1)].clone()), num::abs(hdata[i * nn + n].clone()));
-            if((eps * t) * t > num::one()) {
+            t = num::abs(hdata.get((i * nn + (n - 1)) as uint).clone()).max(num::abs(hdata.get((i * nn + n) as uint).clone()));
+            if (eps * t) * t > num::one() {
               for j in range(i, n + 1) {
-                hdata[j * nn + (n - 1)] = hdata[j * nn + (n - 1)] / t;
-                hdata[j * nn + n] = hdata[j * nn + n] / t;
+                *hdata.get_mut((j * nn + (n - 1)) as uint) = *hdata.get((j * nn + (n - 1)) as uint) / t;
+                *hdata.get_mut((j * nn + n) as uint) = *hdata.get((j * nn + n) as uint) / t;
               }
             }
           }
@@ -729,27 +731,27 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     // Vectors of isolated roots
     for i in range(0, nn) {
-      if((i < low) || (i > high)) {
+      if (i < low) || (i > high) {
         for j in range(i, nn) {
-          vdata[i * nn + j] = hdata[i * nn + j].clone();
+          *vdata.get_mut((i * nn + j) as uint) = hdata.get((i * nn + j) as uint).clone();
         }
       }
     }
 
     // Back transformation to get eigenvectors of original matrix
-    for j in range(low, nn).invert() {
+    for j in range(low, nn).rev() {
       for i in range(low, high + 1) {
         z = num::zero();
-        for k in range(low, num::min(j, high) + 1) {
-          z = z + vdata[i * nn + k] * hdata[k * nn + j];
+        for k in range(low, cmp::min(j, high) + 1) {
+          z = z + *vdata.get((i * nn + k) as uint) * *hdata.get((k * nn + j) as uint);
         }
-        vdata[i * nn + j] = z;
+        *vdata.get_mut((i * nn + j) as uint) = z;
       }
     }
   }
 
   pub fn new(a : &Matrix<T>) -> EigenDecomposition<T> {
-    let n = a.noCols;
+    let n = a.cols();
 
     let mut vdata = alloc_dirty_vec(n * n);
     let mut ddata = alloc_dirty_vec(n);
@@ -757,10 +759,10 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
     let mut issymmetric = true;
     let mut j = 0;
-    while((j < n) && issymmetric) {
+    while (j < n) && issymmetric {
       let mut i = 0;
-      while((i < n) && issymmetric) {
-        issymmetric = (a.get(i, j) == a.get(j, i));
+      while (i < n) && issymmetric {
+        issymmetric = a.get(i, j) == a.get(j, i);
         i += 1;
       }
       j += 1;
@@ -769,21 +771,21 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     if issymmetric {
       for i in range(0, n) {
         for j in range(0, n) {
-          vdata[i * n + j] = a.get(i, j).clone();
+          *vdata.get_mut(i * n + j) = a.get(i as uint, j as uint).clone();
         }
       }
 
       // Tridiagonalize.
-      EigenDecomposition::tred2(n, ddata, vdata, edata);
+      EigenDecomposition::tred2(n, &mut ddata, &mut vdata, &mut edata);
 
       // Diagonalize.
-      EigenDecomposition::tql2(n, edata, ddata, vdata);
+      EigenDecomposition::tql2(n, &mut edata, &mut ddata, &mut vdata);
 
       EigenDecomposition {
         n : n,
         d : ddata,
         e : edata,
-        v : Matrix { noRows : n, noCols : n, data : vdata },
+        v : matrix(n, n, vdata),
         h : None
       }
     } else {
@@ -791,55 +793,55 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
       for j in range(0, n) {
         for i in range(0, n) {
-          hdata[i * n + j] = a.get(i, j);
+          *hdata.get_mut(i * n + j) = a.get(i as uint, j as uint);
         }
       }
 
       // Reduce to Hessenberg form.
-      EigenDecomposition::orthes(n, hdata, vdata);
+      EigenDecomposition::orthes(n, &mut hdata, &mut vdata);
    
       // Reduce Hessenberg to real Schur form.
-      EigenDecomposition::hqr2(n, ddata, edata, hdata, vdata);
+      EigenDecomposition::hqr2(n, &mut ddata, &mut edata, &mut hdata, &mut vdata);
 
       EigenDecomposition {
         n : n,
         d : ddata,
         e : edata,
-        v : Matrix { noRows : n, noCols : n, data : vdata },
-        h : Some(Matrix { noRows : n, noCols : n, data : hdata })
+        v : matrix(n, n, vdata),
+        h : Some(matrix(n, n, hdata))
       }
     }
   }
 
   pub fn get_v<'lt>(&'lt self) -> &'lt Matrix<T> { &self.v }
 
-  pub fn get_real_eigenvalues<'lt>(&'lt self) -> &'lt ~[T] { &self.d }
+  pub fn get_real_eigenvalues<'lt>(&'lt self) -> &'lt Vec<T> { &self.d }
 
-  pub fn get_imag_eigenvalues<'lt>(&'lt self) -> &'lt ~[T] { &self.e }
+  pub fn get_imag_eigenvalues<'lt>(&'lt self) -> &'lt Vec<T> { &self.e }
 
   pub fn get_d(&self) -> Matrix<T> {
     let mut ddata = alloc_dirty_vec(self.n * self.n);
 
     for i in range(0u, self.n) {
       for j in range(0u, self.n) {
-        ddata[i * self.n + j] = num::zero();
+        *ddata.get_mut((i * self.n + j) as uint) = num::zero();
       }
-      ddata[i * self.n + i] = self.d[i].clone();
-      if(self.e[i] > num::zero()) {
-        ddata[i * self.n + (i + 1)] = self.e[i].clone();
-      } else if(self.e[i] < num::zero()) {
-        ddata[i * self.n + (i - 1)] = self.e[i].clone();
+      *ddata.get_mut((i * self.n + i) as uint) = self.d.get(i as uint).clone();
+      if *self.e.get(i as uint) > num::zero() {
+        *ddata.get_mut((i * self.n + (i + 1)) as uint) = self.e.get(i as uint).clone();
+      } else if *self.e.get(i as uint) < num::zero() {
+        *ddata.get_mut((i * self.n + (i - 1)) as uint) = self.e.get(i as uint).clone();
       }
     }
 
-    Matrix { noRows: self.n, noCols: self.n, data: ddata }
+    matrix(self.n, self.n, ddata)
   }
 }
 
 #[test]
 fn eigen_test() {
-  let a = matrix(3, 3, ~[3.0, 1.0, 6.0, 2.0, 1.0, 0.0, -1.0, 0.0, -3.0]);
+  let a = matrix(3, 3, vec![3.0, 1.0, 6.0, 2.0, 1.0, 0.0, -1.0, 0.0, -3.0]);
   let _eig = EigenDecomposition::new(&a);
   let r = _eig.get_real_eigenvalues();
-  assert!(vector(r.clone()).approx_eq(&vector(~[3.0, -1.0, -1.0])));
+  assert!(vector(r.clone()).approx_eq(&vector(vec![3.0, -1.0, -1.0])));
 }

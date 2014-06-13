@@ -1,14 +1,16 @@
+use std::cmp;
 use std::num;
 use std::num::{One, Zero, NumCast};
 use std::vec;
 
+use approxeq::ApproxEq;
 use matrix::*;
 use util::{alloc_dirty_vec, hypot};
 
 pub struct SVD<T> {
   u : Matrix<T>,
   v : Matrix<T>,
-  s : ~[T],
+  s : Vec<T>,
   m : uint,
   n : uint
 }
@@ -25,20 +27,20 @@ pub struct SVD<T> {
 //
 // The singular value decompostion always exists. The matrix condition number
 // and the effective numerical rank can be computed from this decomposition.
-impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + Eq + Ord + ApproxEq<T> + One + Zero + Clone + Algebraic + Signed + Orderable> SVD<T> {
+impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float + FloatMath> SVD<T> {
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // Derived from LINPACK code.
     // Initialize.
     let mut adata = a.data.clone();
-    let m = a.noRows;
-    let n = a.noCols;
+    let m = a.rows();
+    let n = a.cols();
 
     assert!(m >= n);
 
-    let nu = num::min(m, n);
+    let nu = cmp::min(m, n);
 
-    let slen = num::min(m + 1, n);
-    let mut sdata : ~[T] = alloc_dirty_vec(slen);
+    let slen = cmp::min(m + 1, n);
+    let mut sdata : Vec<T> = alloc_dirty_vec(slen);
 
     let ulen = m * nu;
     let mut udata = alloc_dirty_vec(ulen);
@@ -47,174 +49,174 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     let mut vdata = alloc_dirty_vec(vlen);
 
     let mut edata = alloc_dirty_vec(n);
-    let mut workdata : ~[T] = alloc_dirty_vec(m);
+    let mut workdata : Vec<T> = alloc_dirty_vec(m);
 
     // Reduce A to bidiagonal form, storing the diagonal elements
     // in s and the super-diagonal elements in e.
-    let nct = num::min(m - 1, n);
-    let nrt = num::max(0 as int, num::min((n as int) - 2, m as int)) as uint;
-    for k in range(0u, num::max(nct, nrt)) {
-      if(k < nct) {
+    let nct = cmp::min(m - 1, n);
+    let nrt = cmp::max(0 as int, cmp::min((n as int) - 2, m as int)) as uint;
+    for k in range(0u, cmp::max(nct, nrt)) {
+      if k < nct {
         // Compute the transformation for the k-th column and
         // place the k-th diagonal in s[k].
         // Compute 2-norm of k-th column without under/overflow.
-        sdata[k] = num::zero();
+        *sdata.get_mut(k) = num::zero();
         for i in range(k, m) {
-          sdata[k] = hypot(sdata[k].clone(), adata[i * n + k].clone());
+          *sdata.get_mut(k) = hypot(sdata.get(k).clone(), adata.get(i * n + k).clone());
         }
-        if(sdata[k] != num::zero()) {
-          if(adata[k * n + k] < num::zero()) {
-            sdata[k] = - sdata[k];
+        if *sdata.get(k) != num::zero() {
+          if *adata.get(k * n + k) < num::zero() {
+            *sdata.get_mut(k) = - *sdata.get(k);
           }
           for i in range(k, m) {
-            adata[i * n + k] = adata[i * n + k] / sdata[k];
+            *adata.get_mut(i * n + k) = *adata.get(i * n + k) / *sdata.get(k);
           }
-          adata[k * n + k] = adata[k * n + k] + num::one();
+          *adata.get_mut(k * n + k) = *adata.get(k * n + k) + num::one();
         }
-        sdata[k] = - sdata[k];
+        *sdata.get_mut(k) = - *sdata.get(k);
       }
       for j in range(k + 1, n) {
-        if((k < nct) && (sdata[k] != num::zero()))  {
+        if (k < nct) && (*sdata.get(k) != num::zero()) {
           // Apply the transformation.
           let mut t : T = num::zero();
           for i in range(k, m) {
-            t = t + adata[i * n + k] * adata[i * n + j];
+            t = t + *adata.get(i * n + k) * *adata.get(i * n + j);
           }
-          t = - t / adata[k * n + k];
+          t = - t / *adata.get(k * n + k);
           for i in range(k, m) {
-            adata[i * n + j] = adata[i * n + j] + t * adata[i * n + k];
+            *adata.get_mut(i * n + j) = *adata.get(i * n + j) + t * *adata.get(i * n + k);
           }
         }
         // Place the k-th row of A into e for the
         // subsequent calculation of the row transformation.
-        edata[j] = adata[k * n + j].clone();
+        *edata.get_mut(j) = adata.get(k * n + j).clone();
       }
 
-      if(k < nct) {
+      if k < nct {
         // Place the transformation in U for subsequent back multiplication.
         for i in range(k, m) {
-          udata[i * nu + k] = adata[i * n + k].clone();
+          *udata.get_mut(i * nu + k) = adata.get(i * n + k).clone();
         }
       }
 
-      if(k < nrt) {
+      if k < nrt {
         // Compute the k-th row transformation and place the k-th super-diagonal in e[k].
         // Compute 2-norm without under/overflow.
-        edata[k] = num::zero();
+        *edata.get_mut(k) = num::zero();
         for i in range(k + 1, n) {
-          edata[k] = hypot(edata[k].clone(), edata[i].clone());
+          *edata.get_mut(k) = hypot(edata.get(k).clone(), edata.get(i).clone());
         }
-        if(edata[k] != num::zero()) {
-          if(edata[k + 1] < num::zero()) {
-            edata[k] = - edata[k];
+        if *edata.get(k) != num::zero() {
+          if *edata.get(k + 1) < num::zero() {
+            *edata.get_mut(k) = - *edata.get(k);
           }
           for i in range(k + 1, n) {
-            edata[i] = edata[i] / edata[k];
+            *edata.get_mut(i) = *edata.get(i) / *edata.get(k);
           }
-          edata[k + 1] = edata[k + 1] + num::one();
+          *edata.get_mut(k + 1) = *edata.get(k + 1) + num::one();
         }
-        edata[k] = - edata[k];
-        if((k + 1 < m) && (edata[k] != num::zero())) {
+        *edata.get_mut(k) = - *edata.get(k);
+        if (k + 1 < m) && (*edata.get(k) != num::zero()) {
           // Apply the transformation.
           for i in range(k + 1, m) {
-            workdata[i] = num::zero();
+            *workdata.get_mut(i) = num::zero();
           }
           for j in range(k + 1, n) {
             for i in range(k + 1, m) {
-              workdata[i] = workdata[i] + edata[j] * adata[i * n + j];
+              *workdata.get_mut(i) = *workdata.get(i) + *edata.get(j) * *adata.get(i * n + j);
             }
           }
           for j in range(k + 1, n) {
-            let t = - edata[j] / edata[k + 1];
+            let t = - *edata.get(j) / *edata.get(k + 1);
             for i in range(k + 1, m) {
-              adata[i * n + j] = adata[i * n + j] + t * workdata[i];
+              *adata.get_mut(i * n + j) = *adata.get(i * n + j) + t * *workdata.get(i);
             }
           }
         }
 
         // Place the transformation in V for subsequent back multiplication.
         for i in range(k + 1, n) {
-          vdata[i * n + k] = edata[i].clone();
+          *vdata.get_mut(i * n + k) = edata.get(i).clone();
         }
       }
     }
 
     // Set up the final bidiagonal matrix or order p.
-    let mut p = num::min(n, m + 1);
-    if(nct < n) {
-      sdata[nct] = adata[nct * n + nct].clone();
+    let mut p = cmp::min(n, m + 1);
+    if nct < n {
+      *sdata.get_mut(nct) = adata.get(nct * n + nct).clone();
     }
-    if(m < p) {
-      sdata[p - 1] = num::zero();
+    if m < p {
+      *sdata.get_mut(p - 1) = num::zero();
     }
-    if(nrt + 1 < p) {
-      edata[nrt] = adata[nrt * n + (p - 1)].clone();
+    if (nrt + 1) < p {
+      *edata.get_mut(nrt) = adata.get(nrt * n + (p - 1)).clone();
     }
-    edata[p - 1] = num::zero();
+    *edata.get_mut(p - 1) = num::zero();
 
     // Generate U.
     for j in range(nct, nu) {
       for i in range(0u, m) {
-        udata[i * nu + j] = num::zero();
+        *udata.get_mut(i * nu + j) = num::zero();
       }
-      udata[j * nu + j] = num::one();
+      *udata.get_mut(j * nu + j) = num::one();
     }
-    for k in range(0u, nct).invert() {
-      if(sdata[k] != num::zero()) {
+    for k in range(0u, nct).rev() {
+      if *sdata.get(k) != num::zero() {
         for j in range(k + 1, nu) {
           let mut t : T = num::zero();
           for i in range(k, m) {
-            t = t + udata[i * nu + k] * udata[i * nu + j];
+            t = t + *udata.get(i * nu + k) * *udata.get(i * nu + j);
           }
-          t = - t / udata[k * nu + k];
+          t = - t / *udata.get(k * nu + k);
           for i in range(k, m) {
-            udata[i * nu + j] = udata[i * nu + j] + t * udata[i * nu + k];
+            *udata.get_mut(i * nu + j) = *udata.get(i * nu + j) + t * *udata.get(i * nu + k);
           }
         }
         for i in range(k, m) {
-          udata[i * nu + k] = - udata[i * nu + k];
+          *udata.get_mut(i * nu + k) = - *udata.get(i * nu + k);
         }
-        udata[k * nu + k] = num::one::<T>() + udata[k * nu + k];
+        *udata.get_mut(k * nu + k) = num::one::<T>() + *udata.get(k * nu + k);
         for i in range(0, k) {
-          udata[(i as uint) * nu + k] = num::zero();
+          *udata.get_mut((i as uint) * nu + k) = num::zero();
         }
         //let mut i = 0;
-        //while(i < ((k as int) - 1)) {
+        //while i < ((k as int) - 1) {
         //  i -= 1;
         //}
       } else {
         for i in range(0u, m) {
-          udata[i * nu + k] = num::zero();
+          *udata.get_mut(i * nu + k) = num::zero();
         }
-        udata[k * nu + k] = num::one();
+        *udata.get_mut(k * nu + k) = num::one();
       }
     }
 
     // Generate V.
-    for k in range(0u, n).invert() {
-      if((k < nrt) && (edata[k] != num::zero())) {
+    for k in range(0u, n).rev() {
+      if (k < nrt) && (*edata.get(k) != num::zero()) {
         for j in range(k + 1, nu) {
           let mut t : T = num::zero();
           for i in range(k + 1, n) {
-            t = t + vdata[i * n + k] * vdata[i * n + j];
+            t = t + *vdata.get(i * n + k) * *vdata.get(i * n + j);
           }
-          t = - t / vdata[(k + 1) * n + k];
+          t = - t / *vdata.get((k + 1) * n + k);
           for i in range(k + 1, n) {
-            vdata[i * n + j] = vdata[i * n + j] + t * vdata[i * n + k];
+            *vdata.get_mut(i * n + j) = *vdata.get(i * n + j) + t * *vdata.get(i * n + k);
           }
         }
       }
       for i in range(0u, n) {
-        vdata[i * n + k] = num::zero();
+        *vdata.get_mut(i * n + k) = num::zero();
       }
-      vdata[k * n + k] = num::one();
+      *vdata.get_mut(k * n + k) = num::one();
     }
 
     // Main iteration loop for the singular values.
     let pp = p - 1;
-    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
-    let tiny : T = num::cast(num::pow(2.0, -966.0)).unwrap();
-    while(p > 0) {
+    let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
+    let tiny : T = num::cast(2.0f64.powf(-966.0)).unwrap();
+    while p > 0 {
       // Here is where a test for too many iterations would go.
 
       // This section of the program inspects for
@@ -228,30 +230,30 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       // kase = 4     if e(p-1) is negligible (convergence).
       let mut kase;
       let mut k = (p as int) - 2;
-      while(k >= 0) {
-        if(num::abs(edata[k].clone()) <= (tiny + eps * (num::abs(sdata[k].clone()) + num::abs(sdata[k + 1].clone())))) {
-          edata[k] = num::zero();
+      while k >= 0 {
+        if num::abs(edata.get(k as uint).clone()) <= (tiny + eps * (num::abs(sdata.get(k as uint).clone()) + num::abs(sdata.get((k + 1) as uint).clone()))) {
+          *edata.get_mut(k as uint) = num::zero();
           break;
         }
         k -= 1;
       }
 
-      if(k == ((p as int) - 2)) {
+      if k == ((p as int) - 2) {
         kase = 4;
       } else {
         let mut ks = (p as int) - 1;
-        while(ks > k) {
-          let t = (if ks != (p as int) { num::abs(edata[ks].clone()) } else { num::zero() })
-                  + (if ks != (k + 1) { num::abs(edata[ks - 1].clone()) } else { num::zero() });
-          if(num::abs(sdata[ks].clone()) <= (tiny + eps * t)) {
-            sdata[ks] = num::zero();
+        while ks > k {
+          let t = (if ks != (p as int) { num::abs(edata.get(ks as uint).clone()) } else { num::zero() })
+                  + (if ks != (k + 1) { num::abs(edata.get((ks - 1) as uint).clone()) } else { num::zero() });
+          if num::abs(sdata.get(ks as uint).clone()) <= (tiny + eps * t) {
+            *sdata.get_mut(ks as uint) = num::zero();
             break;
           }
           ks -= 1;
         }
-        if(ks == k) {
+        if ks == k {
           kase = 3;
-        } else if(ks == ((p as int) - 1)) {
+        } else if ks == ((p as int) - 1) {
           kase = 1;
         } else {
           kase = 2;
@@ -261,68 +263,66 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       k += 1;
 
       // Perform the task indicated by kase.
-      if(kase == 1) {
+      if kase == 1 {
         // Deflate negligible s(p).
-        let mut f = edata[p - 2].clone();
-        edata[p - 2] = num::zero();
+        let mut f = edata.get(p - 2).clone();
+        *edata.get_mut(p - 2) = num::zero();
         let mut j = (p as int) - 2;
-        while(j >= k) {
-          let mut t = hypot(sdata[j].clone(), f.clone());
-          let cs = sdata[j] / t;
+        while j >= k {
+          let mut t = hypot(sdata.get(j as uint).clone(), f.clone());
+          let cs = *sdata.get(j as uint) / t;
           let sn = f / t;
-          sdata[j] = t;
-          if(j != k) {
-            f = - sn * edata[j - 1];
-            edata[j - 1] = cs * edata[j - 1];
+          *sdata.get_mut(j as uint) = t;
+          if j != k {
+            f = - sn * *edata.get((j - 1) as uint);
+            *edata.get_mut((j - 1) as uint) = cs * *edata.get((j - 1) as uint);
           }
 
           for i in range(0u, n) {
-            t = cs * vdata[i * n + (j as uint)] + sn * vdata[i * n + (p - 1)];
-            vdata[i * n + (p - 1)] = - sn * vdata[i * n + (j as uint)] + cs * vdata[i * n + (p - 1)];
-            vdata[i * n + (j as uint)] = t;
+            t = cs * *vdata.get(i * n + (j as uint)) + sn * *vdata.get(i * n + (p - 1));
+            *vdata.get_mut(i * n + (p - 1)) = - sn * *vdata.get(i * n + (j as uint)) + cs * *vdata.get(i * n + (p - 1));
+            *vdata.get_mut(i * n + (j as uint)) = t;
           }
           j -= 1;
         }
-      } else if(kase == 2) {
+      } else if kase == 2 {
         // Split at negligible s(k).
-        let mut f = edata[k - 1].clone();
-        edata[k - 1] = num::zero();
+        let mut f = edata.get((k - 1) as uint).clone();
+        *edata.get_mut((k - 1) as uint) = num::zero();
         for j in range(k, p as int) {
-          let mut t = hypot(sdata[j].clone(), f.clone());
-          let cs = sdata[j] / t;
+          let mut t = hypot(sdata.get(j as uint).clone(), f.clone());
+          let cs = *sdata.get(j as uint) / t;
           let sn = f / t;
-          sdata[j] = t;
-          f = - sn * edata[j];
-          edata[j] = cs * edata[j];
+          *sdata.get_mut(j as uint) = t;
+          f = - sn * *edata.get(j as uint);
+          *edata.get_mut(j as uint) = cs * *edata.get(j as uint);
 
           for i in range(0u, m) {
-            t = cs * udata[i * nu + (j as uint)] + sn * udata[i * nu + ((k as uint) - 1)];
-            udata[i * nu + ((k as uint) - 1)] = - sn * udata[i * nu + (j as uint)] + cs * udata[i * nu + ((k as uint) - 1)];
-            udata[i * nu + (j as uint)] = t;
+            t = cs * *udata.get(i * nu + (j as uint)) + sn * *udata.get(i * nu + ((k as uint) - 1));
+            *udata.get_mut(i * nu + ((k as uint) - 1)) = - sn * *udata.get(i * nu + (j as uint)) + cs * *udata.get(i * nu + ((k as uint) - 1));
+            *udata.get_mut(i * nu + (j as uint)) = t;
           }
         }
-      } else if(kase == 3) {
+      } else if kase == 3 {
         // Perform one qr step.
 
         // Calculate the shift.
-        let scale = num::max(
-                      num::max(
-                        num::max(
-                          num::max(num::abs(sdata[p - 1].clone()), num::abs(sdata[p - 2].clone())),
-                          num::abs(edata[p - 2].clone())),
-                        num::abs(sdata[k].clone())),
-                      num::abs(edata[k].clone()));
-        let sp = sdata[p - 1] / scale;
-        let spm1 = sdata[p - 2] / scale;
-        let epm1 = edata[p - 2] / scale;
-        let sk = sdata[k] / scale;
-        let ek = edata[k] / scale;
+        let scale = num::abs(sdata.get(p - 1).clone())
+                      .max(num::abs(sdata.get(p - 2).clone()))
+                      .max(num::abs(edata.get(p - 2).clone()))
+                      .max(num::abs(sdata.get(k as uint).clone()))
+                      .max(num::abs(edata.get(k as uint).clone()));
+        let sp = *sdata.get(p - 1) / scale;
+        let spm1 = *sdata.get(p - 2) / scale;
+        let epm1 = *edata.get(p - 2) / scale;
+        let sk = *sdata.get(k as uint) / scale;
+        let ek = *edata.get(k as uint) / scale;
         let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / num::cast(2.0).unwrap();
         let c = (sp * epm1) * (sp * epm1);
         let mut shift = num::zero();
-        if((b != num::zero()) || (c != num::zero())) {
-          shift = num::sqrt(b * b + c);
-          if(b < num::zero()) {
+        if (b != num::zero()) || (c != num::zero()) {
+          shift = (b * b + c).sqrt();
+          if b < num::zero() {
             shift = - shift;
           }
           shift = c / (b + shift);
@@ -336,69 +336,69 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
           let mut t = hypot(f.clone(), g.clone());
           let mut cs = f / t;
           let mut sn = g / t;
-          if(j != k) {
-            edata[j - 1] = t;
+          if j != k {
+            *edata.get_mut((j - 1) as uint) = t;
           }
-          f = cs * sdata[j] + sn * edata[j];
-          edata[j] = cs * edata[j] - sn * sdata[j];
-          g = sn * sdata[j + 1];
-          sdata[j + 1] = cs * sdata[j + 1];
+          f = cs * *sdata.get(j as uint) + sn * *edata.get(j as uint);
+          *edata.get_mut(j as uint) = cs * *edata.get(j as uint) - sn * *sdata.get(j as uint);
+          g = sn * *sdata.get((j + 1) as uint);
+          *sdata.get_mut((j + 1) as uint) = cs * *sdata.get((j + 1) as uint);
 
           for i in range(0u, n) {
-            t = cs * vdata[i * n + (j as uint)] + sn * vdata[i * n + ((j as uint) + 1)];
-            vdata[i * n + ((j as uint) + 1)] = - sn * vdata[i * n + (j as uint)] + cs * vdata[i * n + ((j as uint) + 1)];
-            vdata[i * n + (j as uint)] = t;
+            t = cs * *vdata.get(i * n + (j as uint)) + sn * *vdata.get(i * n + ((j as uint) + 1));
+            *vdata.get_mut(i * n + ((j as uint) + 1)) = - sn * *vdata.get(i * n + (j as uint)) + cs * *vdata.get(i * n + ((j as uint) + 1));
+            *vdata.get_mut(i * n + (j as uint)) = t;
           }
 
           t = hypot(f.clone(), g.clone());
           cs = f / t;
           sn = g / t;
-          sdata[j] = t;
-          f = cs * edata[j] + sn * sdata[j + 1];
-          sdata[j + 1] = - sn * edata[j] + cs * sdata[j + 1];
-          g = sn * edata[j + 1];
-          edata[j + 1] = cs * edata[j + 1];
-          if(j < ((m as int) - 1)) {
+          *sdata.get_mut(j as uint) = t;
+          f = cs * *edata.get(j as uint) + sn * *sdata.get((j + 1) as uint);
+          *sdata.get_mut((j + 1) as uint) = - sn * *edata.get(j as uint) + cs * *sdata.get((j + 1) as uint);
+          g = sn * *edata.get((j + 1) as uint);
+          *edata.get_mut((j + 1) as uint) = cs * *edata.get((j + 1) as uint);
+          if j < ((m as int) - 1) {
             for i in range(0u, m) {
-              t = cs * udata[i * nu + (j as uint)] + sn * udata[i * nu + ((j as uint) + 1)];
-              udata[i * nu + ((j as uint) + 1)] = - sn * udata[i * nu + (j as uint)] + cs * udata[i * nu + ((j as uint) + 1)];
-              udata[i * nu + (j as uint)] = t;
+              t = cs * *udata.get(i * nu + (j as uint)) + sn * *udata.get(i * nu + ((j as uint) + 1));
+              *udata.get_mut(i * nu + ((j as uint) + 1)) = - sn * *udata.get(i * nu + (j as uint)) + cs * *udata.get(i * nu + ((j as uint) + 1));
+              *udata.get_mut(i * nu + (j as uint)) = t;
             }
           }
         }
 
-        edata[p - 2] = f;
-      } else if(kase == 4) {
+        *edata.get_mut(p - 2) = f;
+      } else if kase == 4 {
         // Convergence.
 
         // Make the singular values positive.
-        if(sdata[k] <= num::zero()) {
-          sdata[k] = if(sdata[k] < num::zero()) { - sdata[k] } else { num::zero() };
+        if *sdata.get(k as uint) <= num::zero() {
+          *sdata.get_mut(k as uint) = if *sdata.get(k as uint) < num::zero() { - *sdata.get(k as uint) } else { num::zero() };
           for i in range(0u, pp + 1) {
-            vdata[i * n + (k as uint)] = - vdata[i * n + (k as uint)];
+            *vdata.get_mut(i * n + (k as uint)) = - *vdata.get(i * n + (k as uint));
           }
         }
 
         // Order the singular values.
-        while(k < (pp as int)) {
-          if(sdata[k] >= sdata[k + 1]) {
+        while k < (pp as int) {
+          if *sdata.get(k as uint) >= *sdata.get((k + 1) as uint) {
             break;
           }
-          let mut t = sdata[k].clone();
-          sdata[k] = sdata[k + 1].clone();
-          sdata[k + 1] = t;
-          if(k < ((n as int) - 1)) {
+          let mut t = sdata.get(k as uint).clone();
+          *sdata.get_mut(k as uint) = sdata.get((k + 1) as uint).clone();
+          *sdata.get_mut((k + 1) as uint) = t;
+          if k < ((n as int) - 1) {
             for i in range(0u, n) {
-              t = vdata[i * n + ((k as uint) + 1)].clone();
-              vdata[i * n + ((k as uint) + 1)] = vdata[i * n + (k as uint)].clone();
-              vdata[i * n + (k as uint)] = t;
+              t = vdata.get(i * n + ((k as uint) + 1)).clone();
+              *vdata.get_mut(i * n + ((k as uint) + 1)) = vdata.get(i * n + (k as uint)).clone();
+              *vdata.get_mut(i * n + (k as uint)) = t;
             }
           }
-          if(k < ((m as int) - 1)) {
+          if k < ((m as int) - 1) {
             for i in range(0u, m) {
-              t = udata[i * nu + ((k as uint) + 1)].clone();
-              udata[i * nu + ((k as uint) + 1)] = udata[i * nu + (k as uint)].clone();
-              udata[i * nu + (k as uint)] = t;
+              t = udata.get(i * nu + ((k as uint) + 1)).clone();
+              *udata.get_mut(i * nu + ((k as uint) + 1)) = udata.get(i * nu + (k as uint)).clone();
+              *udata.get_mut(i * nu + (k as uint)) = t;
             }
           }
           k += 1;
@@ -426,20 +426,20 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   pub fn get_s(&self) -> Matrix<T> {
-    let mut d = vec::from_elem(self.n * self.n, num::zero());
+    let mut d = vec::Vec::from_elem(self.n * self.n, num::zero());
     for i in range(0u, self.n) {
-      d[i * self.n + i] = self.s[i].clone();
+      *d.get_mut(i * self.n + i) = self.s.get(i).clone();
     }
-    Matrix { noRows : self.n, noCols: self.n, data : d }
+    matrix(self.n, self.n, d)
   }
 
   pub fn rank(&self) -> uint {
-    let eps : T = num::cast(num::pow(2.0, -52.0)).unwrap();
-    let maxDim : T = num::cast(num::max(self.m, self.n)).unwrap();
-    let tol = maxDim * self.s[0] * eps;
+    let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
+    let maxDim : T = num::cast(cmp::max(self.m, self.n)).unwrap();
+    let tol = maxDim * *self.s.get(0) * eps;
     let mut r = 0;
     for i in range(0u, self.s.len()) {
-      if(self.s[i] > tol) {
+      if *self.s.get(i) > tol {
         r += 1;
       }
     }
@@ -449,7 +449,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
 #[test]
 fn svd_test() {
-  let a = matrix(3, 3, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+  let a = matrix(3, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
   let svd = SVD::new(&a);
   let u = svd.get_u();
   let s = svd.get_s();
@@ -458,8 +458,8 @@ fn svd_test() {
 }
 
 #[test]
-fn svd_test__m_over_n() {
-  let a = matrix(3, 2, ~[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+fn svd_test_m_over_n() {
+  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
   let svd = SVD::new(&a);
   let u = svd.get_u();
   let s = svd.get_s();
