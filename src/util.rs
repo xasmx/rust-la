@@ -37,7 +37,7 @@ pub fn read_csv<T>(file_name : &str, parser : |&str| -> T) -> super::matrix::Mat
   for line in file.lines() {
     let element_count = data.len();
     for item in line.unwrap().as_slice().split_str(",") {
-      data.push(parser(item))
+      data.push(parser(item.trim()))
     }
     let line_col_count = data.len() - element_count;
 
