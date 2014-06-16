@@ -1,18 +1,17 @@
 #![crate_type = "lib"]
 #![crate_id = "la#0.1"]
 
-#![feature(globs)]
-#![feature(macro_rules)]
+#![feature(globs, macro_rules)]
 
 pub use approxeq::ApproxEq;
-pub use matrix::Matrix;
 pub use decomp::cholesky::CholeskyDecomposition;
 pub use decomp::eigen::EigenDecomposition;
 pub use decomp::lu::LUDecomposition;
 pub use decomp::qr::QRDecomposition;
 pub use decomp::svd::SVD;
+pub use matrix::Matrix;
 
-mod macros;
+pub mod macros;
 mod approxeq;
 mod matrix;
 mod internalutil;
