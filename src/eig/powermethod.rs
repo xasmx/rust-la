@@ -85,9 +85,9 @@ pub fn power_method
   assert!(q.cols() == 1);
 
   fn max_elem<T : Ord + Signed + Clone>(v : &Matrix<T>) -> T {
-    let mut current_max = num::abs(v.data.get(0).clone());
+    let mut current_max = num::abs(v.get_data().get(0).clone());
     for _ in range(1, v.rows()) {
-      let v = num::abs(v.data.get(1).clone());
+      let v = num::abs(v.get_data().get(1).clone());
       if v > current_max {
         current_max = v.clone();
       }

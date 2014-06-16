@@ -31,7 +31,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // Derived from LINPACK code.
     // Initialize.
-    let mut adata = a.data.clone();
+    let mut adata = a.get_data().clone();
     let m = a.rows();
     let n = a.cols();
 

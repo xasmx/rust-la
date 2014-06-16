@@ -101,7 +101,7 @@ pub struct LUDecomposition<T> {
 
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
-    let mut ludata = a.data.clone();
+    let mut ludata = a.get_data().clone();
     let m = a.rows() as int;
     let n = a.cols() as int;
     let mut pivdata = alloc_dirty_vec(m as uint);
@@ -173,7 +173,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
   pub fn is_non_singular(&self) -> bool {
     let n = self.lu.cols();
     for j in range(0, n) {
-      if *self.lu.data.get((j * n + j) as uint) == num::zero() {
+      if *self.lu.get_data().get((j * n + j) as uint) == num::zero() {
         return false;
       }
     }
@@ -189,7 +189,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       for j in range(0, n) {
         *ldata.get_mut((i * n + j) as uint) =
             if i > j {
-              self.lu.data.get((i * self.lu.cols() + j) as uint).clone()
+              self.lu.get_data().get((i * self.lu.cols() + j) as uint).clone()
             } else if i == j {
               num::one()
             } else {
@@ -207,7 +207,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     let mut udata = alloc_dirty_vec((m * n) as uint);
     for i in range(0, m) {
       for j in range(0, n) {
-        *udata.get_mut((i * n + j) as uint) = if i <= j { self.lu.data.get((i * n + j) as uint).clone() } else { num::zero() };
+        *udata.get_mut((i * n + j) as uint) = if i <= j { self.lu.get_data().get((i * n + j) as uint).clone() } else { num::zero() };
       }
     }
     Matrix::new(m as uint, n as uint, udata)
@@ -225,7 +225,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     let n = self.lu.cols() as int;
     let mut d = if self.pospivsign { num::one::<T>() } else { - num::one::<T>() };
     for j in range(0, n) {
-      d = d * *self.lu.data.get((j * n + j) as uint);
+      d = d * *self.lu.get_data().get((j * n + j) as uint);
     }
     d
   }
@@ -247,7 +247,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     let mut destIdx = 0;
     for i in range(0, self.piv.len()) {
       for j in range(0, nx) {
-        *xdata.get_mut(destIdx) = b.data.get(((*self.piv.get(i) as int) * (b.cols() as int) + j) as uint).clone();
+        *xdata.get_mut(destIdx) = b.get_data().get(((*self.piv.get(i) as int) * (b.cols() as int) + j) as uint).clone();
         destIdx += 1;
       }
     }
@@ -256,7 +256,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     for k in range(0, n) {
       for i in range(k + 1, n) {
         for j in range(0, nx) {
-          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.data.get((i * (self.lu.cols() as int) + k) as uint);
+          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.get_data().get((i * (self.lu.cols() as int) + k) as uint);
         }
       }
     }
@@ -264,11 +264,11 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     // Solve U*X = Y;
     for k in range(0, n).rev() {
       for j in range(0, nx) {
-        *xdata.get_mut((k * nx + j) as uint) = *xdata.get((k * nx + j) as uint) / *self.lu.data.get((k * (self.lu.cols() as int) + k) as uint);
+        *xdata.get_mut((k * nx + j) as uint) = *xdata.get((k * nx + j) as uint) / *self.lu.get_data().get((k * (self.lu.cols() as int) + k) as uint);
       }
       for i in range(0, k) {
         for j in range(0, nx) {
-          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.data.get((i * (self.lu.cols() as int) + k) as uint);
+          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.get_data().get((i * (self.lu.cols() as int) + k) as uint);
         }
       }
     }

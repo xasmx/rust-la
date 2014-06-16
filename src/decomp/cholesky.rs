@@ -117,16 +117,16 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     let l = &self.l;
     assert!(l.rows() == b.rows());
     let n = l.rows();
-    let mut xdata = b.data.clone();
+    let mut xdata = b.get_data().clone();
     let nx = b.cols();
 
     // Solve L*Y = B
     for k in range(0u, n) {
       for j in range(0u, nx) {
         for i in range(0u, k) {
-          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.data.get(k * n + i);
+          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.get_data().get(k * n + i);
         }
-        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.data.get(k * n + k);
+        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.get_data().get(k * n + k);
       }
     }
 
@@ -134,9 +134,9 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     for k in range(0u, n).rev() {
       for j in range(0u, nx) {
         for i in range(k + 1, n) {
-          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.data.get(i * n + k);
+          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.get_data().get(i * n + k);
         }
-        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.data.get(k * n + k);
+        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.get_data().get(k * n + k);
       }
     }
 
@@ -149,7 +149,7 @@ fn cholesky_square_pos_def_test() {
   let a = m!(4.0, 12.0, -16.0; 12.0, 37.0, -43.0; -16.0, -43.0, 98.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
   assert!(c.get_l() * c.get_l().t() == a);
-  assert!(c.get_l().data == vec![2.0, 0.0, 0.0, 6.0, 1.0, 0.0, -8.0, 5.0, 3.0]);
+  assert!(c.get_l().get_data() == vec![2.0, 0.0, 0.0, 6.0, 1.0, 0.0, -8.0, 5.0, 3.0]);
 }
 
 #[test]

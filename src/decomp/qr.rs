@@ -26,7 +26,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
     // qr: The area above the diagonals stores the corresponding parts of the R matrix.
     //     Each column from diagonal down will store the k:th householder vector in the end. (The elements above are zero for the householder vectors).
-    let mut qrdata = m.data.clone();
+    let mut qrdata = m.get_data().clone();
     let n = m.cols();
     let m = m.rows();
     let diag_count = cmp::min(m, n);
@@ -124,7 +124,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
 
     for i in range(0u, m) {
       for j in range(0u, n) {
-        *hdata.get_mut(i * self.qr.cols() + j) = if i >= j { self.qr.data.get(i * self.qr.cols() + j).clone() } else { num::zero() }
+        *hdata.get_mut(i * self.qr.cols() + j) = if i >= j { self.qr.get_data().get(i * self.qr.cols() + j).clone() } else { num::zero() }
       }
     }
 
@@ -139,7 +139,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
 
     for i in range(0u, m) {
       for j in range(0u, n) {
-        *rdata.get_mut(i * n + j) = if i < j { self.qr.data.get(i * n + j).clone() }
+        *rdata.get_mut(i * n + j) = if i < j { self.qr.get_data().get(i * n + j).clone() }
                            else if i == j { self.rdiag.get(i).clone() }
                            else { num::zero() };
       }
@@ -163,7 +163,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     // the identity matrix to Q: (Note that a reflection matrix is it's own inverse).
     //   Q = Q_1_inv(Q_2_inv(...(Q_m_inv I))) = Q_1(Q_2(...(Q_m I)))
     for minor in range(0u, cmp::min(m, n)).rev() {
-      if *self.qr.data.get(minor * n + minor) != num::zero() {
+      if *self.qr.get_data().get(minor * n + minor) != num::zero() {
         // |u|^2 = -2a*qrdata[minor * n + minor]
         //       = -2 * rdiag[minor] * qrdata[minor * n + minor]
         //
@@ -179,12 +179,12 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
         for column in range(minor, m) {
           let mut x_dot_u : T = num::zero();
           for row in range(minor, m) {
-            x_dot_u = x_dot_u + *self.qr.data.get(row * n + minor) * *qdata.get(row * m + column);
+            x_dot_u = x_dot_u + *self.qr.get_data().get(row * n + minor) * *qdata.get(row * m + column);
           }
-          let factor = x_dot_u / (*self.rdiag.get(minor) * *self.qr.data.get(minor * n + minor));
+          let factor = x_dot_u / (*self.rdiag.get(minor) * *self.qr.get_data().get(minor * n + minor));
 
           for row in range(minor, m) {
-            *qdata.get_mut(row * m + column) = *qdata.get(row * m + column) + factor * *self.qr.data.get(row * n + minor);
+            *qdata.get_mut(row * m + column) = *qdata.get(row * m + column) + factor * *self.qr.get_data().get(row * n + minor);
           }
         }
       }
@@ -203,7 +203,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     }
 
     let nx = b.cols();
-    let mut xdata = b.data.clone();
+    let mut xdata = b.get_data().clone();
 
     let n = self.qr.cols();
     let m = self.qr.rows();
@@ -213,11 +213,11 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       for j in range(0u, nx) {
         let mut s : T = num::zero();
         for i in range(k, m) {
-          s = s + *self.qr.data.get(i * self.qr.cols() + k) * *xdata.get(i * nx + j);
+          s = s + *self.qr.get_data().get(i * self.qr.cols() + k) * *xdata.get(i * nx + j);
         }
-        s = - s / *self.qr.data.get(k * self.qr.cols() + k);
+        s = - s / *self.qr.get_data().get(k * self.qr.cols() + k);
         for i in range(k, m) {
-          *xdata.get_mut(i * nx + j) = *xdata.get(i * nx + j) + s * *self.qr.data.get(i * self.qr.cols() + k);
+          *xdata.get_mut(i * nx + j) = *xdata.get(i * nx + j) + s * *self.qr.get_data().get(i * self.qr.cols() + k);
         }
       }
     }
@@ -229,7 +229,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
       for i in range(0u, k) {
         for j in range(0u, nx) {
-          *xdata.get_mut(i * nx + j) = *xdata.get(i * nx + j) - *xdata.get(k * nx + j) * *self.qr.data.get(i * self.qr.cols() + k);
+          *xdata.get_mut(i * nx + j) = *xdata.get(i * nx + j) - *xdata.get(k * nx + j) * *self.qr.get_data().get(i * self.qr.cols() + k);
         }
       }
     }

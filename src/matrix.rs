@@ -15,7 +15,7 @@ use internalutil::{alloc_dirty_vec};
 #[deriving(PartialEq, Clone)]
 pub struct Matrix<T> {
   no_rows : uint,
-  pub data : Vec<T>
+  data : Vec<T>
 }
 
 impl<T : ApproxEq<T>>  Matrix<T> {
@@ -44,6 +44,9 @@ impl<T> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : 1, data : data }
   }
+
+  #[inline]
+  pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
   #[inline]
   pub fn rows(&self) -> uint { self.no_rows }
