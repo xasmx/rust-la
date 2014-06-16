@@ -3,7 +3,7 @@
 Linear algebra library for the Rust programming language.
 
 Features:
-* basic linear algebra operations
+* BLAS
 * immutable and mutable implementations
 * inverse, solve
 * decompositions, including
@@ -12,6 +12,8 @@ Features:
   * QR
   * Eigen
   * SVD.
+
+Currently only dense matrixes.
 
 To build rust-la:
 

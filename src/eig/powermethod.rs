@@ -1,7 +1,7 @@
 use std::num;
 use std::num::{Zero, One};
 
-use matrix;
+use Matrix;
 
 // NOTE: This module contains untested alpha code
 
@@ -77,32 +77,32 @@ use matrix;
 // Using normal equations we get:
 //   r = q'Aq / (q'q).			// Note that if we normalized q, then we'll just have:  r = q'Aq.
 //
-impl<T : Mul<T, T> + Div<T, T> + Add<T, T> + Sub<T, T> + Zero + One + Ord + Signed + Clone + Float> matrix::Matrix<T> {
-  pub fn power_method(m : &matrix::Matrix<T>, q : &matrix::Matrix<T>, eps : T) -> matrix::Matrix<T> {
-    assert!(m.cols() == m.rows());
-    assert!(m.cols() == q.rows());
-    assert!(q.cols() == 1);
+pub fn power_method
+    <T : Mul<T, T> + Div<T, T> + Add<T, T> + Sub<T, T> + Zero + One + Ord + Signed + Clone + Float>
+    (m : &Matrix<T>, q : &Matrix<T>, eps : T) -> Matrix<T> {
+  assert!(m.cols() == m.rows());
+  assert!(m.cols() == q.rows());
+  assert!(q.cols() == 1);
 
-    fn max_elem<T : Ord + Signed + Clone>(v : &matrix::Matrix<T>) -> T {
-      let mut current_max = num::abs(v.data.get(0).clone());
-      for _ in range(1, v.rows()) {
-        let v = num::abs(v.data.get(1).clone());
-        if v > current_max {
-          current_max = v.clone();
-        }
+  fn max_elem<T : Ord + Signed + Clone>(v : &Matrix<T>) -> T {
+    let mut current_max = num::abs(v.data.get(0).clone());
+    for _ in range(1, v.rows()) {
+      let v = num::abs(v.data.get(1).clone());
+      if v > current_max {
+        current_max = v.clone();
       }
-      current_max
     }
+    current_max
+  }
 
-    let mut v = q.scale(num::one::<T>() / max_elem(q));
-    loop {
-      let mut nv = m * v;
-      let factor = num::one::<T>() / max_elem(&nv);
-      nv.mscale(factor);
-      if (nv - v).length() <= eps {
-        return nv;
-      }
-      v = nv;
+  let mut v = q.scale(num::one::<T>() / max_elem(q));
+  loop {
+    let mut nv = m * v;
+    let factor = num::one::<T>() / max_elem(&nv);
+    nv.mscale(factor);
+    if (nv - v).length() <= eps {
+      return nv;
     }
+    v = nv;
   }
 }

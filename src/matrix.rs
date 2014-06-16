@@ -7,10 +7,10 @@ use std::rand;
 use std::rand::{Rand};
 use std::vec;
 
-use approxeq::ApproxEq;
+use ApproxEq;
 use decomp::lu;
 use decomp::qr;
-use util::{alloc_dirty_vec};
+use internalutil::{alloc_dirty_vec};
 
 #[deriving(PartialEq, Clone)]
 pub struct Matrix<T> {

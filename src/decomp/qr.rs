@@ -3,9 +3,9 @@ use std::num;
 use std::num::{One, Zero};
 use std::vec;
 
-use approxeq::ApproxEq;
-use matrix::*;
-use util::{alloc_dirty_vec};
+use ApproxEq;
+use Matrix;
+use internalutil::{alloc_dirty_vec};
 
 pub struct QRDecomposition<T> {
   qr : Matrix<T>,

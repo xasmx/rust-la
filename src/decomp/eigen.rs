@@ -2,9 +2,9 @@ use std::cmp;
 use std::num;
 use std::num::{One, Zero, NumCast, FloatMath};
 
-use approxeq::ApproxEq;
-use matrix::*;
-use util::{alloc_dirty_vec, hypot};
+use ApproxEq;
+use Matrix;
+use internalutil::{alloc_dirty_vec, hypot};
 
 pub struct EigenDecomposition<T> {
   n : uint,

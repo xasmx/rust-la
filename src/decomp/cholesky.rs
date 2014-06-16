@@ -1,9 +1,9 @@
 use std::num;
 use std::num::{One, Zero};
 
-use approxeq::ApproxEq;
-use matrix::*;
-use util::{alloc_dirty_vec};
+use ApproxEq;
+use Matrix;
+use internalutil::{alloc_dirty_vec};
 
 pub struct CholeskyDecomposition<T> {
   l : Matrix<T>
