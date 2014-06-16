@@ -149,7 +149,7 @@ fn cholesky_square_pos_def_test() {
   let a = m!(4.0, 12.0, -16.0; 12.0, 37.0, -43.0; -16.0, -43.0, 98.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
   assert!(c.get_l() * c.get_l().t() == a);
-  assert!(c.get_l().get_data() == vec![2.0, 0.0, 0.0, 6.0, 1.0, 0.0, -8.0, 5.0, 3.0]);
+  assert!(*c.get_l().get_data() == vec![2.0, 0.0, 0.0, 6.0, 1.0, 0.0, -8.0, 5.0, 3.0]);
 }
 
 #[test]

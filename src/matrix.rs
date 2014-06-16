@@ -49,6 +49,9 @@ impl<T> Matrix<T> {
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
   #[inline]
+  pub fn get_mut_data<'a>(&'a mut self) -> &'a mut Vec<T> { &mut self.data }
+
+  #[inline]
   pub fn rows(&self) -> uint { self.no_rows }
 
   #[inline]
