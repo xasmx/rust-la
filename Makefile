@@ -1,11 +1,12 @@
 RUSTC?=rustc
 RUSTFLAGS=
 SRC_DIR=src
-RUST_SRC=${SRC_DIR}/la.rs
+RUST_SRC=${SRC_DIR}/lib.rs
 BUILD_DIR=out
+DOCS_DIR=doc
 
 .PHONY: all
-all: build
+all: build docs
 
 build: $(RUST_SRC)
 	mkdir -p $(BUILD_DIR)
@@ -21,6 +22,9 @@ test: test-compile $(RUST_SRC)
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(DOCS_DIR)
 
+.PHONY: docs
+docs:
+	rustdoc -o $(DOCS_DIR) -L lib $(RUST_SRC)
 
