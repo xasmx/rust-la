@@ -1,6 +1,6 @@
 use std::num;
-use std::num::{Zero, One};
 
+use ApproxEq;
 use Matrix;
 
 // NOTE: This module contains untested alpha code
@@ -78,7 +78,7 @@ use Matrix;
 //   r = q'Aq / (q'q).			// Note that if we normalized q, then we'll just have:  r = q'Aq.
 //
 pub fn power_method
-    <T : Mul<T, T> + Div<T, T> + Add<T, T> + Sub<T, T> + Zero + One + Ord + Signed + Clone + Float>
+    <T : Ord + Float + ApproxEq<T>>
     (m : &Matrix<T>, q : &Matrix<T>, eps : T) -> Matrix<T> {
   assert!(m.cols() == m.rows());
   assert!(m.cols() == q.rows());

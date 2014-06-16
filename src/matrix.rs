@@ -2,7 +2,6 @@ use std::cmp;
 use std::fmt::{Show};
 use std::io;
 use std::num;
-use std::num::{One, Zero};
 use std::rand;
 use std::rand::{Rand};
 use std::vec;
@@ -16,16 +15,6 @@ use internalutil::{alloc_dirty_vec};
 pub struct Matrix<T> {
   no_rows : uint,
   data : Vec<T>
-}
-
-impl<T : ApproxEq<T>>  Matrix<T> {
-  pub fn approx_eq(&self, m : &Matrix<T>) -> bool {
-    if self.rows() != m.rows() || self.cols() != m.cols() { return false };
-    for i in range(0u, self.data.len()) {
-      if !self.data.get(i).approx_eq(m.data.get(i)) { return false }
-    }
-    true
-  }
 }
 
 impl<T> Matrix<T> {
@@ -46,26 +35,71 @@ impl<T> Matrix<T> {
   }
 
   #[inline]
+  pub fn rows(&self) -> uint { self.no_rows }
+
+  #[inline]
+  pub fn cols(&self) -> uint { self.data.len() / self.no_rows }
+
+  #[inline]
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
   #[inline]
   pub fn get_mut_data<'a>(&'a mut self) -> &'a mut Vec<T> { &mut self.data }
 
-  #[inline]
-  pub fn rows(&self) -> uint { self.no_rows }
+  pub fn get_ref<'lt>(&'lt self, row : uint, col : uint) -> &'lt T {
+    assert!(row < self.no_rows && col < self.cols());
+    self.data.get(row * self.cols() + col)
+  }
 
-  #[inline]
-  pub fn cols(&self) -> uint { self.data.len() / self.no_rows }
-}
+  pub fn get_mref<'lt>(&'lt mut self, row : uint, col : uint) -> &'lt mut T {
+    assert!(row < self.no_rows && col < self.cols());
+    let no_cols = self.cols();
+    self.data.get_mut(row * no_cols + col)
+  }
 
-impl<T : Rand> Matrix<T> {
-  pub fn random(no_rows : uint, no_cols : uint) -> Matrix<T> {
-    let elems = no_rows * no_cols;
+  pub fn map<S>(&self, f : |&T| -> S) -> Matrix<S> {
+    let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in range(0u, elems) {
-      *d.get_mut(i) = rand::random::<T>();
+      *d.get_mut(i) = f(self.data.get(i));
     }
-    Matrix { no_rows : no_rows, data : d }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn mmap(&mut self, f : |&T| -> T) {
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = f(self.data.get(i));
+    }
+  }
+
+  pub fn reduce<S : Clone>(&self, init: &Vec<S>, f: |&S, &T| -> S) -> Matrix<S> {
+    assert!(init.len() == self.cols());
+
+    let mut data = init.clone();
+    let mut dataIdx = 0;
+    for i in range(0, self.data.len()) {
+      *data.get_mut(dataIdx) = f(data.get(dataIdx), self.data.get(i));
+      dataIdx += 1;
+      dataIdx %= data.len();
+    }
+
+    Matrix {
+      no_rows : 1,
+      data : data
+    }
+  }
+
+  #[inline]
+  pub fn is_square(&self) -> bool {
+    self.no_rows == self.cols()
+  }
+
+  #[inline]
+  pub fn is_not_square(&self) -> bool {
+    !self.is_square()
   }
 }
 
@@ -93,9 +127,7 @@ impl<T : Num> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Zero + Clone> Matrix<T> {
   pub fn zero_vector(no_rows : uint) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
     for i in range(0u, no_rows) {
@@ -103,9 +135,7 @@ impl<T : Zero + Clone> Matrix<T> {
     }
     Matrix { no_rows : no_rows, data : d }
   }
-}
 
-impl<T : One + Clone> Matrix<T> {
   pub fn one_vector(no_rows : uint) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
     for i in range(0u, no_rows) {
@@ -113,7 +143,179 @@ impl<T : One + Clone> Matrix<T> {
     }
     Matrix { no_rows : no_rows, data : d }
   }
+
+  pub fn neg(&self) -> Matrix<T> {
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = - *self.data.get(i)
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn mneg(&mut self) {
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = - *self.data.get(i);
+    }
+  }
+
+  pub fn scale(&self, factor : T) -> Matrix<T> {
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = factor * *self.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn mscale(&mut self, factor : T) {
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = factor * *self.data.get(i);
+    }
+  }
+
+  pub fn add(&self, m : &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) + *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn madd(&mut self, m : &Matrix<T>) {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = *self.data.get(i) + *m.data.get(i);
+    }
+  }
+
+  pub fn sub(&self, m : &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) - *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn msub(&mut self, m : &Matrix<T>) {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = *self.data.get(i) - *m.data.get(i);
+    }
+  }
+
+  pub fn elem_mul(&self, m : &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) * *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn melem_mul(&mut self, m : &Matrix<T>) {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = *self.data.get(i) * *m.data.get(i);
+    }
+  }
+
+  pub fn elem_div(&self, m : &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) / *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn melem_div(&mut self, m : &Matrix<T>) {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    for i in range(0u, self.data.len()) {
+      *self.data.get_mut(i) = *self.data.get(i) / *m.data.get(i);
+    }
+  }
+
+  pub fn mul(&self, m : &Matrix<T>) -> Matrix<T> {
+    assert!(self.cols() == m.no_rows);
+
+    let elems = self.no_rows * m.cols();
+    let mut d = alloc_dirty_vec(elems);
+    for row in range(0u, self.no_rows) {
+      for col in range(0u, m.cols()) {
+        let mut res : T = num::zero();
+        for idx in range(0u, self.cols()) {
+          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
+        }
+        *d.get_mut(row * m.cols() + col) = res;
+      }
+    }
+
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+
+  pub fn mmul(&mut self, m : &Matrix<T>) {
+    assert!(self.cols() == m.no_rows);
+
+    let elems = self.no_rows * m.cols();
+    let mut d = alloc_dirty_vec(elems);
+    for row in range(0u, self.no_rows) {
+      for col in range(0u, m.cols()) {
+        let mut res : T = num::zero();
+        for idx in range(0u, self.cols()) {
+          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
+        }
+        *d.get_mut(row * m.cols() + col) = res;
+      }
+    }
+
+    self.data = d
+  }
 }
+
 
 impl<T : Clone> Matrix<T> {
   pub fn get(&self, row : uint, col : uint) -> T {
@@ -121,47 +323,12 @@ impl<T : Clone> Matrix<T> {
     self.data.get(row * self.cols() + col).clone()
   }
 
-  pub fn get_ref<'lt>(&'lt self, row : uint, col : uint) -> &'lt T {
-    assert!(row < self.no_rows && col < self.cols());
-    self.data.get(row * self.cols() + col)
-  }
-
-  pub fn get_mref<'lt>(&'lt mut self, row : uint, col : uint) -> &'lt mut T {
-    assert!(row < self.no_rows && col < self.cols());
-    let no_cols = self.cols();
-    self.data.get_mut(row * no_cols + col)
-  }
-
   pub fn set(&mut self, row : uint, col : uint, val : T) {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
     *self.data.get_mut(row * no_cols + col) = val.clone()
   }
-}
 
-impl<S, T> Matrix<S> {
-  pub fn map(&self, f : |&S| -> T) -> Matrix<T> {
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = f(self.data.get(i));
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl<T> Matrix<T> {
-  pub fn mmap(&mut self, f : |&T| -> T) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = f(self.data.get(i));
-    }
-  }
-}
-
-impl<T : Clone> Matrix<T> {
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     let elems = self.data.len() + m.data.len();
@@ -186,9 +353,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn cb(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.cols() == m.cols());
     let elems = self.data.len() + m.data.len();
@@ -205,9 +370,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn t(&self) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
@@ -225,9 +388,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn mt(&mut self) {
     let mut visited = vec::Vec::from_elem(self.data.len(), false);
 
@@ -253,9 +414,7 @@ impl<T : Clone> Matrix<T> {
 
     self.no_rows = self.cols();
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn minor(&self, row : uint, col : uint) -> Matrix<T> {
     assert!(row < self.no_rows && col < self.cols() && self.no_rows > 1 && self.cols() > 1);
     let elems = (self.cols() - 1) * (self.no_rows - 1);
@@ -278,9 +437,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn sub_matrix(&self, startRow : uint, startCol : uint, endRow : uint, endCol : uint) -> Matrix<T> {
     assert!(startRow < endRow);
     assert!(startCol < endCol);
@@ -317,9 +474,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn permute_rows(&self, rows : &Vec<uint>) -> Matrix<T> {
     let no_rows = rows.len();
     let no_cols = self.cols();
@@ -360,9 +515,7 @@ impl<T : Clone> Matrix<T> {
       data : d
     }
   }
-}
 
-impl<T : Clone> Matrix<T> {
   pub fn filter_rows(&self, f : |m : &Matrix<T>, row : uint| -> bool) -> Matrix<T> {
     let mut rows = vec::Vec::with_capacity(self.rows());
     for row in range(0u, self.rows()) {
@@ -406,7 +559,7 @@ impl<T : Clone> Matrix<T> {
   }
 }
 
-impl<T : Clone + Show> Matrix<T> {
+impl<T : Show> Matrix<T> {
   pub fn print(&self) {
     print!("{:10s} ", "");
     for col in range(0u, self.cols()) {
@@ -416,229 +569,41 @@ impl<T : Clone + Show> Matrix<T> {
     for row in range(0u, self.no_rows) {
       print!("{:10u} ", row);
       for col in range(0u, self.cols()) {
-        print!("{:10.10}? ", self.get(row, col))
+        print!("{:10.10}? ", self.get_ref(row, col))
       }
       io::println("")
     }
   }
 }
 
-impl<T : Neg<T>> Matrix<T> {
-  pub fn neg(&self) -> Matrix<T> {
-    let elems = self.data.len();
+impl<T : Rand> Matrix<T> {
+  pub fn random(no_rows : uint, no_cols : uint) -> Matrix<T> {
+    let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
     for i in range(0u, elems) {
-      *d.get_mut(i) = - *self.data.get(i)
+      *d.get_mut(i) = rand::random::<T>();
     }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
+    Matrix { no_rows : no_rows, data : d }
   }
 }
 
-impl <T : Neg<T>> Neg<Matrix<T>> for Matrix<T> {
+impl <T : Num> Neg<Matrix<T>> for Matrix<T> {
   fn neg(&self) -> Matrix<T> { self.neg() }
 }
 
-impl<T : Neg<T>> Matrix<T> {
-  pub fn mneg(&mut self) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = - *self.data.get(i);
-    }
-  }
-}
-
-impl<T : Mul<T, T>> Matrix<T> {
-  pub fn scale(&self, factor : T) -> Matrix<T> {
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = factor * *self.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl<T : Mul<T, T>> Matrix<T> {
-  pub fn mscale(&mut self, factor : T) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = factor * *self.data.get(i);
-    }
-  }
-}
-
-impl<T : Add<T, T>> Matrix<T> {
-  pub fn add(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) + *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl <T : Add<T, T>> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl <T : Num> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn add(&self, rhs: &Matrix<T>) -> Matrix<T> { self.add(rhs) }
 }
 
-impl<T : Add<T, T>> Matrix<T> {
-  pub fn madd(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) + *m.data.get(i);
-    }
-  }
-}
-
-impl<T : Sub<T, T>> Matrix<T> {
-  pub fn sub(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) - *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl <T : Sub<T, T>> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl <T : Num> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn sub(&self, rhs: &Matrix<T>) -> Matrix<T> { self.sub(rhs) }
 }
 
-impl<T : Sub<T, T>> Matrix<T> {
-  pub fn msub(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) - *m.data.get(i);
-    }
-  }
-}
-
-impl<T : Mul<T, T>> Matrix<T> {
-  pub fn elem_mul(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) * *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl<T : Mul<T, T>> Matrix<T> {
-  pub fn melem_mul(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) * *m.data.get(i);
-    }
-  }
-}
-
-impl<T : Div<T, T>> Matrix<T> {
-  pub fn elem_div(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) / *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl<T : Div<T, T>> Matrix<T> {
-  pub fn melem_div(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) / *m.data.get(i);
-    }
-  }
-}
-
-impl<T : Add<T, T> + Mul<T, T> + Zero + Clone> Matrix<T> {
-  pub fn mul(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.cols() == m.no_rows);
-
-    let elems = self.no_rows * m.cols();
-    let mut d = alloc_dirty_vec(elems);
-    for row in range(0u, self.no_rows) {
-      for col in range(0u, m.cols()) {
-        let mut res : T = num::zero();
-        for idx in range(0u, self.cols()) {
-          res = res + self.get(row, idx) * m.get(idx, col);
-        }
-        *d.get_mut(row * m.cols() + col) = res;
-      }
-    }
-
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-}
-
-impl<T : Mul<T, T> + Add<T, T> + Zero + Clone> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl<T : Num> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn mul(&self, rhs: &Matrix<T>) -> Matrix<T> { self.mul(rhs) }
 }
 
-impl<T : Add<T, T> + Mul<T, T> + Zero + Clone> Matrix<T> {
-  pub fn mmul(&mut self, m : &Matrix<T>) {
-    assert!(self.cols() == m.no_rows);
-
-    let elems = self.no_rows * m.cols();
-    let mut d = alloc_dirty_vec(elems);
-    for row in range(0u, self.no_rows) {
-      for col in range(0u, m.cols()) {
-        let mut res : T = num::zero();
-        for idx in range(0u, self.cols()) {
-          res = res + self.get(row, idx) * m.get(idx, col);
-        }
-        *d.get_mut(row * m.cols() + col) = res;
-      }
-    }
-
-    self.data = d
-  }
-}
-
-impl<T : Add<T, T> + Zero> Matrix<T> {
+impl<T : Float + ApproxEq<T>> Matrix<T> {
   pub fn trace(&self) -> T {
     let mut sum : T = num::zero();
     let mut idx = 0;
@@ -648,41 +613,21 @@ impl<T : Add<T, T> + Zero> Matrix<T> {
     }
     sum
   }
-}
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> Matrix<T> {
   pub fn det(&self) -> T {
     assert!(self.cols() == self.no_rows);
     lu::LUDecomposition::new(self).det()
   }
-}
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> Matrix<T> {
   pub fn solve(&self, b : &Matrix<T>) -> Option<Matrix<T>> {
     lu::LUDecomposition::new(self).solve(b)
   }
-}
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> Matrix<T> {
   pub fn inverse(&self) -> Option<Matrix<T>> {
     assert!(self.no_rows == self.cols());
     lu::LUDecomposition::new(self).solve(&Matrix::id(self.no_rows, self.no_rows))
   }
-}
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float> Matrix<T> {
-  pub fn pinverse(&self) -> Matrix<T> {
-    // A+ = (A' A)^-1 A'
-    //    = ((QR)' QR)^-1 A'
-    //    = (R'Q'QR)^-1 A'
-    //    = (R'R)^-1 A'
-    let qr = qr::QRDecomposition::new(self);
-    let r = qr.get_r();
-    (r.t() * r).inverse().unwrap() * self.t()
-  }
-}
-
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> Matrix<T> {
   #[inline]
   pub fn is_singular(&self) -> bool {
     !self.is_non_singular()
@@ -692,39 +637,17 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     assert!(self.no_rows == self.cols());
     lu::LUDecomposition::new(self).is_non_singular()
   }
-}
 
-impl<T> Matrix<T> {
-  #[inline]
-  pub fn is_square(&self) -> bool {
-    self.no_rows == self.cols()
+  pub fn pinverse(&self) -> Matrix<T> {
+    // A+ = (A' A)^-1 A'
+    //    = ((QR)' QR)^-1 A'
+    //    = (R'Q'QR)^-1 A'
+    //    = (R'R)^-1 A'
+    let qr = qr::QRDecomposition::new(self);
+    let r = qr.get_r();
+    (r.t() * r).inverse().unwrap() * self.t()
   }
 
-  #[inline]
-  pub fn is_not_square(&self) -> bool {
-    !self.is_square()
-  }
-}
-
-impl<T : PartialEq + Clone> Matrix<T> {
-  pub fn is_symmetric(&self) -> bool {
-    if self.no_rows != self.cols() { return false; }
-    for row in range(1, self.no_rows) {
-      for col in range(0, row) {
-        if self.get(row, col) != self.get(col, row) { return false; }
-      }
-    }
-
-    true
-  }
-
-  #[inline]
-  pub fn is_non_symmetric(&self) -> bool {
-    !self.is_symmetric()
-  }
-}
-
-impl<T : Add<T, T> + Mul<T, T> + Zero + Float> Matrix<T> {
   pub fn vector_euclidean_norm(&self) -> T {
     assert!(self.cols() == 1);
 
@@ -741,13 +664,6 @@ impl<T : Add<T, T> + Mul<T, T> + Zero + Float> Matrix<T> {
     self.vector_euclidean_norm()
   }
 
-  #[inline]
-  pub fn vector_2_norm(&self) -> T {
-    self.vector_euclidean_norm()
-  }
-}
-
-impl<T : Add<T, T> + Signed + Zero + Clone> Matrix<T> {
   pub fn vector_1_norm(&self) -> T {
     assert!(self.cols() == 1);
 
@@ -758,9 +674,12 @@ impl<T : Add<T, T> + Signed + Zero + Clone> Matrix<T> {
 
     s
   }
-}
 
-impl<T : Add<T, T> + Div<T, T> + Signed + Zero + Clone + Float> Matrix<T> {
+  #[inline]
+  pub fn vector_2_norm(&self) -> T {
+    self.vector_euclidean_norm()
+  }
+
   pub fn vector_p_norm(&self, p : T) -> T {
     assert!(self.cols() == 1);
 
@@ -771,9 +690,16 @@ impl<T : Add<T, T> + Div<T, T> + Signed + Zero + Clone + Float> Matrix<T> {
 
     s.powf(num::one::<T>() / p)
   }
-}
 
-impl<T : Signed + PartialOrd + Clone> Matrix<T> {
+  pub fn frobenius_norm(&self) -> T {
+    let mut s : T = num::zero();
+    for i in range(0, self.data.len()) {
+      s = s + *self.data.get(i) * *self.data.get(i);
+    }
+
+    s.sqrt()
+  }
+
   pub fn vector_inf_norm(&self) -> T {
     assert!(self.cols() == 1);
 
@@ -787,35 +713,29 @@ impl<T : Signed + PartialOrd + Clone> Matrix<T> {
 
     current_max
   }
-}
 
-impl<T : Add<T, T> + Mul<T, T> + Zero + Float> Matrix<T> {
-  pub fn frobenius_norm(&self) -> T {
-    let mut s : T = num::zero();
-    for i in range(0, self.data.len()) {
-      s = s + *self.data.get(i) * *self.data.get(i);
+  pub fn is_symmetric(&self) -> bool {
+    if self.no_rows != self.cols() { return false; }
+    for row in range(1, self.no_rows) {
+      for col in range(0, row) {
+        if !self.get(row, col).approx_eq(self.get_ref(col, row)) { return false; }
+      }
     }
 
-    s.sqrt()
+    true
   }
-}
 
-impl <S : Clone, T> Matrix<T> {
-  pub fn reduce(&self, init: &Vec<S>, f: |&S, &T| -> S) -> Matrix<S> {
-    assert!(init.len() == self.cols());
+  #[inline]
+  pub fn is_non_symmetric(&self) -> bool {
+    !self.is_symmetric()
+  }
 
-    let mut data = init.clone();
-    let mut dataIdx = 0;
-    for i in range(0, self.data.len()) {
-      *data.get_mut(dataIdx) = f(data.get(dataIdx), self.data.get(i));
-      dataIdx += 1;
-      dataIdx %= data.len();
+  pub fn approx_eq(&self, m : &Matrix<T>) -> bool {
+    if self.rows() != m.rows() || self.cols() != m.cols() { return false };
+    for i in range(0u, self.data.len()) {
+      if !self.data.get(i).approx_eq(m.data.get(i)) { return false }
     }
-
-    Matrix {
-      no_rows : 1,
-      data : data
-    }
+    true
   }
 }
 
@@ -1189,14 +1109,14 @@ fn test_mmul_incompatible() {
 
 #[test]
 fn test_trace() {
-  let a = m!(1, 2; 3, 4);
-  assert!(a.trace() == 5);
+  let a = m!(1.0, 2.0; 3.0, 4.0);
+  assert!(a.trace() == 5.0);
 
-  let a = m!(1, 2; 3, 4; 5, 6);
-  assert!(a.trace() == 5);
+  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
+  assert!(a.trace() == 5.0);
 
-  let a = m!(1, 2, 3; 4, 5, 6);
-  assert!(a.trace() == 6);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
+  assert!(a.trace() == 6.0);
 }
 
 #[test]
@@ -1283,13 +1203,13 @@ fn test_is_square() {
 
 #[test]
 fn test_is_symmetric() {
-  let m = m!(1, 2, 3; 2, 4, 5; 3, 5, 6);
+  let m = m!(1.0, 2.0, 3.0; 2.0, 4.0, 5.0; 3.0, 5.0, 6.0);
   assert!(m.is_symmetric());
 
-  let m = m!(1, 2; 3, 4);
+  let m = m!(1.0, 2.0; 3.0, 4.0);
   assert!(!m.is_symmetric());
 
-  let m = m!(1, 2, 3; 2, 4, 5);
+  let m = m!(1.0, 2.0, 3.0; 2.0, 4.0, 5.0);
   assert!(!m.is_symmetric());
 }
 
