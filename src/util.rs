@@ -52,7 +52,7 @@ pub fn read_csv<T>(file_name : &str, parser : |&str| -> T) -> super::matrix::Mat
 
   assert!(col_count != None);
 
-  super::matrix::matrix(row_count, col_count.unwrap(), data)
+  super::matrix::Matrix::new(row_count, col_count.unwrap(), data)
 }
 
 #[test]

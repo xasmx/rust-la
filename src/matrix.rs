@@ -28,77 +28,85 @@ impl<T : ApproxEq<T>>  Matrix<T> {
   }
 }
 
-pub fn matrix<T>(no_rows : uint, no_cols : uint, data : Vec<T>) -> Matrix<T> {
-  assert!(no_rows * no_cols == data.len());
-  assert!(no_rows > 0 && no_cols > 0);
-  Matrix { no_rows : no_rows, data : data }
-}
-
-pub fn random<T : Rand>(no_rows : uint, no_cols : uint) -> Matrix<T> {
-  let elems = no_rows * no_cols;
-  let mut d = alloc_dirty_vec(elems);
-  for i in range(0u, elems) {
-    *d.get_mut(i) = rand::random::<T>();
-  }
-  Matrix { no_rows : no_rows, data : d }
-}
-
-pub fn id<T : Num>(m : uint, n : uint) -> Matrix<T> {
-  let elems = m * n;
-  let mut d : Vec<T> = alloc_dirty_vec(elems);
-  for i in range(0u, elems) {
-    *d.get_mut(i) = num::zero();
-  }
-  for i in range(0u, cmp::min(m, n)) {
-    *d.get_mut(i * n + i) = num::one();
-  }
-  Matrix { no_rows : m, data : d }
-}
-
-pub fn zero<T : Num>(no_rows : uint, no_cols : uint) -> Matrix<T> {
-  let elems = no_rows * no_cols;
-  let mut d : Vec<T> = alloc_dirty_vec(elems);
-  for i in range(0u, elems) {
-    *d.get_mut(i) = num::zero();
-  }
-  Matrix {
-    no_rows : no_rows,
-    data : d
-  }
-}
-
-pub fn vector<T>(data : Vec<T>) -> Matrix<T> {
-  assert!(data.len() > 0);
-  Matrix { no_rows : data.len(), data : data }
-}
-
-pub fn zero_vector<T : Zero + Clone>(no_rows : uint) -> Matrix<T> {
-  let mut d : Vec<T> = alloc_dirty_vec(no_rows);
-  for i in range(0u, no_rows) {
-    *d.get_mut(i) = num::zero();
-  }
-  Matrix { no_rows : no_rows, data : d }
-}
-
-pub fn one_vector<T : One + Clone>(no_rows : uint) -> Matrix<T> {
-  let mut d : Vec<T> = alloc_dirty_vec(no_rows);
-  for i in range(0u, no_rows) {
-    *d.get_mut(i) = num::one();
-  }
-  Matrix { no_rows : no_rows, data : d }
-}
-
-pub fn row_vector<T>(data : Vec<T>) -> Matrix<T> {
-  assert!(data.len() > 0);
-  Matrix { no_rows : 1, data : data }
-}
-
 impl<T> Matrix<T> {
+  pub fn new(no_rows : uint, no_cols : uint, data : Vec<T>) -> Matrix<T> {
+    assert!(no_rows * no_cols == data.len());
+    assert!(no_rows > 0 && no_cols > 0);
+    Matrix { no_rows : no_rows, data : data }
+  }
+
+  pub fn vector(data : Vec<T>) -> Matrix<T> {
+    assert!(data.len() > 0);
+    Matrix { no_rows : data.len(), data : data }
+  }
+
+  pub fn row_vector(data : Vec<T>) -> Matrix<T> {
+    assert!(data.len() > 0);
+    Matrix { no_rows : 1, data : data }
+  }
+
   #[inline]
   pub fn rows(&self) -> uint { self.no_rows }
 
   #[inline]
   pub fn cols(&self) -> uint { self.data.len() / self.no_rows }
+}
+
+impl<T : Rand> Matrix<T> {
+  pub fn random(no_rows : uint, no_cols : uint) -> Matrix<T> {
+    let elems = no_rows * no_cols;
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = rand::random::<T>();
+    }
+    Matrix { no_rows : no_rows, data : d }
+  }
+}
+
+impl<T : Num> Matrix<T> {
+  pub fn id(m : uint, n : uint) -> Matrix<T> {
+    let elems = m * n;
+    let mut d : Vec<T> = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = num::zero();
+    }
+    for i in range(0u, cmp::min(m, n)) {
+      *d.get_mut(i * n + i) = num::one();
+    }
+    Matrix { no_rows : m, data : d }
+  }
+
+  pub fn zero(no_rows : uint, no_cols : uint) -> Matrix<T> {
+    let elems = no_rows * no_cols;
+    let mut d : Vec<T> = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = num::zero();
+    }
+    Matrix {
+      no_rows : no_rows,
+      data : d
+    }
+  }
+}
+
+impl<T : Zero + Clone> Matrix<T> {
+  pub fn zero_vector(no_rows : uint) -> Matrix<T> {
+    let mut d : Vec<T> = alloc_dirty_vec(no_rows);
+    for i in range(0u, no_rows) {
+      *d.get_mut(i) = num::zero();
+    }
+    Matrix { no_rows : no_rows, data : d }
+  }
+}
+
+impl<T : One + Clone> Matrix<T> {
+  pub fn one_vector(no_rows : uint) -> Matrix<T> {
+    let mut d : Vec<T> = alloc_dirty_vec(no_rows);
+    for i in range(0u, no_rows) {
+      *d.get_mut(i) = num::one();
+    }
+    Matrix { no_rows : no_rows, data : d }
+  }
 }
 
 impl<T : Clone> Matrix<T> {
@@ -652,7 +660,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
 impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> Matrix<T> {
   pub fn inverse(&self) -> Option<Matrix<T>> {
     assert!(self.no_rows == self.cols());
-    lu::LUDecomposition::new(self).solve(&id(self.no_rows, self.no_rows))
+    lu::LUDecomposition::new(self).solve(&Matrix::id(self.no_rows, self.no_rows))
   }
 }
 
@@ -805,45 +813,9 @@ impl <S : Clone, T> Matrix<T> {
   }
 }
 
-// Helper macro for m!
-macro_rules! m_one {
-  ( $item:tt ) => ( 1 )
-}
-
-// Helper macro for m!
-macro_rules! m_rec(
-  ( [ $($row:tt),* ] [$($i:expr),*]) => ({
-     let _rows = 0 $(+ m_one!($row) )*;
-     let _cols = (0 $(+ m_one!($i))*) / _rows;
-     matrix(
-       _rows,
-       _cols,
-       vec![$($i),*]
-     )
-  })
-)
-
-#[macro_export]
-macro_rules! m {
-  ( $( $( $i:expr ),* );* ) => ( m_rec!([$([$($i),*]),*] [$($($i),*),*]) )
-}
-
 #[test]
-pub fn test_m() {
-  let m = m!(1; 3; 5; 7);
-  assert!(m.rows() == 4);
-  assert!(m.cols() == 1);
-  assert!(m.data == vec![1, 3, 5, 7]);
-
-  let m = m!(1, 2; 3, 4);
-  assert!(m.rows() == 2);
-  assert!(m.cols() == 2);
-  assert!(m.data == vec![1, 2, 3, 4]);
-}
-
-#[test]
-fn test_matrix() {
-  let m = matrix(2, 2, vec![1, 2, 3, 4]);
+fn test_new() {
+  let m = Matrix::new(2, 2, vec![1, 2, 3, 4]);
   m.print();
   assert!(m.rows() == 2);
   assert!(m.cols() == 2);
@@ -852,25 +824,25 @@ fn test_matrix() {
 
 #[test]
 #[should_fail]
-fn test_matrix_invalid_data() {
-  matrix(1, 2, vec![1, 2, 3]);
+fn test_new_invalid_data() {
+  Matrix::new(1, 2, vec![1, 2, 3]);
 }
 
 #[test]
 #[should_fail]
-fn test_matrix_invalid_row_count() {
-  matrix::<uint>(0, 2, vec![]);
+fn test_new_invalid_row_count() {
+  Matrix::<uint>::new(0, 2, vec![]);
 }
 
 #[test]
 #[should_fail]
-fn test_matrix_invalid_col_count() {
-  matrix::<uint>(2, 0, vec![]);
+fn test_new_invalid_col_count() {
+  Matrix::<uint>::new(2, 0, vec![]);
 }
 
 #[test]
 fn test_id_square() {
-  let m = id::<uint>(2, 2);
+  let m = Matrix::<uint>::id(2, 2);
   assert!(m.rows() == 2);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 1]);
@@ -878,7 +850,7 @@ fn test_id_square() {
 
 #[test]
 fn test_id_m_over_n() {
-  let m = id::<uint>(3, 2);
+  let m = Matrix::<uint>::id(3, 2);
   assert!(m.rows() == 3);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 1, 0, 0]);
@@ -886,7 +858,7 @@ fn test_id_m_over_n() {
 
 #[test]
 fn test_id_n_over_m() {
-  let m = id::<uint>(2, 3);
+  let m = Matrix::<uint>::id(2, 3);
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![1, 0, 0, 0, 1, 0]);
@@ -894,7 +866,7 @@ fn test_id_n_over_m() {
 
 #[test]
 fn test_zero() {
-  let m = zero::<uint>(2, 3);
+  let m = Matrix::<uint>::zero(2, 3);
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![0, 0, 0, 0, 0, 0]);
@@ -902,7 +874,7 @@ fn test_zero() {
 
 #[test]
 fn test_vector() {
-  let v = vector::<uint>(vec![1, 2, 3]);
+  let v = Matrix::vector(vec![1, 2, 3]);
   assert!(v.rows() == 3);
   assert!(v.cols() == 1);
   assert!(v.data == vec![1, 2, 3]);
@@ -910,7 +882,7 @@ fn test_vector() {
 
 #[test]
 fn test_zero_vector() {
-  let v = zero_vector::<uint>(2);
+  let v = Matrix::<uint>::zero_vector(2);
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
   assert!(v.data == vec![0, 0]);
@@ -918,7 +890,7 @@ fn test_zero_vector() {
 
 #[test]
 fn test_one_vector() {
-  let v = one_vector::<uint>(2);
+  let v = Matrix::<uint>::one_vector(2);
 
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
@@ -927,7 +899,7 @@ fn test_one_vector() {
 
 #[test]
 fn test_row_vector() {
-  let v = row_vector::<uint>(vec![1, 2, 3]);
+  let v = Matrix::row_vector(vec![1, 2, 3]);
   assert!(v.rows() == 1);
   assert!(v.cols() == 3);
   assert!(v.data == vec![1, 2, 3]);
@@ -935,7 +907,7 @@ fn test_row_vector() {
 
 #[test]
 fn test_get_set() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   assert!(m.get(1, 0) == 3);
   assert!(m.get(0, 1) == 2);
 
@@ -951,62 +923,62 @@ fn test_get_set() {
 #[test]
 #[should_fail]
 fn test_get_out_of_bounds_x() {
-  let m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   let _ = m.get(2, 0);
 }
 
 #[test]
 #[should_fail]
 fn test_get_out_of_bounds_y() {
-  let m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   let _ = m.get(0, 2);
 }
 
 #[test]
 #[should_fail]
 fn test_get_ref_out_of_bounds_x() {
-  let m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   let _ = m.get_ref(2, 0);
 }
 
 #[test]
 #[should_fail]
 fn test_get_ref_out_of_bounds_y() {
-  let m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   let _ = m.get_ref(0, 2);
 }
 
 #[test]
 #[should_fail]
 fn test_get_mref_out_of_bounds_x() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   let _ = m.get_mref(2, 0);
 }
 
 #[test]
 #[should_fail]
 fn test_get_mref_out_of_bounds_y() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   let _ = m.get_mref(0, 2);
 }
 
 #[test]
 #[should_fail]
 fn test_set_out_of_bounds_x() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   m.set(2, 0, 0);
 }
 
 #[test]
 #[should_fail]
 fn test_set_out_of_bounds_y() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   m.set(0, 2, 0);
 }
 
 #[test]
 fn test_map() {
-  let mut m = matrix::<uint>(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   assert!(m.map(|x : &uint| -> uint { *x + 1 }).data == vec![2, 3, 4, 5]);
 
   m.mmap(|x : &uint| { *x + 2 });
@@ -1015,7 +987,7 @@ fn test_map() {
 
 #[test]
 fn test_cr() {
-  let v = vector(vec![1, 2, 3]);
+  let v = m!(1; 2; 3);
   let m = v.cr(&v);
   assert!(m.rows() == 3);
   assert!(m.cols() == 2);
@@ -1024,7 +996,7 @@ fn test_cr() {
 
 #[test]
 fn test_cb() {
-  let m = matrix(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   let m2 = m.cb(&m);
   assert!(m2.rows() == 4);
   assert!(m2.cols() == 2);
@@ -1033,13 +1005,13 @@ fn test_cb() {
 
 #[test]
 fn test_t() {
-  let mut m = matrix(2, 2, vec![1, 2, 3, 4]);
+  let mut m = m!(1, 2; 3, 4);
   assert!(m.t().data == vec![1, 3, 2, 4]);
 
   m.mt();
   assert!(m.data == vec![1, 3, 2, 4]);
 
-  let mut m = matrix(2, 3, vec![1, 2, 3, 4, 5, 6]);
+  let mut m = m!(1, 2, 3; 4, 5, 6);
   let r = m.t();
   assert!(r.rows() == 3);
   assert!(r.cols() == 2);
@@ -1053,7 +1025,7 @@ fn test_t() {
 
 #[test]
 fn test_sub() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   assert!(m.minor(1, 1).data == vec![1, 3, 7, 9]);
   assert!(m.sub_matrix(1, 1, 3, 3).data == vec![5, 6, 8, 9]);
   assert!(m.get_column(1).data == vec![2, 5, 8]);
@@ -1062,27 +1034,27 @@ fn test_sub() {
 #[test]
 #[should_fail]
 fn test_minor_out_of_bounds() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.minor(1, 4);
 }
 
 #[test]
 #[should_fail]
 fn test_sub_out_of_bounds() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.sub_matrix(1, 1, 3, 4);
 }
 
 #[test]
 #[should_fail]
 fn test_get_column_out_of_bounds() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.get_column(3);
 }
 
 #[test]
 fn test_permute_rows() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   assert!(m.permute_rows(&vec![1, 0, 2]).data == vec![4, 5, 6, 1, 2, 3, 7, 8, 9]);
   assert!(m.permute_rows(&vec![2, 1]).data == vec![7, 8, 9, 4, 5, 6]);
 }
@@ -1090,13 +1062,13 @@ fn test_permute_rows() {
 #[test]
 #[should_fail]
 fn test_permute_rows_out_of_bounds() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.permute_rows(&vec![1, 0, 5]);
 }
 
 #[test]
 fn test_permute_columns() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   assert!(m.permute_columns(&vec![1, 0, 2]).data == vec![2, 1, 3, 5, 4, 6, 8, 7, 9]);
   assert!(m.permute_columns(&vec![1, 2]).data == vec![2, 3, 5, 6, 8, 9]);
 }
@@ -1104,13 +1076,13 @@ fn test_permute_columns() {
 #[test]
 #[should_fail]
 fn test_permute_columns_out_of_bounds() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.permute_columns(&vec![1, 0, 5]);
 }
 
 #[test]
 fn test_filter_rows() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let m2 = m.filter_rows(|_, row| { ((row % 2) == 0) });
   assert!(m2.rows() == 2);
   assert!(m2.cols() == 3);
@@ -1119,7 +1091,7 @@ fn test_filter_rows() {
 
 #[test]
 fn test_filter_columns() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let m2 = m.filter_columns(|_, col| { (col >= 1) });
   m2.print();
   assert!(m2.rows() == 3);
@@ -1129,7 +1101,7 @@ fn test_filter_columns() {
 
 #[test]
 fn test_select_rows() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let m2 = m.select_rows([false, true, true]);
   assert!(m2.rows() == 2);
   assert!(m2.cols() == 3);
@@ -1138,7 +1110,7 @@ fn test_select_rows() {
 
 #[test]
 fn test_select_columns() {
-  let m = matrix(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let m2 = m.select_columns([true, false, true]);
   assert!(m2.rows() == 3);
   assert!(m2.cols() == 2);
@@ -1147,8 +1119,8 @@ fn test_select_columns() {
 
 #[test]
 fn test_algebra() {
-  let a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let b = matrix(2, 2, vec![3, 4, 5, 6]);
+  let a = m!(1, 2; 3, 4);
+  let b = m!(3, 4; 5, 6);
   assert!(a.neg().data == vec![-1, -2, -3, -4]);
   assert!(a.scale(2).data == vec![2, 4, 6, 8]);
   assert!(a.add(&b).data == vec![4, 6, 8, 10]);
@@ -1156,38 +1128,38 @@ fn test_algebra() {
   assert!(a.elem_mul(&b).data == vec![3, 8, 15, 24]);
   assert!(b.elem_div(&a).data == vec![3, 2, 1, 1]);
 
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
+  let mut a = m!(1, 2; 3, 4);
   a.mneg();
   assert!(a.data == vec![-1, -2, -3, -4]);
 
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
+  let mut a = m!(1, 2; 3, 4);
   a.mscale(2);
   assert!(a.data == vec![2, 4, 6, 8]);
 
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
+  let mut a = m!(1, 2; 3, 4);
   a.madd(&b);
   assert!(a.data == vec![4, 6, 8, 10]);
 
-  let a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let mut b = matrix(2, 2, vec![3, 4, 5, 6]);
+  let a = m!(1, 2; 3, 4);
+  let mut b = m!(3, 4; 5, 6);
   b.msub(&a);
   assert!(b.data == vec![2, 2, 2, 2]);
 
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let b = matrix(2, 2, vec![3, 4, 5, 6]);
+  let mut a = m!(1, 2; 3, 4);
+  let b = m!(3, 4; 5, 6);
   a.melem_mul(&b);
   assert!(a.data == vec![3, 8, 15, 24]);
 
-  let a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let mut b = matrix(2, 2, vec![3, 4, 5, 6]);
+  let a = m!(1, 2; 3, 4);
+  let mut b = m!(3, 4; 5, 6);
   b.melem_div(&a);
   assert!(b.data == vec![3, 2, 1, 1]);
 }
 
 #[test]
 fn test_mul() {
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let b = matrix(2, 2, vec![3, 4, 5, 6]);
+  let mut a = m!(1, 2; 3, 4);
+  let b = m!(3, 4; 5, 6);
   assert!(a.mul(&b).data == vec![13, 16, 29, 36]);
   a.mmul(&b);
   assert!(a.data == vec![13, 16, 29, 36]);
@@ -1196,179 +1168,179 @@ fn test_mul() {
 #[test]
 #[should_fail]
 fn test_mul_incompatible() {
-  let a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let b = matrix(3, 2, vec![1, 2, 3, 4, 5, 6]);
+  let a = m!(1, 2; 3, 4);
+  let b = m!(1, 2; 3, 4; 5, 6);
   let _ = a.mul(&b);
 }
 
 #[test]
 #[should_fail]
 fn test_mmul_incompatible() {
-  let mut a = matrix(2, 2, vec![1, 2, 3, 4]);
-  let b = matrix(3, 2, vec![1, 2, 3, 4, 5, 6]);
+  let mut a = m!(1, 2; 3, 4);
+  let b = m!(1, 2; 3, 4; 5, 6);
   a.mmul(&b);
 }
 
 #[test]
 fn test_trace() {
-  let a = matrix(2, 2, vec![1, 2, 3, 4]);
+  let a = m!(1, 2; 3, 4);
   assert!(a.trace() == 5);
 
-  let a = matrix(3, 2, vec![1, 2, 3, 4, 5, 6]);
+  let a = m!(1, 2; 3, 4; 5, 6);
   assert!(a.trace() == 5);
 
-  let a = matrix(2, 3, vec![1, 2, 3, 4, 5, 6]);
+  let a = m!(1, 2, 3; 4, 5, 6);
   assert!(a.trace() == 6);
 }
 
 #[test]
 fn test_det() {
-  let a = matrix(3, 3, vec![6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
+  let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0; 0.0, 5.0, -7.0);
   assert!((a.det() - -96.0) <= Float::epsilon());
 }
 
 #[test]
 #[should_fail]
 fn test_det_not_square() {
-  let _ = matrix(2, 3, vec![6.0, -7.0, 10.0, 0.0, 3.0, -1.0]).det();
+  let _ = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0).det();
 }
 
 #[test]
 fn test_solve() {
-  let a = matrix(3, 3, vec![1.0, 1.0, 1.0, 1.0, -1.0, 4.0, 2.0, 3.0, -5.0]);
-  let b = vector(vec![3.0, 4.0, 0.0]);
-  assert!(a.solve(&b).unwrap().eq(&vector(vec![1.0, 1.0, 1.0])));
+  let a = m!(1.0, 1.0, 1.0; 1.0, -1.0, 4.0; 2.0, 3.0, -5.0);
+  let b = m!(3.0; 4.0; 0.0);
+  assert!(a.solve(&b).unwrap().eq(&m!(1.0; 1.0; 1.0)));
 }
 
 // TODO: Add more tests for solve
 
 #[test]
 fn test_inverse() {
-  let a = matrix(3, 3, vec![6.0, -7.0, 10.0, 0.0, 3.0, -1.0, 0.0, 5.0, -7.0]);
+  let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0; 0.0, 5.0, -7.0);
   let data : Vec<f64> = vec![16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].mut_iter().map(|x : &mut f64| -> f64 { *x / 96.0 }).collect();
-  let a_inv = matrix(3, 3, data);
+  let a_inv = Matrix::new(3, 3, data);
   assert!(a.inverse().unwrap().approx_eq(&a_inv));
 }
 
 #[test]
 #[should_fail]
 fn test_inverse_not_square() {
-  let a = matrix(2, 3, vec![6.0, -7.0, 10.0, 0.0, 3.0, -1.0]);
+  let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0);
   let _ = a.inverse();
 }
 
 #[test]
 fn test_inverse_singular() {
-  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
+  let a = m!(2.0, 6.0; 1.0, 3.0);
   assert!(a.inverse() == None);
 }
 
 #[test]
 fn test_pinverse() {
-  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
-  assert!((a.pinverse() * a).approx_eq(&id::<f64>(2, 2)));
+  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
+  assert!((a.pinverse() * a).approx_eq(&Matrix::<f64>::id(2, 2)));
 }
 
 #[test]
 fn test_is_singular() {
-  let m = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
+  let m = m!(2.0, 6.0; 1.0, 3.0);
   assert!(m.is_singular());
 }
 
 #[test]
 #[should_fail]
 fn test_is_singular_non_square() {
-  let m = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let m = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   assert!(m.is_singular());
 }
 
 #[test]
 fn test_is_non_singular() {
-  let m = matrix(2, 2, vec![2.0, 6.0, 6.0, 3.0]);
+  let m = m!(2.0, 6.0; 6.0, 3.0);
   assert!(m.is_non_singular());
 }
 
 #[test]
 fn test_is_square() {
-  let m = matrix(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   assert!(m.is_square());
   assert!(!m.is_not_square());
 
-  let m = matrix(2, 3, vec![1, 2, 3, 4, 5, 6]);
+  let m = m!(1, 2, 3; 4, 5, 6);
   assert!(!m.is_square());
   assert!(m.is_not_square());
 
-  let v = vector(vec![1, 2, 3]);
+  let v = m!(1; 2; 3);
   assert!(!v.is_square());
   assert!(v.is_not_square());
 }
 
 #[test]
 fn test_is_symmetric() {
-  let m = matrix(3, 3, vec![1, 2, 3, 2, 4, 5, 3, 5, 6]);
+  let m = m!(1, 2, 3; 2, 4, 5; 3, 5, 6);
   assert!(m.is_symmetric());
 
-  let m = matrix(2, 2, vec![1, 2, 3, 4]);
+  let m = m!(1, 2; 3, 4);
   assert!(!m.is_symmetric());
 
-  let m = matrix(2, 3, vec![1, 2, 3, 2, 4, 5]);
+  let m = m!(1, 2, 3; 2, 4, 5);
   assert!(!m.is_symmetric());
 }
 
 #[test]
 fn test_vector_euclidean_norm() {
-  assert!(vector(vec![1.0, 2.0, 2.0]).vector_euclidean_norm() == 3.0);
-  assert!(vector(vec![-2.0, 2.0, 2.0, 2.0]).vector_euclidean_norm() == 4.0);
+  assert!(m!(1.0; 2.0; 2.0).vector_euclidean_norm() == 3.0);
+  assert!(m!(-2.0; 2.0; 2.0; 2.0).vector_euclidean_norm() == 4.0);
 }
 
 #[test]
 #[should_fail]
 fn test_vector_euclidean_norm_not_vector() {
-  let _ = matrix(2, 2, vec![1.0, 2.0, 3.0, 4.0]).vector_euclidean_norm();
+  let _ = m!(1.0, 2.0; 3.0, 4.0).vector_euclidean_norm();
 }
 
 #[test]
 fn test_vector_1_norm() {
-  assert!(vector(vec![-3.0, 2.0, 2.5]).vector_1_norm() == 7.5);
-  assert!(vector(vec![6.0, 8.0, -2.0, 3.0]).vector_1_norm() == 19.0);
-  assert!(vector(vec![1.0]).vector_1_norm() == 1.0);
+  assert!(m!(-3.0; 2.0; 2.5).vector_1_norm() == 7.5);
+  assert!(m!(6.0; 8.0; -2.0; 3.0).vector_1_norm() == 19.0);
+  assert!(m!(1.0).vector_1_norm() == 1.0);
 }
 
 #[test]
 #[should_fail]
 fn test_vector_1_norm_not_vector() {
-  let _ = matrix(2, 2, vec![1.0, 2.0, 3.0, 4.0]).vector_1_norm();
+  let _ = m!(1.0, 2.0; 3.0, 4.0).vector_1_norm();
 }
 
 #[test]
 fn test_vector_p_norm() {
-  assert!(vector(vec![-3.0, 2.0, 2.0]).vector_p_norm(3.0) == 43.0f64.powf(1.0 / 3.0));
-  assert!(vector(vec![6.0, 8.0, -2.0, 3.0]).vector_p_norm(5.0) == 40819.0f64.powf(1.0 / 5.0));
-  assert!(vector(vec![1.0]).vector_p_norm(2.0) == 1.0);
+  assert!(m!(-3.0; 2.0; 2.0).vector_p_norm(3.0) == 43.0f64.powf(1.0 / 3.0));
+  assert!(m!(6.0; 8.0; -2.0; 3.0).vector_p_norm(5.0) == 40819.0f64.powf(1.0 / 5.0));
+  assert!(m!(1.0).vector_p_norm(2.0) == 1.0);
 }
 
 #[test]
 #[should_fail]
 fn test_vector_p_norm_not_vector() {
-  let _ = matrix(2, 2, vec![1.0, 2.0, 3.0, 4.0]).vector_p_norm(1.0);
+  let _ = m!(1.0, 2.0; 3.0, 4.0).vector_p_norm(1.0);
 }
 
 #[test]
 fn test_vector_inf_norm() {
-  assert!(vector(vec![-3.0, 2.0, 2.5]).vector_inf_norm() == 3.0);
-  assert!(vector(vec![6.0, 8.0, -2.0, 3.0]).vector_inf_norm() == 8.0);
-  assert!(vector(vec![1.0]).vector_inf_norm() == 1.0);
+  assert!(m!(-3.0; 2.0; 2.5).vector_inf_norm() == 3.0);
+  assert!(m!(6.0; 8.0; -2.0; 3.0).vector_inf_norm() == 8.0);
+  assert!(m!(1.0).vector_inf_norm() == 1.0);
 }
 
 #[test]
 #[should_fail]
 fn test_vector_inf_norm_not_vector() {
-  let _ = matrix(2, 2, vec![1.0, 2.0, 3.0, 4.0]).vector_inf_norm();
+  let _ = m!(1.0, 2.0; 3.0, 4.0).vector_inf_norm();
 }
 
 #[test]
 fn test_frobenius_norm() {
-  assert!(matrix(2, 2, vec![1.0, 2.0, 3.0, 4.0]).frobenius_norm() == 30.0f64.sqrt());
-  assert!(vector(vec![1.0, 2.0, 2.0]).frobenius_norm() == 3.0);
+  assert!(m!(1.0, 2.0; 3.0, 4.0).frobenius_norm() == 30.0f64.sqrt());
+  assert!(m!(1.0; 2.0; 2.0).frobenius_norm() == 3.0);
 }
 

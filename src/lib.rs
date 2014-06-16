@@ -4,6 +4,8 @@
 #![feature(globs)]
 #![feature(macro_rules)]
 
+mod macros;
+
 pub mod approxeq;
 
 pub mod matrix;

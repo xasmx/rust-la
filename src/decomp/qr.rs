@@ -39,7 +39,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       QRDecomposition::perform_householder_reflection(minor, &mut qrdata, m, n, &mut rdiag);
     }
 
-    QRDecomposition { qr : matrix(m, n, qrdata), rdiag : rdiag }
+    QRDecomposition { qr : Matrix::new(m, n, qrdata), rdiag : rdiag }
   }
 
   // Find a reflection hyperplane, that will reflect the minor:th minor vector to (a 0 .. 0)^T and perform the reflection.
@@ -128,7 +128,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    matrix(self.qr.rows(), self.qr.cols(), hdata)
+    Matrix::new(self.qr.rows(), self.qr.cols(), hdata)
   }
 
   // Return the upper triangular factor
@@ -144,7 +144,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
                            else { num::zero() };
       }
     }
-    matrix(m, n, rdata)
+    Matrix::new(m, n, rdata)
   }
 
   // Generate and return the (economy-sized) orthogonal factor
@@ -190,7 +190,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    matrix(m, m, qdata)
+    Matrix::new(m, m, qdata)
   }
 
   // Least squares solution of A*X = B
@@ -234,27 +234,27 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    Some(matrix(self.qr.cols(), b.cols(), xdata))
+    Some(Matrix::new(self.qr.cols(), b.cols(), xdata))
   }
 }
 
 #[test]
 fn qr_test() {
-  let a = matrix(3, 3, vec![12.0, -51.0, 4.0, 6.0, 167.0, -68.0, -4.0, 24.0, -41.0]);
+  let a = m!(12.0, -51.0, 4.0; 6.0, 167.0, -68.0; -4.0, 24.0, -41.0);
   let qr = QRDecomposition::new(&a);
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }
 
 #[test]
 fn qr_test_m_over_n() {
-  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
   let qr = QRDecomposition::new(&a);
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }
 
 #[test]
 fn qr_test_n_over_m() {
-  let a = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   let qr = QRDecomposition::new(&a);
   assert!((qr.get_q() * qr.get_r()).approx_eq(&a));
 }

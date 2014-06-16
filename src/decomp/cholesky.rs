@@ -106,7 +106,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    Some(CholeskyDecomposition { l : matrix(n, n, data) })
+    Some(CholeskyDecomposition { l : Matrix::new(n, n, data) })
   }
 
   #[inline]
@@ -140,13 +140,13 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    matrix(n, nx, xdata)
+    Matrix::new(n, nx, xdata)
   }
 }
 
 #[test]
 fn cholesky_square_pos_def_test() {
-  let a = matrix(3, 3, vec![4.0, 12.0, -16.0, 12.0, 37.0, -43.0, -16.0, -43.0, 98.0]);
+  let a = m!(4.0, 12.0, -16.0; 12.0, 37.0, -43.0; -16.0, -43.0, 98.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
   assert!(c.get_l() * c.get_l().t() == a);
   assert!(c.get_l().data == vec![2.0, 0.0, 0.0, 6.0, 1.0, 0.0, -8.0, 5.0, 3.0]);
@@ -154,29 +154,29 @@ fn cholesky_square_pos_def_test() {
 
 #[test]
 fn cholesky_not_pos_def_test() {
-  let a = matrix(3, 3, vec![4.0, 12.0, -16.0, 12.0, 37.0, 43.0, -16.0, 43.0, 98.0]);
+  let a = m!(4.0, 12.0, -16.0; 12.0, 37.0, 43.0; -16.0, 43.0, 98.0);
   assert!(CholeskyDecomposition::new(&a).is_none());
 }
 
 #[test]
 fn cholesky_not_square_test() {
-  let a = matrix(2, 3, vec![4.0, 12.0, -16.0, 12.0, 37.0, 43.0]);
+  let a = m!(4.0, 12.0, -16.0; 12.0, 37.0, 43.0);
   assert!(CholeskyDecomposition::new(&a).is_none());
 }
 
 #[test]
 fn cholesky_solve_test() {
-  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
-  let b = vector(vec![1.0, 2.0, 3.0]);
-  assert!(c.solve(&b).approx_eq(&vector(vec![-1.0, 3.0, 3.0])));
+  let b = m!(1.0; 2.0; 3.0);
+  assert!(c.solve(&b).approx_eq(&m!(-1.0; 3.0; 3.0)));
 }
 
 #[test]
 #[should_fail]
 fn cholesky_solve_test_incompatible() {
-  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
-  let b = vector(vec![1.0, 2.0, 3.0, 4.0]);
+  let b = m!(1.0; 2.0; 3.0; 4.0);
   let _ = c.solve(&b);
 }

@@ -160,7 +160,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
     }
 
     LUDecomposition { 
-      lu : matrix(m as uint, n as uint, ludata),
+      lu : Matrix::new(m as uint, n as uint, ludata),
       pospivsign : pospivsign,
       piv : pivdata
     }
@@ -197,7 +197,7 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
             }
       }
     }
-    matrix(m, n, ldata)
+    Matrix::new(m, n, ldata)
   }
 
   pub fn get_u(&self) -> Matrix<T> {
@@ -210,12 +210,12 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
         *udata.get_mut((i * n + j) as uint) = if i <= j { self.lu.data.get((i * n + j) as uint).clone() } else { num::zero() };
       }
     }
-    matrix(m as uint, n as uint, udata)
+    Matrix::new(m as uint, n as uint, udata)
   }
 
   pub fn get_p(&self) -> Matrix<T> {
     let len = self.piv.len();
-    id(len, len).permute_rows(&self.piv)
+    Matrix::id(len, len).permute_rows(&self.piv)
   }
 
   pub fn get_piv<'lt>(&'lt self) -> &'lt Vec<uint> { &self.piv }
@@ -273,13 +273,13 @@ impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + 
       }
     }
 
-    Some(matrix(self.lu.rows(), b.cols(), xdata))
+    Some(Matrix::new(self.lu.rows(), b.cols(), xdata))
   }
 }
 
 #[test]
 fn test_lu_square() {
-  let a = matrix(3, 3, vec![1.0, 2.0, 0.0, 3.0, 6.0, -1.0, 1.0, 2.0, 1.0]);
+  let a = m!(1.0, 2.0, 0.0; 3.0, 6.0, -1.0; 1.0, 2.0, 1.0);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -289,7 +289,7 @@ fn test_lu_square() {
 
 #[test]
 fn test_lu2_m_over_n() {
-  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -299,7 +299,7 @@ fn test_lu2_m_over_n() {
 
 #[test]
 fn test_lu2_m_under_n() {
-  let a = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   let lu = LUDecomposition::new(&a);
   let l = lu.get_l();
   let u = lu.get_u();
@@ -309,58 +309,58 @@ fn test_lu2_m_under_n() {
 
 #[test]
 fn lu_solve_test() {
-  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let lu = LUDecomposition::new(&a);
-  let b = vector(vec![1.0, 2.0, 3.0]);
-  assert!(lu.solve(&b).unwrap().approx_eq(&vector(vec![-1.0, 3.0, 3.0])));
+  let b = m!(1.0; 2.0; 3.0);
+  assert!(lu.solve(&b).unwrap().approx_eq(&m!(-1.0; 3.0; 3.0)));
 }
 
 #[test]
 #[should_fail]
 fn lu_solve_test_incompatible() {
-  let a = matrix(3, 3, vec![2.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
+  let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let lu = LUDecomposition::new(&a);
-  let b = vector(vec![1.0, 2.0, 3.0, 4.0]);
+  let b = m!(1.0; 2.0; 3.0; 4.0);
   let _ = lu.solve(&b);
 }
 
 #[test]
 fn lu_solve_test_singular() {
-  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
+  let a = m!(2.0, 6.0; 1.0, 3.0);
   let lu = LUDecomposition::new(&a);
-  let b = vector(vec![1.0, 2.0]);
+  let b = m!(1.0; 2.0);
   assert!(lu.solve(&b).is_none());
 }
 
 #[test]
 fn lu_is_singular_test() {
-  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 3.0]);
+  let a = m!(2.0, 6.0; 1.0, 3.0);
   let lu = LUDecomposition::new(&a);
   assert!(lu.is_singular());
 
-  let a = matrix(2, 2, vec![2.0, 6.0, 1.0, 4.0]);
+  let a = m!(2.0, 6.0; 1.0, 4.0);
   let lu = LUDecomposition::new(&a);
   assert!(!lu.is_singular());
 }
 
 #[test]
 fn lu_is_non_singular_test() {
-  let a = matrix(2, 2, vec![4.0, 8.0, 3.0, 4.0]);
+  let a = m!(4.0, 8.0; 3.0, 4.0);
   let lu = LUDecomposition::new(&a);
   assert!(lu.is_non_singular());
 
-  let a = matrix(2, 2, vec![4.0, 6.0, 2.0, 3.0]);
+  let a = m!(4.0, 6.0; 2.0, 3.0);
   let lu = LUDecomposition::new(&a);
   assert!(!lu.is_non_singular());
 }
 
 #[test]
 fn lu_det_test() {
-  let a = matrix(2, 2, vec![4.0, 8.0, 3.0, 4.0]);
+  let a = m!(4.0, 8.0; 3.0, 4.0);
   let lu = LUDecomposition::new(&a);
   assert!(lu.det() == -8.0);
 
-  let a = matrix(2, 2, vec![4.0, 8.0, 2.0, 4.0]);
+  let a = m!(4.0, 8.0; 2.0, 4.0);
   let lu = LUDecomposition::new(&a);
   assert!(lu.det() == 0.0);
 }
@@ -368,7 +368,7 @@ fn lu_det_test() {
 #[test]
 #[should_fail]
 fn lu_det_test_not_square() {
-  let a = matrix(2, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   let lu = LUDecomposition::new(&a);
   let _ = lu.det();
 }

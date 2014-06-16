@@ -342,7 +342,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
   }
 
   // Nonsymmetric reduction from Hessenberg to real Schur form.
-  pub fn hqr2(n : uint, ddata : &mut Vec<T>, edata : &mut Vec<T>, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
+  fn hqr2(n : uint, ddata : &mut Vec<T>, edata : &mut Vec<T>, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedure hqr2, by Martin and Wilkinson, Handbook for Auto. Comp.,
     // Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
 
@@ -785,7 +785,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         n : n,
         d : ddata,
         e : edata,
-        v : matrix(n, n, vdata),
+        v : Matrix::new(n, n, vdata),
         h : None
       }
     } else {
@@ -807,8 +807,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         n : n,
         d : ddata,
         e : edata,
-        v : matrix(n, n, vdata),
-        h : Some(matrix(n, n, hdata))
+        v : Matrix::new(n, n, vdata),
+        h : Some(Matrix::new(n, n, hdata))
       }
     }
   }
@@ -834,14 +834,14 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
       }
     }
 
-    matrix(self.n, self.n, ddata)
+    Matrix::new(self.n, self.n, ddata)
   }
 }
 
 #[test]
 fn eigen_test() {
-  let a = matrix(3, 3, vec![3.0, 1.0, 6.0, 2.0, 1.0, 0.0, -1.0, 0.0, -3.0]);
+  let a = m!(3.0, 1.0, 6.0; 2.0, 1.0, 0.0; -1.0, 0.0, -3.0);
   let _eig = EigenDecomposition::new(&a);
   let r = _eig.get_real_eigenvalues();
-  assert!(vector(r.clone()).approx_eq(&vector(vec![3.0, -1.0, -1.0])));
+  assert!(Matrix::vector(r.clone()).approx_eq(&m!(3.0; -1.0; -1.0)));
 }

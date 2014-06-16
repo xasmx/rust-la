@@ -409,8 +409,8 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     }
 
     SVD {
-      u : matrix(m, nu, udata),
-      v : matrix(n, n, vdata),
+      u : Matrix::new(m, nu, udata),
+      v : Matrix::new(n, n, vdata),
       s : sdata,
       m : m,
       n : n
@@ -430,7 +430,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
     for i in range(0u, self.n) {
       *d.get_mut(i * self.n + i) = self.s.get(i).clone();
     }
-    matrix(self.n, self.n, d)
+    Matrix::new(self.n, self.n, d)
   }
 
   pub fn rank(&self) -> uint {
@@ -449,7 +449,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
 
 #[test]
 fn svd_test() {
-  let a = matrix(3, 3, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0; 7.0, 8.0, 9.0);
   let svd = SVD::new(&a);
   let u = svd.get_u();
   let s = svd.get_s();
@@ -459,7 +459,7 @@ fn svd_test() {
 
 #[test]
 fn svd_test_m_over_n() {
-  let a = matrix(3, 2, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
   let svd = SVD::new(&a);
   let u = svd.get_u();
   let s = svd.get_s();
