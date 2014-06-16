@@ -31,16 +31,3 @@ pub fn read_csv<T>(file_name : &str, parser : |&str| -> T) -> Matrix<T> {
 
   Matrix::new(row_count, col_count.unwrap(), data)
 }
-
-#[test]
-fn hypot_test() {
-  assert!(hypot(3.0, 4.0) == 5.0);
-  assert!(hypot(4.0, 3.0) == 5.0);
-  assert!(hypot(4.0, 0.0) == 4.0);
-  assert!(hypot(0.0, 4.0) == 4.0);
-  assert!(hypot(-3.0, 4.0) == 5.0);
-  assert!(hypot(4.0, -3.0) == 5.0);
-  assert!(hypot(-4.0, -3.0) == 5.0);
-  assert!(hypot(-4.0, 0.0) == 4.0);
-  assert!(hypot(0.0, -4.0) == 4.0);
-}
