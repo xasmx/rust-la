@@ -2,7 +2,12 @@
 
 Linear algebra library for the Rust programming language.
 
-Features:
+## Documentation
+
+See [here](http://xasmx.github.io/rust-la/doc/la/index.html).
+
+## Features
+
 * BLAS
 * immutable and mutable implementations
 * inverse, solve
@@ -15,7 +20,9 @@ Features:
 
 Currently only dense matrixes.
 
-To build rust-la:
+## Building
 
-	$ make
+~~~
+make
+~~~
 
