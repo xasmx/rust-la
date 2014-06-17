@@ -1,6 +1,5 @@
 use std::cmp;
 use std::num;
-use std::num::{One, Zero, NumCast};
 use std::vec;
 
 use ApproxEq;
@@ -27,7 +26,7 @@ pub struct SVD<T> {
 //
 // The singular value decompostion always exists. The matrix condition number
 // and the effective numerical rank can be computed from this decomposition.
-impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float + FloatMath> SVD<T> {
+impl<T : FloatMath + ApproxEq<T>> SVD<T> {
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // Derived from LINPACK code.
     // Initialize.

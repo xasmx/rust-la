@@ -1,6 +1,5 @@
 use std::cmp;
 use std::num;
-use std::num::{One, Zero};
 use std::vec;
 
 use ApproxEq;
@@ -22,7 +21,7 @@ pub struct QRDecomposition<T> {
 // full rank.  The primary use of the QR decomposition is in the least
 // squares solution of nonsquare systems of simultaneous linear equations.
 // This will fail if is_full_rank() returns false.
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float> QRDecomposition<T> {
+impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
     // qr: The area above the diagonals stores the corresponding parts of the R matrix.
     //     Each column from diagonal down will store the k:th householder vector in the end. (The elements above are zero for the householder vectors).

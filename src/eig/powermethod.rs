@@ -77,14 +77,12 @@ use Matrix;
 // Using normal equations we get:
 //   r = q'Aq / (q'q).			// Note that if we normalized q, then we'll just have:  r = q'Aq.
 //
-pub fn power_method
-    <T : Ord + Float + ApproxEq<T>>
-    (m : &Matrix<T>, q : &Matrix<T>, eps : T) -> Matrix<T> {
+pub fn power_method<T : Float + ApproxEq<T>>(m : &Matrix<T>, q : &Matrix<T>, eps : T) -> Matrix<T> {
   assert!(m.cols() == m.rows());
   assert!(m.cols() == q.rows());
   assert!(q.cols() == 1);
 
-  fn max_elem<T : Ord + Signed + Clone>(v : &Matrix<T>) -> T {
+  fn max_elem<T : Float>(v : &Matrix<T>) -> T {
     let mut current_max = num::abs(v.get_data().get(0).clone());
     for _ in range(1, v.rows()) {
       let v = num::abs(v.get_data().get(1).clone());

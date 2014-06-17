@@ -1,6 +1,6 @@
 use std::cmp;
 use std::num;
-use std::num::{One, Zero, NumCast, FloatMath};
+use std::num::FloatMath;
 
 use ApproxEq;
 use Matrix;
@@ -26,7 +26,7 @@ pub struct EigenDecomposition<T> {
 // columns of V represent the eigenvectors in the sense that A*V = V*D,
 // The matrix V may be badly conditioned, or even singular, so the validity
 // of the equation A = V * D * V^-1 depends upon V.cond().
-impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed + Float + FloatMath> EigenDecomposition<T> {
+impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
   // Symmetric Householder reduction to tridiagonal form.
   fn tred2(n : uint, ddata : &mut Vec<T>, vdata : &mut Vec<T>, edata : &mut Vec<T>) {
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for

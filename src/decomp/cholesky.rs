@@ -1,5 +1,4 @@
 use std::num;
-use std::num::{One, Zero};
 
 use ApproxEq;
 use Matrix;
@@ -52,7 +51,7 @@ pub struct CholeskyDecomposition<T> {
 // As long as we follow the up->down, left->right order to compute the values, all the elements of L accessed on the right
 // side will have been computed by the time they are needed.
 //
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Float> CholeskyDecomposition<T> {
+impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> Option<CholeskyDecomposition<T>> {
     if m.rows() != m.cols() {
       return None

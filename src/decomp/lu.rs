@@ -1,6 +1,5 @@
 use std::cmp;
 use std::num;
-use std::num::{One, Zero};
 
 use ApproxEq;
 use Matrix;
@@ -99,7 +98,7 @@ pub struct LUDecomposition<T> {
   piv : Vec<uint>
 }
 
-impl<T : Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> + ApproxEq<T> + PartialOrd + One + Zero + Clone + Signed> LUDecomposition<T> {
+impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
     let mut ludata = a.get_data().clone();
     let m = a.rows() as int;
