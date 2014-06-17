@@ -10,8 +10,7 @@ pub struct EigenDecomposition<T> {
   n : uint,
   d : Vec<T>,
   e : Vec<T>,
-  v : Matrix<T>,
-  h : Option<Matrix<T>>
+  v : Matrix<T>
 }
 
 // Ported from JAMA.
@@ -785,8 +784,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         n : n,
         d : ddata,
         e : edata,
-        v : Matrix::new(n, n, vdata),
-        h : None
+        v : Matrix::new(n, n, vdata)
       }
     } else {
       let mut hdata = alloc_dirty_vec(n * n);
@@ -807,8 +805,7 @@ impl<T : Num + NumCast + Add<T, T> + Sub<T, T> + Mul<T, T> + Div<T, T> + Neg<T> 
         n : n,
         d : ddata,
         e : edata,
-        v : Matrix::new(n, n, vdata),
-        h : Some(Matrix::new(n, n, hdata))
+        v : Matrix::new(n, n, vdata)
       }
     }
   }
