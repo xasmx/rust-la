@@ -2,6 +2,7 @@ use std::cmp;
 use std::fmt::{Show};
 use std::io;
 use std::num;
+use std::num::Zero;
 use std::rand;
 use std::rand::{Rand};
 use std::vec::Vec;
@@ -173,18 +174,6 @@ impl<T : Num + Clone> Matrix<T> {
     Matrix { no_rows : no_rows, data : d }
   }
 
-  pub fn neg(&self) -> Matrix<T> {
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = - *self.data.get(i)
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-
   pub fn mneg(&mut self) {
     for i in range(0u, self.data.len()) {
       *self.data.get_mut(i) = - *self.data.get(i);
@@ -209,42 +198,12 @@ impl<T : Num + Clone> Matrix<T> {
     }
   }
 
-  pub fn add(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) + *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
-    }
-  }
-
   pub fn madd(&mut self, m : &Matrix<T>) {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     for i in range(0u, self.data.len()) {
       *self.data.get_mut(i) = *self.data.get(i) + *m.data.get(i);
-    }
-  }
-
-  pub fn sub(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    let elems = self.data.len();
-    let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) - *m.data.get(i);
-    }
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
     }
   }
 
@@ -302,27 +261,6 @@ impl<T : Num + Clone> Matrix<T> {
 
     for i in range(0u, self.data.len()) {
       *self.data.get_mut(i) = *self.data.get(i) / *m.data.get(i);
-    }
-  }
-
-  pub fn mul(&self, m : &Matrix<T>) -> Matrix<T> {
-    assert!(self.cols() == m.no_rows);
-
-    let elems = self.no_rows * m.cols();
-    let mut d = alloc_dirty_vec(elems);
-    for row in range(0u, self.no_rows) {
-      for col in range(0u, m.cols()) {
-        let mut res : T = num::zero();
-        for idx in range(0u, self.cols()) {
-          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
-        }
-        *d.get_mut(row * m.cols() + col) = res;
-      }
-    }
-
-    Matrix {
-      no_rows: self.no_rows,
-      data : d
     }
   }
 
@@ -616,20 +554,85 @@ impl<T : Rand> Matrix<T> {
   }
 }
 
-impl <T : Num + Clone> Neg<Matrix<T>> for Matrix<T> {
-  fn neg(&self) -> Matrix<T> { self.neg() }
+impl <T : Neg<T>> Neg<Matrix<T>> for Matrix<T> {
+  fn neg(&self) -> Matrix<T> {
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = - *self.data.get(i)
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
 }
 
-impl <T : Num + Clone> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn add(&self, rhs: &Matrix<T>) -> Matrix<T> { self.add(rhs) }
+impl <T : Add<T, T>> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
+  fn add(&self, m: &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) + *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
 }
 
-impl <T : Num + Clone> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn sub(&self, rhs: &Matrix<T>) -> Matrix<T> { self.sub(rhs) }
+impl <T : Sub<T, T>> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
+  fn sub(&self, m: &Matrix<T>) -> Matrix<T> {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols());
+
+    let elems = self.data.len();
+    let mut d = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = *self.data.get(i) - *m.data.get(i);
+    }
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
 }
 
-impl<T : Num + Clone> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn mul(&self, rhs: &Matrix<T>) -> Matrix<T> { self.mul(rhs) }
+impl<T : Add<T, T> + Mul<T, T> + Zero> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
+  fn mul(&self, m: &Matrix<T>) -> Matrix<T> {
+    assert!(self.cols() == m.no_rows);
+
+    let elems = self.no_rows * m.cols();
+    let mut d = alloc_dirty_vec(elems);
+    for row in range(0u, self.no_rows) {
+      for col in range(0u, m.cols()) {
+        let mut res : T = num::zero();
+        for idx in range(0u, self.cols()) {
+          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
+        }
+        *d.get_mut(row * m.cols() + col) = res;
+      }
+    }
+
+    Matrix {
+      no_rows: self.no_rows,
+      data : d
+    }
+  }
+}
+
+impl<T : Clone> Index<(uint, uint), T> for Matrix<T> {
+  #[inline]
+  fn index(&self, &(y, x): &(uint, uint)) -> T { self.get(y, x) }
+}
+
+impl<T : Clone> BitOr<Matrix<T>, Matrix<T>> for Matrix<T> {
+  #[inline]
+  fn bitor(&self, rhs: &Matrix<T>) -> Matrix<T> { self.cr(rhs) }
 }
 
 impl<T : Float + ApproxEq<T>> Matrix<T> {
