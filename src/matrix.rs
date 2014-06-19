@@ -4,7 +4,7 @@ use std::io;
 use std::num;
 use std::rand;
 use std::rand::{Rand};
-use std::vec;
+use std::vec::Vec;
 
 use ApproxEq;
 use decomp::lu;
@@ -103,7 +103,7 @@ impl<T> Matrix<T> {
   }
 }
 
-impl<T : Num> Matrix<T> {
+impl<T : Num + Clone> Matrix<T> {
   pub fn id(m : uint, n : uint) -> Matrix<T> {
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
@@ -126,6 +126,35 @@ impl<T : Num> Matrix<T> {
       no_rows : no_rows,
       data : d
     }
+  }
+
+  pub fn diag(data : Vec<T>) -> Matrix<T> {
+    let size = data.len();
+    let elems = size * size;
+    let mut d : Vec<T> = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = num::zero();
+    }
+    for i in range(0u, size) {
+      *d.get_mut(i * size + i) = data.get(i).clone();
+    }
+    Matrix::new(size, size, d)
+  }
+
+  pub fn block_diag(m : uint, n : uint, data : Vec<T>) -> Matrix<T> {
+    let min_dim = cmp::min(m, n);
+    assert!(data.len() == min_dim);
+
+    let elems = m * n;
+    let mut d : Vec<T> = alloc_dirty_vec(elems);
+    for i in range(0u, elems) {
+      *d.get_mut(i) = num::zero();
+    }
+
+    for i in range(0u, min_dim) {
+      *d.get_mut(i * n + i) = data.get(i).clone();
+    }
+    Matrix::new(m, n, d)
   }
 
   pub fn zero_vector(no_rows : uint) -> Matrix<T> {
@@ -390,7 +419,7 @@ impl<T : Clone> Matrix<T> {
   }
 
   pub fn mt(&mut self) {
-    let mut visited = vec::Vec::from_elem(self.data.len(), false);
+    let mut visited = Vec::from_elem(self.data.len(), false);
 
     for cycleIdx in range(1u, self.data.len() - 1) {
       if *visited.get(cycleIdx) {
@@ -517,7 +546,7 @@ impl<T : Clone> Matrix<T> {
   }
 
   pub fn filter_rows(&self, f : |m : &Matrix<T>, row : uint| -> bool) -> Matrix<T> {
-    let mut rows = vec::Vec::with_capacity(self.rows());
+    let mut rows = Vec::with_capacity(self.rows());
     for row in range(0u, self.rows()) {
       if f(self, row) {
         rows.push(row);
@@ -527,7 +556,7 @@ impl<T : Clone> Matrix<T> {
   }
 
   pub fn filter_columns(&self, f : |m : &Matrix<T>, col : uint| -> bool) -> Matrix<T> {
-    let mut cols = vec::Vec::with_capacity(self.cols());
+    let mut cols = Vec::with_capacity(self.cols());
     for col in range(0u, self.cols()) {
       if f(self, col) {
         cols.push(col);
@@ -538,7 +567,7 @@ impl<T : Clone> Matrix<T> {
 
   pub fn select_rows(&self, selector : &[bool]) -> Matrix<T> {
     assert!(self.no_rows == selector.len());
-    let mut rows = vec::Vec::with_capacity(self.no_rows);
+    let mut rows = Vec::with_capacity(self.no_rows);
     for i in range(0, selector.len()) {
       if selector[i] {
         rows.push(i);
@@ -549,7 +578,7 @@ impl<T : Clone> Matrix<T> {
 
   pub fn select_columns(&self, selector : &[bool]) -> Matrix<T> {
     assert!(self.cols() == selector.len());
-    let mut cols = vec::Vec::with_capacity(self.cols());
+    let mut cols = Vec::with_capacity(self.cols());
     for i in range(0, selector.len()) {
       if selector[i] {
         cols.push(i);
@@ -587,19 +616,19 @@ impl<T : Rand> Matrix<T> {
   }
 }
 
-impl <T : Num> Neg<Matrix<T>> for Matrix<T> {
+impl <T : Num + Clone> Neg<Matrix<T>> for Matrix<T> {
   fn neg(&self) -> Matrix<T> { self.neg() }
 }
 
-impl <T : Num> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl <T : Num + Clone> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn add(&self, rhs: &Matrix<T>) -> Matrix<T> { self.add(rhs) }
 }
 
-impl <T : Num> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl <T : Num + Clone> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn sub(&self, rhs: &Matrix<T>) -> Matrix<T> { self.sub(rhs) }
 }
 
-impl<T : Num> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
+impl<T : Num + Clone> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
   fn mul(&self, rhs: &Matrix<T>) -> Matrix<T> { self.mul(rhs) }
 }
 
@@ -796,6 +825,27 @@ fn test_zero() {
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![0, 0, 0, 0, 0, 0]);
+}
+
+#[test]
+fn test_diag() {
+  let m = Matrix::<uint>::diag(vec![1, 2]);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 2);
+  assert!(m.data == vec![1, 0, 0, 2]);
+}
+
+#[test]
+fn test_block_diag() {
+  let m = Matrix::<uint>::block_diag(2, 3, vec![1, 2]);
+  assert!(m.rows() == 2);
+  assert!(m.cols() == 3);
+  assert!(m.data == vec![1, 0, 0, 0, 2, 0]);
+
+  let m = Matrix::<uint>::block_diag(3, 2, vec![1, 2]);
+  assert!(m.rows() == 3);
+  assert!(m.cols() == 2);
+  assert!(m.data == vec![1, 0, 0, 2, 0, 0]);
 }
 
 #[test]

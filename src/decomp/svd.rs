@@ -1,6 +1,5 @@
 use std::cmp;
 use std::num;
-use std::vec;
 
 use ApproxEq;
 use Matrix;
@@ -8,10 +7,8 @@ use internalutil::{alloc_dirty_vec, hypot};
 
 pub struct SVD<T> {
   u : Matrix<T>,
-  v : Matrix<T>,
-  s : Vec<T>,
-  m : uint,
-  n : uint
+  s : Matrix<T>,
+  v : Matrix<T>
 }
 
 // Ported from JAMA.
@@ -409,10 +406,8 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
     SVD {
       u : Matrix::new(m, nu, udata),
-      v : Matrix::new(n, n, vdata),
-      s : sdata,
-      m : m,
-      n : n
+      s : Matrix::diag(sdata),
+      v : Matrix::new(n, n, vdata)
     }
   }
 
@@ -420,25 +415,21 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     &self.u
   }
 
+  pub fn get_s<'lt>(&'lt self) -> &'lt Matrix<T> {
+    &self.s
+  }
+
   pub fn get_v<'lt>(&'lt self) -> &'lt Matrix<T> {
     &self.v
   }
 
-  pub fn get_s(&self) -> Matrix<T> {
-    let mut d = vec::Vec::from_elem(self.n * self.n, num::zero());
-    for i in range(0u, self.n) {
-      *d.get_mut(i * self.n + i) = self.s.get(i).clone();
-    }
-    Matrix::new(self.n, self.n, d)
-  }
-
   pub fn rank(&self) -> uint {
     let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
-    let maxDim : T = num::cast(cmp::max(self.m, self.n)).unwrap();
-    let tol = maxDim * *self.s.get(0) * eps;
+    let maxDim : T = num::cast(cmp::max(self.u.rows(), self.v.rows())).unwrap();
+    let tol = maxDim * self.s.get(0, 0) * eps;
     let mut r = 0;
-    for i in range(0u, self.s.len()) {
-      if *self.s.get(i) > tol {
+    for i in range(0u, self.s.rows()) {
+      if self.s.get(i, i) > tol {
         r += 1;
       }
     }
@@ -453,7 +444,7 @@ fn svd_test() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * s * v.t()).approx_eq(&a));
+  assert!((u * *s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -463,6 +454,6 @@ fn svd_test_m_over_n() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * s * v.t()).approx_eq(&a));
+  assert!((u * *s * v.t()).approx_eq(&a));
 }
 
