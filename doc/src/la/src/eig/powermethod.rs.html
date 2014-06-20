@@ -143,8 +143,6 @@
 <span id='104'>104</span>
 <span id='105'>105</span>
 <span id='106'>106</span>
-<span id='107'>107</span>
-<span id='108'>108</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
 
@@ -225,14 +223,12 @@
 // Using normal equations we get:
 //   r = q&#39;Aq / (q&#39;q).			// Note that if we normalized q, then we&#39;ll just have:  r = q&#39;Aq.
 //
-</span><span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>power_method</span>
-    <span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span>
-    (<span class='ident'>m</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>q</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>eps</span> : <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+</span><span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>power_method</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span>(<span class='ident'>m</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>q</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>eps</span> : <span class='ident'>T</span>) <span class='op'>-&gt;</span> <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>m</span>.<span class='ident'>cols</span>() <span class='op'>==</span> <span class='ident'>m</span>.<span class='ident'>rows</span>());
   <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>m</span>.<span class='ident'>cols</span>() <span class='op'>==</span> <span class='ident'>q</span>.<span class='ident'>rows</span>());
   <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>q</span>.<span class='ident'>cols</span>() <span class='op'>==</span> <span class='number'>1</span>);
 
-  <span class='kw'>fn</span> <span class='ident'>max_elem</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Ord</span> <span class='op'>+</span> <span class='ident'>Signed</span> <span class='op'>+</span> <span class='ident'>Clone</span><span class='op'>&gt;</span>(<span class='ident'>v</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> {
+  <span class='kw'>fn</span> <span class='ident'>max_elem</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span><span class='op'>&gt;</span>(<span class='ident'>v</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>T</span> {
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>current_max</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>abs</span>(<span class='ident'>v</span>.<span class='ident'>get_data</span>().<span class='ident'>get</span>(<span class='number'>0</span>).<span class='ident'>clone</span>());
     <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>1</span>, <span class='ident'>v</span>.<span class='ident'>rows</span>()) {
       <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>abs</span>(<span class='ident'>v</span>.<span class='ident'>get_data</span>().<span class='ident'>get</span>(<span class='number'>1</span>).<span class='ident'>clone</span>());

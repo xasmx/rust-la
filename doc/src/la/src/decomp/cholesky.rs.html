@@ -218,10 +218,8 @@
 <span id='179'>179</span>
 <span id='180'>180</span>
 <span id='181'>181</span>
-<span id='182'>182</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
-<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>::{<span class='ident'>One</span>, <span class='ident'>Zero</span>};
 
 <span class='kw'>use</span> <span class='ident'>ApproxEq</span>;
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
@@ -274,7 +272,7 @@
 // As long as we follow the up-&gt;down, left-&gt;right order to compute the values, all the elements of L accessed on the right
 // side will have been computed by the time they are needed.
 //
-</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Add</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Sub</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Mul</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Div</span><span class='op'>&lt;</span><span class='ident'>T</span>, <span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>Neg</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>+</span> <span class='ident'>PartialOrd</span> <span class='op'>+</span> <span class='ident'>One</span> <span class='op'>+</span> <span class='ident'>Zero</span> <span class='op'>+</span> <span class='ident'>Clone</span> <span class='op'>+</span> <span class='ident'>Float</span><span class='op'>&gt;</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>m</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> {
     <span class='kw'>if</span> <span class='ident'>m</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>m</span>.<span class='ident'>cols</span>() {
       <span class='kw'>return</span> <span class='prelude-val'>None</span>
