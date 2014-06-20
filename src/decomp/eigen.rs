@@ -211,32 +211,32 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
           *ddata.get_mut(l as uint) = c * p;
 
           // Check for convergence.
-          if num::abs(edata.get(l as uint).clone()) > (eps * tst1) {
+          if num::abs(edata.get(l as uint).clone()) <= (eps * tst1) {
             break;
           }
         }
-        *ddata.get_mut(l as uint) = *ddata.get(l as uint) + f;
-        *edata.get_mut(l as uint) = num::zero();
       }
+      *ddata.get_mut(l as uint) = *ddata.get(l as uint) + f;
+      *edata.get_mut(l as uint) = num::zero();
+    }
 
-      // Sort eigenvalues and corresponding vectors.
-      for i in range(0u, n - 1) {
-        let mut k = i;
-        let mut p = ddata.get(i as uint).clone();
-        for j in range(i + 1, n) {
-          if *ddata.get(j as uint) < p {
-            k = j;
-            p = ddata.get(j as uint).clone();
-          }
+    // Sort eigenvalues and corresponding vectors.
+    for i in range(0u, n - 1) {
+      let mut k = i;
+      let mut p = ddata.get(i as uint).clone();
+      for j in range(i + 1, n) {
+        if *ddata.get(j as uint) < p {
+          k = j;
+          p = ddata.get(j as uint).clone();
         }
-        if k != i {
-          *ddata.get_mut(k as uint) = ddata.get(i as uint).clone();
-          *ddata.get_mut(i as uint) = p.clone();
-          for j in range(0u, n) {
-            p = vdata.get((j * n + i) as uint).clone();
-            *vdata.get_mut((j * n + i) as uint) = vdata.get((j * n + k) as uint).clone();
-            *vdata.get_mut((j * n + k) as uint) = p;
-          }
+      }
+      if k != i {
+        *ddata.get_mut(k as uint) = ddata.get(i as uint).clone();
+        *ddata.get_mut(i as uint) = p.clone();
+        for j in range(0u, n) {
+          p = vdata.get((j * n + i) as uint).clone();
+          *vdata.get_mut((j * n + i) as uint) = vdata.get((j * n + k) as uint).clone();
+          *vdata.get_mut((j * n + k) as uint) = p;
         }
       }
     }
@@ -836,9 +836,19 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
 }
 
 #[test]
-fn eigen_test() {
+fn eigen_test_symmetric() {
+  let a = m!(3.0, 1.0, 6.0; 2.0, 1.0, 0.0; -1.0, 0.0, -3.0);
+  let ata = a.t() * a;
+  let _eig = EigenDecomposition::new(&ata);
+  let r = _eig.get_real_eigenvalues();
+  assert!(Matrix::vector(r.clone()).approx_eq(&m!(0.036923; 4.301868; 56.661209)));
+}
+
+#[test]
+fn eigen_test_asymmetric() {
   let a = m!(3.0, 1.0, 6.0; 2.0, 1.0, 0.0; -1.0, 0.0, -3.0);
   let _eig = EigenDecomposition::new(&a);
   let r = _eig.get_real_eigenvalues();
   assert!(Matrix::vector(r.clone()).approx_eq(&m!(3.0; -1.0; -1.0)));
 }
+

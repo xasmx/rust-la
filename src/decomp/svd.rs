@@ -435,6 +435,42 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     }
     r
   }
+
+  /// Calculates SVD using the direct method. Note that calculating it this way
+  /// is not numerically stable, so it is mostly useful for testing purposes.
+  //pub fn direct(a : &Matrix<T>) -> SVD<T> {
+  pub fn direct(a : &Matrix<f64>) -> SVD<f64> {
+    use EigenDecomposition;
+
+    // A = USV'
+
+    // A'A = VS'U'USV'
+    //     = VS'SV'
+    let ata = a.t().mul(a);
+    let edc = EigenDecomposition::new(&ata);
+    //let v = &Matrix::id(2, 2);
+    let v = edc.get_v();
+    //let temp = Matrix::zero_vector(2);
+    //let eigs = temp.get_data(); //edc.get_real_eigenvalues();
+    let eigs = edc.get_real_eigenvalues();
+    let singular_values : Vec<f64> = eigs.iter().map(|&e| e.sqrt()).collect();
+
+    // U*S*V' = A
+    // U*S*V'*V = A*V
+    // U*S = A*V
+    // U*S*Sinv = A*V*Sinv
+    // U = A*V*Sinv
+    let s_size = singular_values.len();
+    let s = Matrix::block_diag(s_size, s_size, singular_values);
+    let s_inv = s.inverse().unwrap();
+    let u = a.mul(v).mul(&s_inv);
+
+    SVD {
+      u : u.clone(),
+      s : s.clone(),
+      v : v.clone()
+    }
+  }
 }
 
 #[test]
@@ -451,6 +487,16 @@ fn svd_test() {
 fn svd_test_m_over_n() {
   let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
   let svd = SVD::new(&a);
+  let u = svd.get_u();
+  let s = svd.get_s();
+  let v = svd.get_v();
+  assert!((u * *s * v.t()).approx_eq(&a));
+}
+
+#[test]
+fn direct_test() {
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0; 7.0, 8.0, 9.0);
+  let svd = SVD::<f64>::direct(&a);
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
