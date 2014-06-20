@@ -438,8 +438,7 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
   /// Calculates SVD using the direct method. Note that calculating it this way
   /// is not numerically stable, so it is mostly useful for testing purposes.
-  //pub fn direct(a : &Matrix<T>) -> SVD<T> {
-  pub fn direct(a : &Matrix<f64>) -> SVD<f64> {
+  pub fn direct(a : &Matrix<T>) -> SVD<T> {
     use EigenDecomposition;
 
     // A = USV'
@@ -453,7 +452,7 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     //let temp = Matrix::zero_vector(2);
     //let eigs = temp.get_data(); //edc.get_real_eigenvalues();
     let eigs = edc.get_real_eigenvalues();
-    let singular_values : Vec<f64> = eigs.iter().map(|&e| e.sqrt()).collect();
+    let singular_values : Vec<T> = eigs.iter().map(|&e| e.sqrt()).collect();
 
     // U*S*V' = A
     // U*S*V'*V = A*V
