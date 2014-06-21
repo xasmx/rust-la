@@ -11,22 +11,18 @@ pub struct SVD<T> {
   v : Matrix<T>
 }
 
-// Ported from JAMA.
-// Singular Value Decomposition.
-//
-// For an m-by-n matrix A with m >= n, the singular value decomposition is
-// an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
-// an n-by-n orthogonal matrix V so that A = U*S*V'.
-//
-// For an m-by-n matrix A with m < n, the singular value decomposition is
-// an m-by-m orthogonal matrix U, an m-by-m diagonal matrix S, and
-// an n-by-m orthogonal matrix V so that A = U*S*V'.
-//
-// The singular values, sigma[k] = S[k][k], are ordered so that
-// sigma[0] >= sigma[1] >= ... >= sigma[n-1].
-//
-// The singular value decompostion always exists. The matrix condition number
-// and the effective numerical rank can be computed from this decomposition.
+/// Ported from JAMA (with changes).
+/// Singular Value Decomposition.
+///
+/// For an m-by-n matrix A, the singular value decomposition is
+/// an m-by-m orthogonal matrix U, an m-by-n block diagonal matrix S, and
+/// an n-by-n orthogonal matrix V so that A = U*S*V'.
+///
+/// The singular values, sigma[k] = S[k][k], are ordered so that
+/// sigma[0] >= sigma[1] >= ... >= sigma[n-1].
+///
+/// The singular value decompostion always exists. The matrix condition number
+/// and the effective numerical rank can be computed from this decomposition.
 impl<T : FloatMath + ApproxEq<T>> SVD<T> {
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // A = USV'
@@ -48,12 +44,10 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
     assert!(m >= n);
 
-    let nu = cmp::min(m, n);
-
-    let slen = cmp::min(m + 1, n);
+    let slen = cmp::min(m, n);
     let mut sdata : Vec<T> = alloc_dirty_vec(slen);
 
-    let ulen = m * nu;
+    let ulen = m * m;
     let mut udata = alloc_dirty_vec(ulen);
 
     let vlen = n * n;
@@ -106,7 +100,7 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
       if k < nct {
         // Place the transformation in U for subsequent back multiplication.
         for i in range(k, m) {
-          *udata.get_mut(i * nu + k) = adata.get(i * n + k).clone();
+          *udata.get_mut(i * m + k) = adata.get(i * n + k).clone();
         }
       }
 
@@ -166,30 +160,30 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     *edata.get_mut(p - 1) = num::zero();
 
     // Generate U.
-    for j in range(nct, nu) {
+    for j in range(nct, m) {
       for i in range(0u, m) {
-        *udata.get_mut(i * nu + j) = num::zero();
+        *udata.get_mut(i * m + j) = num::zero();
       }
-      *udata.get_mut(j * nu + j) = num::one();
+      *udata.get_mut(j * m + j) = num::one();
     }
     for k in range(0u, nct).rev() {
       if *sdata.get(k) != num::zero() {
-        for j in range(k + 1, nu) {
+        for j in range(k + 1, m) {
           let mut t : T = num::zero();
           for i in range(k, m) {
-            t = t + *udata.get(i * nu + k) * *udata.get(i * nu + j);
+            t = t + *udata.get(i * m + k) * *udata.get(i * m + j);
           }
-          t = - t / *udata.get(k * nu + k);
+          t = - t / *udata.get(k * m + k);
           for i in range(k, m) {
-            *udata.get_mut(i * nu + j) = *udata.get(i * nu + j) + t * *udata.get(i * nu + k);
+            *udata.get_mut(i * m + j) = *udata.get(i * m + j) + t * *udata.get(i * m + k);
           }
         }
         for i in range(k, m) {
-          *udata.get_mut(i * nu + k) = - *udata.get(i * nu + k);
+          *udata.get_mut(i * m + k) = - *udata.get(i * m + k);
         }
-        *udata.get_mut(k * nu + k) = num::one::<T>() + *udata.get(k * nu + k);
+        *udata.get_mut(k * m + k) = num::one::<T>() + *udata.get(k * m + k);
         for i in range(0, k) {
-          *udata.get_mut((i as uint) * nu + k) = num::zero();
+          *udata.get_mut((i as uint) * m + k) = num::zero();
         }
         //let mut i = 0;
         //while i < ((k as int) - 1) {
@@ -197,16 +191,16 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
         //}
       } else {
         for i in range(0u, m) {
-          *udata.get_mut(i * nu + k) = num::zero();
+          *udata.get_mut(i * m + k) = num::zero();
         }
-        *udata.get_mut(k * nu + k) = num::one();
+        *udata.get_mut(k * m + k) = num::one();
       }
     }
 
     // Generate V.
     for k in range(0u, n).rev() {
       if (k < nrt) && (*edata.get(k) != num::zero()) {
-        for j in range(k + 1, nu) {
+        for j in range(k + 1, n) {
           let mut t : T = num::zero();
           for i in range(k + 1, n) {
             t = t + *vdata.get(i * n + k) * *vdata.get(i * n + j);
@@ -309,9 +303,9 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
           *edata.get_mut(j as uint) = cs * *edata.get(j as uint);
 
           for i in range(0u, m) {
-            t = cs * *udata.get(i * nu + (j as uint)) + sn * *udata.get(i * nu + ((k as uint) - 1));
-            *udata.get_mut(i * nu + ((k as uint) - 1)) = - sn * *udata.get(i * nu + (j as uint)) + cs * *udata.get(i * nu + ((k as uint) - 1));
-            *udata.get_mut(i * nu + (j as uint)) = t;
+            t = cs * *udata.get(i * m + (j as uint)) + sn * *udata.get(i * m + ((k as uint) - 1));
+            *udata.get_mut(i * m + ((k as uint) - 1)) = - sn * *udata.get(i * m + (j as uint)) + cs * *udata.get(i * m + ((k as uint) - 1));
+            *udata.get_mut(i * m + (j as uint)) = t;
           }
         }
       } else if kase == 3 {
@@ -371,9 +365,9 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
           *edata.get_mut((j + 1) as uint) = cs * *edata.get((j + 1) as uint);
           if j < ((m as int) - 1) {
             for i in range(0u, m) {
-              t = cs * *udata.get(i * nu + (j as uint)) + sn * *udata.get(i * nu + ((j as uint) + 1));
-              *udata.get_mut(i * nu + ((j as uint) + 1)) = - sn * *udata.get(i * nu + (j as uint)) + cs * *udata.get(i * nu + ((j as uint) + 1));
-              *udata.get_mut(i * nu + (j as uint)) = t;
+              t = cs * *udata.get(i * m + (j as uint)) + sn * *udata.get(i * m + ((j as uint) + 1));
+              *udata.get_mut(i * m + ((j as uint) + 1)) = - sn * *udata.get(i * m + (j as uint)) + cs * *udata.get(i * m + ((j as uint) + 1));
+              *udata.get_mut(i * m + (j as uint)) = t;
             }
           }
         }
@@ -407,9 +401,9 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
           }
           if k < ((m as int) - 1) {
             for i in range(0u, m) {
-              t = udata.get(i * nu + ((k as uint) + 1)).clone();
-              *udata.get_mut(i * nu + ((k as uint) + 1)) = udata.get(i * nu + (k as uint)).clone();
-              *udata.get_mut(i * nu + (k as uint)) = t;
+              t = udata.get(i * m + ((k as uint) + 1)).clone();
+              *udata.get_mut(i * m + ((k as uint) + 1)) = udata.get(i * m + (k as uint)).clone();
+              *udata.get_mut(i * m + (k as uint)) = t;
             }
           }
           k += 1;
@@ -420,8 +414,8 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     }
 
     SVD {
-      u : Matrix::new(m, nu, udata),
-      s : Matrix::diag(sdata),
+      u : Matrix::new(m, m, udata),
+      s : Matrix::block_diag(m, n, sdata),
       v : Matrix::new(n, n, vdata)
     }
   }
