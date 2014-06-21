@@ -416,21 +416,22 @@
 
 <span class='kw'>use</span> <span class='ident'>ApproxEq</span>;
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
-<span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>};<span class='comment'>
+<span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>};
 
-// Initially based on JAMA.
-// LU Decomposition.
-//
-// For an m-by-n matrix A with m &gt;= n, the LU decomposition is an m-by-n
-// unit lower triangular matrix L, an n-by-n upper triangular matrix U,
-// and a permutation vector piv of length m so that A(piv,:) = L*U.
-// If m &lt; n, then L is m-by-m and U is m-by-n.
-//
-// The LU decompostion with pivoting always exists, even if the matrix is
-// singular. The primary use of the LU decomposition is in the solution of
-// square systems of simultaneous linear equations. This will fail if the
-// matrix is singular.
-//
+<span class='doccomment'>/// LU Decomposition.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// Originally based on JAMA.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// For an m-by-n matrix A with m &gt;= n, the LU decomposition is an m-by-n
+</span><span class='doccomment'>/// unit lower triangular matrix L, an n-by-n upper triangular matrix U,
+</span><span class='doccomment'>/// and a permutation vector piv of length m so that A(piv,:) = L*U.
+</span><span class='doccomment'>/// If m &lt; n, then L is m-by-m and U is m-by-n.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// The LU decompostion with pivoting always exists, even if the matrix is
+</span><span class='doccomment'>/// singular. The primary use of the LU decomposition is in the solution of
+</span><span class='doccomment'>/// square systems of simultaneous linear equations. This will fail if the
+</span><span class='doccomment'>/// matrix is singular.
+</span><span class='comment'>//
 // LU Decomposition:
 // A = LU,
 //   where L is a lower triangular matrix
@@ -502,7 +503,6 @@
 //    x = (LU)^-1 Pb
 //      = U^-1 L^-1 Pb
 //
-
 </span><span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>LUDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
   // U is stored in diagonals and above. Elements below diagonals are zero for U.
   // L is stored below diagonals. Diagonal elements are one for U and elements above diagonals are zero.

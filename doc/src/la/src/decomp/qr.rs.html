@@ -296,6 +296,7 @@
 <span id='257'>257</span>
 <span id='258'>258</span>
 <span id='259'>259</span>
+<span id='260'>260</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
@@ -305,22 +306,23 @@
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
 <span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>};
 
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>QRDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='doccomment'>/// QR Decomposition.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// Based on Apache Commons Math and JAMA.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
+</span><span class='doccomment'>/// and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// The QR decompostion always exists, even if the matrix does not have
+</span><span class='doccomment'>/// full rank.  The primary use of the QR decomposition is in the least
+</span><span class='doccomment'>/// squares solution of nonsquare systems of simultaneous linear equations.
+</span><span class='doccomment'>/// This will fail if is_full_rank() returns false.
+</span><span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>QRDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='ident'>qr</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
   <span class='ident'>rdiag</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
-}<span class='comment'>
+}
 
-// Based on Apache Commons Math and JAMA.
-// QR Decomposition.
-//
-// For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
-// and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.
-//
-// The QR decompostion always exists, even if the matrix does not have
-// full rank.  The primary use of the QR decomposition is in the least
-// squares solution of nonsquare systems of simultaneous linear equations.
-// This will fail if is_full_rank() returns false.
-</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>QRDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>QRDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>m</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>QRDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
     // qr: The area above the diagonals stores the corresponding parts of the R matrix.
     //     Each column from diagonal down will store the k:th householder vector in the end. (The elements above are zero for the householder vectors).

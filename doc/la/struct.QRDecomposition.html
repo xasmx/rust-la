@@ -38,10 +38,21 @@
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'>Struct <a href='index.html'>la</a>::<a class='struct' href=''>QRDecomposition</a><a class='source' id='src-20129' href='../src/la/src/decomp/qr.rs.html#9-12'>[src]</a></h1>
+<h1 class='fqn'>Struct <a href='index.html'>la</a>::<a class='struct' href=''>QRDecomposition</a><a class='source' id='src-20326' href='../src/la/src/decomp/qr.rs.html#20-23'>[src]</a></h1>
 <pre class='rust struct'>pub struct QRDecomposition&lt;T&gt; {
     // some fields omitted
-}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='http://doc.rust-lang.org/core/num/trait.Float.html' title='core::num::Float'>Float</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt;&gt; <a class='struct' href='../la/struct.QRDecomposition.html' title='la::QRDecomposition'>QRDecomposition</a>&lt;T&gt;</code></h3><div class='methods'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(m: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.QRDecomposition.html' title='la::QRDecomposition'>QRDecomposition</a>&lt;T&gt;</code></h4>
+}</pre><div class='docblock'><p>QR Decomposition.</p>
+
+<p>Based on Apache Commons Math and JAMA.</p>
+
+<p>For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
+and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.</p>
+
+<p>The QR decompostion always exists, even if the matrix does not have
+full rank.  The primary use of the QR decomposition is in the least
+squares solution of nonsquare systems of simultaneous linear equations.
+This will fail if is_full_rank() returns false.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='http://doc.rust-lang.org/core/num/trait.Float.html' title='core::num::Float'>Float</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt;&gt; <a class='struct' href='../la/struct.QRDecomposition.html' title='la::QRDecomposition'>QRDecomposition</a>&lt;T&gt;</code></h3><div class='methods'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(m: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.QRDecomposition.html' title='la::QRDecomposition'>QRDecomposition</a>&lt;T&gt;</code></h4>
 <h4 id='method.is_full_rank' class='method'><code>fn <a href='#method.is_full_rank' class='fnname'>is_full_rank</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/std/primitive.bool.html'>bool</a></code></h4>
 <h4 id='method.get_h' class='method'><code>fn <a href='#method.get_h' class='fnname'>get_h</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_r' class='method'><code>fn <a href='#method.get_r' class='fnname'>get_r</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>

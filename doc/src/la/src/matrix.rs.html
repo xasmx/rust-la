@@ -1362,10 +1362,24 @@
 <span id='1323'>1323</span>
 <span id='1324'>1324</span>
 <span id='1325'>1325</span>
+<span id='1326'>1326</span>
+<span id='1327'>1327</span>
+<span id='1328'>1328</span>
+<span id='1329'>1329</span>
+<span id='1330'>1330</span>
+<span id='1331'>1331</span>
+<span id='1332'>1332</span>
+<span id='1333'>1333</span>
+<span id='1334'>1334</span>
+<span id='1335'>1335</span>
+<span id='1336'>1336</span>
+<span id='1337'>1337</span>
+<span id='1338'>1338</span>
+<span id='1339'>1339</span>
+<span id='1340'>1340</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
-<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>::{<span class='ident'>Show</span>};
-<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>io</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>::{<span class='ident'>Formatter</span>, <span class='prelude-ty'>Result</span>, <span class='ident'>Show</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>::<span class='ident'>Zero</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>rand</span>;
@@ -1893,18 +1907,34 @@
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Show</span><span class='op'>&gt;</span> <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>print</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) {
-    <span class='macro'>print</span><span class='macro'>!</span>(<span class='string'>&quot;{:10s} &quot;</span>, <span class='string'>&quot;&quot;</span>);
-    <span class='kw'>for</span> <span class='ident'>col</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='self'>self</span>.<span class='ident'>cols</span>()) {
-      <span class='macro'>print</span><span class='macro'>!</span>(<span class='string'>&quot;{:10u} &quot;</span>, <span class='ident'>col</span>);
-    }
-    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;&quot;</span>);
-    <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='self'>self</span>.<span class='ident'>no_rows</span>) {
-      <span class='macro'>print</span><span class='macro'>!</span>(<span class='string'>&quot;{:10u} &quot;</span>, <span class='ident'>row</span>);
-      <span class='kw'>for</span> <span class='ident'>col</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='self'>self</span>.<span class='ident'>cols</span>()) {
-        <span class='macro'>print</span><span class='macro'>!</span>(<span class='string'>&quot;{:10.10}? &quot;</span>, <span class='self'>self</span>.<span class='ident'>get_ref</span>(<span class='ident'>row</span>, <span class='ident'>col</span>))
+    <span class='macro'>print</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='self'>self</span>);
+  }
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Show</span><span class='op'>&gt;</span> <span class='ident'>Show</span> <span class='kw'>for</span> <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
+  // fmt implementation borrowed (with changes) from matrixrs &lt;https://github.com/doomsplayer/matrixrs&gt;.
+  </span><span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>fmt</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span> {
+    <span class='kw'>let</span> <span class='ident'>max_width</span> <span class='op'>=</span>
+      <span class='self'>self</span>.<span class='ident'>data</span>.<span class='ident'>iter</span>().<span class='ident'>fold</span>(<span class='number'>0</span>, <span class='op'>|</span><span class='ident'>maxlen</span>, <span class='ident'>elem</span><span class='op'>|</span> {
+        <span class='kw'>let</span> <span class='ident'>l</span> <span class='op'>=</span> <span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='ident'>elem</span>).<span class='ident'>len</span>();
+        <span class='kw'>if</span> <span class='ident'>maxlen</span> <span class='op'>&gt;</span> <span class='ident'>l</span> { <span class='ident'>maxlen</span> } <span class='kw'>else</span> { <span class='ident'>l</span> }
+      });
+
+    <span class='macro'>try</span><span class='macro'>!</span>(<span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>fmt</span>, <span class='string'>&quot;\n&quot;</span>));
+    <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0</span>, <span class='self'>self</span>.<span class='ident'>rows</span>()) {
+      <span class='macro'>try</span><span class='macro'>!</span>(<span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>fmt</span>, <span class='string'>&quot;|&quot;</span>));
+      <span class='kw'>for</span> <span class='ident'>col</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0</span>, <span class='self'>self</span>.<span class='ident'>cols</span>()) {
+        <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>get_ref</span>(<span class='ident'>row</span>, <span class='ident'>col</span>).<span class='ident'>clone</span>();
+        <span class='kw'>let</span> <span class='ident'>slen</span> <span class='op'>=</span> <span class='macro'>format</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='ident'>v</span>).<span class='ident'>len</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>padding</span> <span class='op'>=</span> <span class='string'>&quot; &quot;</span>.<span class='ident'>to_str</span>();
+        <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0</span>, <span class='ident'>max_width</span><span class='op'>-</span><span class='ident'>slen</span>) {
+          <span class='ident'>padding</span>.<span class='ident'>push_str</span>(<span class='string'>&quot; &quot;</span>);
+        }
+        <span class='macro'>try</span><span class='macro'>!</span>(<span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>fmt</span>, <span class='string'>&quot;{}{}&quot;</span>, <span class='ident'>padding</span>, <span class='ident'>v</span>));
       }
-      <span class='ident'>io</span>::<span class='ident'>println</span>(<span class='string'>&quot;&quot;</span>)
+      <span class='macro'>try</span><span class='macro'>!</span>(<span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>fmt</span>, <span class='string'>&quot; |\n&quot;</span>));
     }
+    <span class='prelude-val'>Ok</span>(())
   }
 }
 

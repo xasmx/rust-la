@@ -892,6 +892,7 @@
 <span id='853'>853</span>
 <span id='854'>854</span>
 <span id='855'>855</span>
+<span id='856'>856</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
@@ -901,27 +902,28 @@
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
 <span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>, <span class='ident'>hypot</span>};
 
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>EigenDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='doccomment'>/// Eigenvalues and eigenvectors of a real matrix. 
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// Ported from JAMA.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// If A is symmetric, then A = V*D*V&#39; where the eigenvalue matrix D is
+</span><span class='doccomment'>/// diagonal and the eigenvector matrix V is orthogonal.
+</span><span class='doccomment'>/// I.e. A = V * D * V&#39; and V * V&#39; = I.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// If A is not symmetric, then the eigenvalue matrix D is block diagonal
+</span><span class='doccomment'>/// with the real eigenvalues in 1-by-1 blocks and any complex eigenvalues,
+</span><span class='doccomment'>/// lambda + i*mu, in 2-by-2 blocks, [lambda, mu; -mu, lambda].  The
+</span><span class='doccomment'>/// columns of V represent the eigenvectors in the sense that A*V = V*D,
+</span><span class='doccomment'>/// The matrix V may be badly conditioned, or even singular, so the validity
+</span><span class='doccomment'>/// of the equation A = V * D * V^-1 depends upon V.cond().
+</span><span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>EigenDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='ident'>n</span> : <span class='ident'>uint</span>,
   <span class='ident'>d</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
   <span class='ident'>e</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
   <span class='ident'>v</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
-}<span class='comment'>
+}
 
-// Ported from JAMA.
-// Eigenvalues and eigenvectors of a real matrix. 
-//
-// If A is symmetric, then A = V*D*V&#39; where the eigenvalue matrix D is
-// diagonal and the eigenvector matrix V is orthogonal.
-// I.e. A = V * D * V&#39; and V * V&#39; = I.
-//
-// If A is not symmetric, then the eigenvalue matrix D is block diagonal
-// with the real eigenvalues in 1-by-1 blocks and any complex eigenvalues,
-// lambda + i*mu, in 2-by-2 blocks, [lambda, mu; -mu, lambda].  The
-// columns of V represent the eigenvectors in the sense that A*V = V*D,
-// The matrix V may be badly conditioned, or even singular, so the validity
-// of the equation A = V * D * V^-1 depends upon V.cond().
-</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>FloatMath</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>EigenDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>FloatMath</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>EigenDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
   // Symmetric Householder reduction to tridiagonal form.
   </span><span class='kw'>fn</span> <span class='ident'>tred2</span>(<span class='ident'>n</span> : <span class='ident'>uint</span>, <span class='ident'>ddata</span> : <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>vdata</span> : <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>, <span class='ident'>edata</span> : <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) {<span class='comment'>
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
@@ -1737,7 +1739,7 @@
   <span class='kw'>let</span> <span class='ident'>ata</span> <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>t</span>() <span class='op'>*</span> <span class='ident'>a</span>;
   <span class='kw'>let</span> <span class='ident'>_eig</span> <span class='op'>=</span> <span class='ident'>EigenDecomposition</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>ata</span>);
   <span class='kw'>let</span> <span class='ident'>r</span> <span class='op'>=</span> <span class='ident'>_eig</span>.<span class='ident'>get_real_eigenvalues</span>();
-  <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>Matrix</span>::<span class='ident'>vector</span>(<span class='ident'>r</span>.<span class='ident'>clone</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>0.036923</span>; <span class='number'>4.301868</span>; <span class='number'>56.661209</span>)));
+  <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>Matrix</span>::<span class='ident'>vector</span>(<span class='ident'>r</span>.<span class='ident'>clone</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>56.661209</span>; <span class='number'>4.301868</span>; <span class='number'>0.036923</span>)));
 }
 
 <span class='attribute'>#[<span class='ident'>test</span>]</span>

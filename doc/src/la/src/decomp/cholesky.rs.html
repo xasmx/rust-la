@@ -225,19 +225,15 @@
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
 <span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>};
 
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-  <span class='ident'>l</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
-}<span class='comment'>
-
-// Initial implementation based on JAMA.
-//
-// Cholesky Decomposition (for a real values matrix).
-//
-// For a symmetric, positive definite matrix A, the Cholesky decomposition
-// is an lower triangular matrix L so that A = L*L&#39;.
-//
-// If the matrix is not symmetric or positive definite, None is returned.
-//
+<span class='doccomment'>/// Cholesky Decomposition (for a real valued matrix).
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// Initial implementation based on JAMA.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// For a symmetric, positive definite matrix A, the Cholesky decomposition
+</span><span class='doccomment'>/// is an lower triangular matrix L so that A = L*L&#39;.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// If the matrix is not symmetric or positive definite, None is returned.
+</span><span class='comment'>//
 // Solve L one row at a time from row 1 to row n:
 //   A = L * L&#39;
 //
@@ -272,7 +268,11 @@
 // As long as we follow the up-&gt;down, left-&gt;right order to compute the values, all the elements of L accessed on the right
 // side will have been computed by the time they are needed.
 //
-</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+</span><span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+  <span class='ident'>l</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>Float</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>m</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>CholeskyDecomposition</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> {
     <span class='kw'>if</span> <span class='ident'>m</span>.<span class='ident'>rows</span>() <span class='op'>!=</span> <span class='ident'>m</span>.<span class='ident'>cols</span>() {
       <span class='kw'>return</span> <span class='prelude-val'>None</span>

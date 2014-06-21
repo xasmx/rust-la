@@ -594,21 +594,6 @@
 <span id='555'>555</span>
 <span id='556'>556</span>
 <span id='557'>557</span>
-<span id='558'>558</span>
-<span id='559'>559</span>
-<span id='560'>560</span>
-<span id='561'>561</span>
-<span id='562'>562</span>
-<span id='563'>563</span>
-<span id='564'>564</span>
-<span id='565'>565</span>
-<span id='566'>566</span>
-<span id='567'>567</span>
-<span id='568'>568</span>
-<span id='569'>569</span>
-<span id='570'>570</span>
-<span id='571'>571</span>
-<span id='572'>572</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
@@ -617,30 +602,28 @@
 <span class='kw'>use</span> <span class='ident'>Matrix</span>;
 <span class='kw'>use</span> <span class='ident'>internalutil</span>::{<span class='ident'>alloc_dirty_vec</span>, <span class='ident'>hypot</span>};
 
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='doccomment'>/// Singular Value Decomposition.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// Ported from JAMA (with changes).
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// For an m-by-n matrix A, the singular value decomposition is
+</span><span class='doccomment'>/// an m-by-m orthogonal matrix U, an m-by-n block diagonal matrix S, and
+</span><span class='doccomment'>/// an n-by-n orthogonal matrix V so that A = U*S*V&#39;.
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// The singular values, sigma[k] = S[k][k], are ordered so that
+</span><span class='doccomment'>/// sigma[0] &gt;= sigma[1] &gt;= ... &gt;= sigma[n-1].
+</span><span class='doccomment'>///
+</span><span class='doccomment'>/// The singular value decompostion always exists. The matrix condition number
+</span><span class='doccomment'>/// and the effective numerical rank can be computed from this decomposition.
+</span><span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='ident'>u</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
   <span class='ident'>s</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
   <span class='ident'>v</span> : <span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
-}<span class='comment'>
+}
 
-// Ported from JAMA.
-// Singular Value Decomposition.
-//
-// For an m-by-n matrix A with m &gt;= n, the singular value decomposition is
-// an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
-// an n-by-n orthogonal matrix V so that A = U*S*V&#39;.
-//
-// For an m-by-n matrix A with m &lt; n, the singular value decomposition is
-// an m-by-m orthogonal matrix U, an m-by-m diagonal matrix S, and
-// an n-by-m orthogonal matrix V so that A = U*S*V&#39;.
-//
-// The singular values, sigma[k] = S[k][k], are ordered so that
-// sigma[0] &gt;= sigma[1] &gt;= ... &gt;= sigma[n-1].
-//
-// The singular value decompostion always exists. The matrix condition number
-// and the effective numerical rank can be computed from this decomposition.
-</span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>FloatMath</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-  <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>FloatMath</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+  <span class='doccomment'>/// Calculates SVD.
+</span>  <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
     // A = USV&#39;
     </span><span class='kw'>if</span> <span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>&lt;</span> <span class='ident'>a</span>.<span class='ident'>cols</span>() {<span class='comment'>
       // a&#39; = (usv&#39;)&#39; = vs&#39;u&#39;
@@ -660,12 +643,10 @@
 
     <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>m</span> <span class='op'>&gt;=</span> <span class='ident'>n</span>);
 
-    <span class='kw'>let</span> <span class='ident'>nu</span> <span class='op'>=</span> <span class='ident'>cmp</span>::<span class='ident'>min</span>(<span class='ident'>m</span>, <span class='ident'>n</span>);
-
-    <span class='kw'>let</span> <span class='ident'>slen</span> <span class='op'>=</span> <span class='ident'>cmp</span>::<span class='ident'>min</span>(<span class='ident'>m</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>n</span>);
+    <span class='kw'>let</span> <span class='ident'>slen</span> <span class='op'>=</span> <span class='ident'>cmp</span>::<span class='ident'>min</span>(<span class='ident'>m</span>, <span class='ident'>n</span>);
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>sdata</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>alloc_dirty_vec</span>(<span class='ident'>slen</span>);
 
-    <span class='kw'>let</span> <span class='ident'>ulen</span> <span class='op'>=</span> <span class='ident'>m</span> <span class='op'>*</span> <span class='ident'>nu</span>;
+    <span class='kw'>let</span> <span class='ident'>ulen</span> <span class='op'>=</span> <span class='ident'>m</span> <span class='op'>*</span> <span class='ident'>m</span>;
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>udata</span> <span class='op'>=</span> <span class='ident'>alloc_dirty_vec</span>(<span class='ident'>ulen</span>);
 
     <span class='kw'>let</span> <span class='ident'>vlen</span> <span class='op'>=</span> <span class='ident'>n</span> <span class='op'>*</span> <span class='ident'>n</span>;
@@ -718,7 +699,7 @@
       <span class='kw'>if</span> <span class='ident'>k</span> <span class='op'>&lt;</span> <span class='ident'>nct</span> {<span class='comment'>
         // Place the transformation in U for subsequent back multiplication.
         </span><span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span>, <span class='ident'>m</span>) {
-          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>adata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>).<span class='ident'>clone</span>();
+          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>adata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>).<span class='ident'>clone</span>();
         }
       }
 
@@ -778,30 +759,30 @@
     <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get_mut</span>(<span class='ident'>p</span> <span class='op'>-</span> <span class='number'>1</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();<span class='comment'>
 
     // Generate U.
-    </span><span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>nct</span>, <span class='ident'>nu</span>) {
+    </span><span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>nct</span>, <span class='ident'>m</span>) {
       <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>m</span>) {
-        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
+        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
       }
-      <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>();
+      <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>();
     }
     <span class='kw'>for</span> <span class='ident'>k</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>nct</span>).<span class='ident'>rev</span>() {
       <span class='kw'>if</span> <span class='op'>*</span><span class='ident'>sdata</span>.<span class='ident'>get</span>(<span class='ident'>k</span>) <span class='op'>!=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
-        <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>nu</span>) {
+        <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>m</span>) {
           <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>t</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
           <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span>, <span class='ident'>m</span>) {
-            <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>t</span> <span class='op'>+</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>j</span>);
+            <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>t</span> <span class='op'>+</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>j</span>);
           }
-          <span class='ident'>t</span> <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>t</span> <span class='op'>/</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>);
+          <span class='ident'>t</span> <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>t</span> <span class='op'>/</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>);
           <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span>, <span class='ident'>m</span>) {
-            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>+</span> <span class='ident'>t</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>);
+            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>=</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>j</span>) <span class='op'>+</span> <span class='ident'>t</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>);
           }
         }
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span>, <span class='ident'>m</span>) {
-          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='op'>-</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>);
+          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='op'>-</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>);
         }
-        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>::<span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>() <span class='op'>+</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>);
+        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>::<span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>() <span class='op'>+</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>);
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0</span>, <span class='ident'>k</span>) {
-          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>((<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
+          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>((<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
         }<span class='comment'>
         //let mut i = 0;
         //while i &lt; ((k as int) - 1) {
@@ -809,16 +790,16 @@
         //}
       </span>} <span class='kw'>else</span> {
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>m</span>) {
-          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
+          <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
         }
-        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>();
+        <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>one</span>();
       }
     }<span class='comment'>
 
     // Generate V.
     </span><span class='kw'>for</span> <span class='ident'>k</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>n</span>).<span class='ident'>rev</span>() {
       <span class='kw'>if</span> (<span class='ident'>k</span> <span class='op'>&lt;</span> <span class='ident'>nrt</span>) <span class='op'>&amp;&amp;</span> (<span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get</span>(<span class='ident'>k</span>) <span class='op'>!=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>()) {
-        <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>nu</span>) {
+        <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>n</span>) {
           <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>t</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
           <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>n</span>) {
             <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>t</span> <span class='op'>+</span> <span class='op'>*</span><span class='ident'>vdata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>) <span class='op'>*</span> <span class='op'>*</span><span class='ident'>vdata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>j</span>);
@@ -921,9 +902,9 @@
           <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get_mut</span>(<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get</span>(<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>);
 
           <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>m</span>) {
-            <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>));
-            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>));
-            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
+            <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>));
+            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>-</span> <span class='number'>1</span>));
+            <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
           }
         }
       } <span class='kw'>else</span> <span class='kw'>if</span> <span class='ident'>kase</span> <span class='op'>==</span> <span class='number'>3</span> {<span class='comment'>
@@ -983,9 +964,9 @@
           <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get_mut</span>((<span class='ident'>j</span> <span class='op'>+</span> <span class='number'>1</span>) <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get</span>((<span class='ident'>j</span> <span class='op'>+</span> <span class='number'>1</span>) <span class='kw'>as</span> <span class='ident'>uint</span>);
           <span class='kw'>if</span> <span class='ident'>j</span> <span class='op'>&lt;</span> ((<span class='ident'>m</span> <span class='kw'>as</span> <span class='ident'>int</span>) <span class='op'>-</span> <span class='number'>1</span>) {
             <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>m</span>) {
-              <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>));
-              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>));
-              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
+              <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>));
+              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>sn</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>+</span> <span class='ident'>cs</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>));
+              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
             }
           }
         }
@@ -1019,9 +1000,9 @@
           }
           <span class='kw'>if</span> <span class='ident'>k</span> <span class='op'>&lt;</span> ((<span class='ident'>m</span> <span class='kw'>as</span> <span class='ident'>int</span>) <span class='op'>-</span> <span class='number'>1</span>) {
             <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>m</span>) {
-              <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)).<span class='ident'>clone</span>();
-              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>)).<span class='ident'>clone</span>();
-              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nu</span> <span class='op'>+</span> (<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
+              <span class='ident'>t</span> <span class='op'>=</span> <span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)).<span class='ident'>clone</span>();
+              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> ((<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>+</span> <span class='number'>1</span>)) <span class='op'>=</span> <span class='ident'>udata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>)).<span class='ident'>clone</span>();
+              <span class='op'>*</span><span class='ident'>udata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> (<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>)) <span class='op'>=</span> <span class='ident'>t</span>;
             }
           }
           <span class='ident'>k</span> <span class='op'>+=</span> <span class='number'>1</span>;
@@ -1032,8 +1013,8 @@
     }
 
     <span class='ident'>SVD</span> {
-      <span class='ident'>u</span> : <span class='ident'>Matrix</span>::<span class='ident'>new</span>(<span class='ident'>m</span>, <span class='ident'>nu</span>, <span class='ident'>udata</span>),
-      <span class='ident'>s</span> : <span class='ident'>Matrix</span>::<span class='ident'>diag</span>(<span class='ident'>sdata</span>),
+      <span class='ident'>u</span> : <span class='ident'>Matrix</span>::<span class='ident'>new</span>(<span class='ident'>m</span>, <span class='ident'>m</span>, <span class='ident'>udata</span>),
+      <span class='ident'>s</span> : <span class='ident'>Matrix</span>::<span class='ident'>block_diag</span>(<span class='ident'>m</span>, <span class='ident'>n</span>, <span class='ident'>sdata</span>),
       <span class='ident'>v</span> : <span class='ident'>Matrix</span>::<span class='ident'>new</span>(<span class='ident'>n</span>, <span class='ident'>n</span>, <span class='ident'>vdata</span>)
     }
   }
@@ -1065,11 +1046,6 @@
 
   <span class='doccomment'>/// Calculates SVD using the direct method. Note that calculating it this way
 </span>  <span class='doccomment'>/// is not numerically stable, so it is mostly useful for testing purposes.
-</span>  <span class='doccomment'>/// A = USV&#39;
-</span>  <span class='doccomment'>/// for A : m * n
-</span>  <span class='doccomment'>///     U : m * m
-</span>  <span class='doccomment'>///     S : m * n
-</span>  <span class='doccomment'>///     V : n * n
 </span>  <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>direct</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='kw'>use</span> <span class='ident'>EigenDecomposition</span>;<span class='comment'>
 
@@ -1154,8 +1130,6 @@
   <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
   <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
   <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
-<span class='ident'>s</span>.<span class='ident'>print</span>();
-<span class='macro'>fail</span><span class='macro'>!</span>();
 }
 
 <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1166,8 +1140,6 @@
   <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
   <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
   <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
-<span class='ident'>s</span>.<span class='ident'>print</span>();
-<span class='macro'>fail</span><span class='macro'>!</span>();
 }
 
 <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1178,8 +1150,6 @@
   <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
   <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
   <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
-<span class='ident'>s</span>.<span class='ident'>print</span>();
-<span class='macro'>fail</span><span class='macro'>!</span>();
 }
 
 </pre>
