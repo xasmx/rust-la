@@ -4,18 +4,14 @@ use ApproxEq;
 use Matrix;
 use internalutil::{alloc_dirty_vec};
 
-pub struct CholeskyDecomposition<T> {
-  l : Matrix<T>
-}
-
-// Initial implementation based on JAMA.
-//
-// Cholesky Decomposition (for a real values matrix).
-//
-// For a symmetric, positive definite matrix A, the Cholesky decomposition
-// is an lower triangular matrix L so that A = L*L'.
-//
-// If the matrix is not symmetric or positive definite, None is returned.
+/// Cholesky Decomposition (for a real valued matrix).
+///
+/// Initial implementation based on JAMA.
+///
+/// For a symmetric, positive definite matrix A, the Cholesky decomposition
+/// is an lower triangular matrix L so that A = L*L'.
+///
+/// If the matrix is not symmetric or positive definite, None is returned.
 //
 // Solve L one row at a time from row 1 to row n:
 //   A = L * L'
@@ -51,6 +47,10 @@ pub struct CholeskyDecomposition<T> {
 // As long as we follow the up->down, left->right order to compute the values, all the elements of L accessed on the right
 // side will have been computed by the time they are needed.
 //
+pub struct CholeskyDecomposition<T> {
+  l : Matrix<T>
+}
+
 impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> Option<CholeskyDecomposition<T>> {
     if m.rows() != m.cols() {

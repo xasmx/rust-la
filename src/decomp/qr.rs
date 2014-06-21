@@ -6,21 +6,22 @@ use ApproxEq;
 use Matrix;
 use internalutil::{alloc_dirty_vec};
 
+/// QR Decomposition.
+///
+/// Based on Apache Commons Math and JAMA.
+///
+/// For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
+/// and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.
+///
+/// The QR decompostion always exists, even if the matrix does not have
+/// full rank.  The primary use of the QR decomposition is in the least
+/// squares solution of nonsquare systems of simultaneous linear equations.
+/// This will fail if is_full_rank() returns false.
 pub struct QRDecomposition<T> {
   qr : Matrix<T>,
   rdiag : Vec<T>
 }
 
-// Based on Apache Commons Math and JAMA.
-// QR Decomposition.
-//
-// For an m-by-n matrix A, the QR decomposition is an m-by-m orthogonal matrix Q
-// and an m-by-n upper triangular (or trapezoidal) matrix R, so that A = Q*R.
-//
-// The QR decompostion always exists, even if the matrix does not have
-// full rank.  The primary use of the QR decomposition is in the least
-// squares solution of nonsquare systems of simultaneous linear equations.
-// This will fail if is_full_rank() returns false.
 impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
   pub fn new(m : &Matrix<T>) -> QRDecomposition<T> {
     // qr: The area above the diagonals stores the corresponding parts of the R matrix.

@@ -5,18 +5,19 @@ use ApproxEq;
 use Matrix;
 use internalutil::{alloc_dirty_vec};
 
-// Initially based on JAMA.
-// LU Decomposition.
-//
-// For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
-// unit lower triangular matrix L, an n-by-n upper triangular matrix U,
-// and a permutation vector piv of length m so that A(piv,:) = L*U.
-// If m < n, then L is m-by-m and U is m-by-n.
-//
-// The LU decompostion with pivoting always exists, even if the matrix is
-// singular. The primary use of the LU decomposition is in the solution of
-// square systems of simultaneous linear equations. This will fail if the
-// matrix is singular.
+/// LU Decomposition.
+///
+/// Originally based on JAMA.
+///
+/// For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
+/// unit lower triangular matrix L, an n-by-n upper triangular matrix U,
+/// and a permutation vector piv of length m so that A(piv,:) = L*U.
+/// If m < n, then L is m-by-m and U is m-by-n.
+///
+/// The LU decompostion with pivoting always exists, even if the matrix is
+/// singular. The primary use of the LU decomposition is in the solution of
+/// square systems of simultaneous linear equations. This will fail if the
+/// matrix is singular.
 //
 // LU Decomposition:
 // A = LU,
@@ -89,7 +90,6 @@ use internalutil::{alloc_dirty_vec};
 //    x = (LU)^-1 Pb
 //      = U^-1 L^-1 Pb
 //
-
 pub struct LUDecomposition<T> {
   // U is stored in diagonals and above. Elements below diagonals are zero for U.
   // L is stored below diagonals. Diagonal elements are one for U and elements above diagonals are zero.

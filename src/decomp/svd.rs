@@ -5,14 +5,9 @@ use ApproxEq;
 use Matrix;
 use internalutil::{alloc_dirty_vec, hypot};
 
-pub struct SVD<T> {
-  u : Matrix<T>,
-  s : Matrix<T>,
-  v : Matrix<T>
-}
-
-/// Ported from JAMA (with changes).
 /// Singular Value Decomposition.
+///
+/// Ported from JAMA (with changes).
 ///
 /// For an m-by-n matrix A, the singular value decomposition is
 /// an m-by-m orthogonal matrix U, an m-by-n block diagonal matrix S, and
@@ -23,7 +18,14 @@ pub struct SVD<T> {
 ///
 /// The singular value decompostion always exists. The matrix condition number
 /// and the effective numerical rank can be computed from this decomposition.
+pub struct SVD<T> {
+  u : Matrix<T>,
+  s : Matrix<T>,
+  v : Matrix<T>
+}
+
 impl<T : FloatMath + ApproxEq<T>> SVD<T> {
+  /// Calculates SVD.
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // A = USV'
     if a.rows() < a.cols() {
@@ -447,15 +449,6 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
   /// Calculates SVD using the direct method. Note that calculating it this way
   /// is not numerically stable, so it is mostly useful for testing purposes.
-  ///
-  /// A = USV'
-  /// for A : m * n
-  ///     U : m * m
-  ///     S : m * n
-  ///     V : n * n
-  ///
-  /// The singular values, sigma[k] = S[k][k], are ordered so that
-  /// sigma[0] >= sigma[1] >= ... >= sigma[n-1].
   pub fn direct(a : &Matrix<T>) -> SVD<T> {
     use EigenDecomposition;
 
