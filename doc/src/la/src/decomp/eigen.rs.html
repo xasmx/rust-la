@@ -891,6 +891,7 @@
 <span id='852'>852</span>
 <span id='853'>853</span>
 <span id='854'>854</span>
+<span id='855'>855</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
@@ -1114,18 +1115,19 @@
       <span class='op'>*</span><span class='ident'>edata</span>.<span class='ident'>get_mut</span>(<span class='ident'>l</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
     }<span class='comment'>
 
-    // Sort eigenvalues and corresponding vectors.
+    // Bubble sort eigenvalues and corresponding vectors.
     </span><span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>n</span> <span class='op'>-</span> <span class='number'>1</span>) {
       <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>k</span> <span class='op'>=</span> <span class='ident'>i</span>;
       <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>p</span> <span class='op'>=</span> <span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>).<span class='ident'>clone</span>();
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='ident'>i</span> <span class='op'>+</span> <span class='number'>1</span>, <span class='ident'>n</span>) {
-        <span class='kw'>if</span> <span class='op'>*</span><span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>&lt;</span> <span class='ident'>p</span> {
+        <span class='kw'>if</span> <span class='op'>*</span><span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>&gt;</span> <span class='ident'>p</span> {
           <span class='ident'>k</span> <span class='op'>=</span> <span class='ident'>j</span>;
           <span class='ident'>p</span> <span class='op'>=</span> <span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>j</span> <span class='kw'>as</span> <span class='ident'>uint</span>).<span class='ident'>clone</span>();
         }
       }
-      <span class='kw'>if</span> <span class='ident'>k</span> <span class='op'>!=</span> <span class='ident'>i</span> {
-        <span class='op'>*</span><span class='ident'>ddata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>).<span class='ident'>clone</span>();
+      <span class='kw'>if</span> <span class='ident'>k</span> <span class='op'>!=</span> <span class='ident'>i</span> {<span class='comment'>
+        // Swap columns k and i of the diagonal and v.
+        </span><span class='op'>*</span><span class='ident'>ddata</span>.<span class='ident'>get_mut</span>(<span class='ident'>k</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>ddata</span>.<span class='ident'>get</span>(<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>).<span class='ident'>clone</span>();
         <span class='op'>*</span><span class='ident'>ddata</span>.<span class='ident'>get_mut</span>(<span class='ident'>i</span> <span class='kw'>as</span> <span class='ident'>uint</span>) <span class='op'>=</span> <span class='ident'>p</span>.<span class='ident'>clone</span>();
         <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='ident'>range</span>(<span class='number'>0u</span>, <span class='ident'>n</span>) {
           <span class='ident'>p</span> <span class='op'>=</span> <span class='ident'>vdata</span>.<span class='ident'>get</span>((<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>) <span class='kw'>as</span> <span class='ident'>uint</span>).<span class='ident'>clone</span>();

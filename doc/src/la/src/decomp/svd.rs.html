@@ -542,6 +542,73 @@
 <span id='503'>503</span>
 <span id='504'>504</span>
 <span id='505'>505</span>
+<span id='506'>506</span>
+<span id='507'>507</span>
+<span id='508'>508</span>
+<span id='509'>509</span>
+<span id='510'>510</span>
+<span id='511'>511</span>
+<span id='512'>512</span>
+<span id='513'>513</span>
+<span id='514'>514</span>
+<span id='515'>515</span>
+<span id='516'>516</span>
+<span id='517'>517</span>
+<span id='518'>518</span>
+<span id='519'>519</span>
+<span id='520'>520</span>
+<span id='521'>521</span>
+<span id='522'>522</span>
+<span id='523'>523</span>
+<span id='524'>524</span>
+<span id='525'>525</span>
+<span id='526'>526</span>
+<span id='527'>527</span>
+<span id='528'>528</span>
+<span id='529'>529</span>
+<span id='530'>530</span>
+<span id='531'>531</span>
+<span id='532'>532</span>
+<span id='533'>533</span>
+<span id='534'>534</span>
+<span id='535'>535</span>
+<span id='536'>536</span>
+<span id='537'>537</span>
+<span id='538'>538</span>
+<span id='539'>539</span>
+<span id='540'>540</span>
+<span id='541'>541</span>
+<span id='542'>542</span>
+<span id='543'>543</span>
+<span id='544'>544</span>
+<span id='545'>545</span>
+<span id='546'>546</span>
+<span id='547'>547</span>
+<span id='548'>548</span>
+<span id='549'>549</span>
+<span id='550'>550</span>
+<span id='551'>551</span>
+<span id='552'>552</span>
+<span id='553'>553</span>
+<span id='554'>554</span>
+<span id='555'>555</span>
+<span id='556'>556</span>
+<span id='557'>557</span>
+<span id='558'>558</span>
+<span id='559'>559</span>
+<span id='560'>560</span>
+<span id='561'>561</span>
+<span id='562'>562</span>
+<span id='563'>563</span>
+<span id='564'>564</span>
+<span id='565'>565</span>
+<span id='566'>566</span>
+<span id='567'>567</span>
+<span id='568'>568</span>
+<span id='569'>569</span>
+<span id='570'>570</span>
+<span id='571'>571</span>
+<span id='572'>572</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>cmp</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>num</span>;
@@ -563,6 +630,10 @@
 // an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
 // an n-by-n orthogonal matrix V so that A = U*S*V&#39;.
 //
+// For an m-by-n matrix A with m &lt; n, the singular value decomposition is
+// an m-by-m orthogonal matrix U, an m-by-m diagonal matrix S, and
+// an n-by-m orthogonal matrix V so that A = U*S*V&#39;.
+//
 // The singular values, sigma[k] = S[k][k], are ordered so that
 // sigma[0] &gt;= sigma[1] &gt;= ... &gt;= sigma[n-1].
 //
@@ -570,6 +641,17 @@
 // and the effective numerical rank can be computed from this decomposition.
 </span><span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span> : <span class='ident'>FloatMath</span> <span class='op'>+</span> <span class='ident'>ApproxEq</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {<span class='comment'>
+    // A = USV&#39;
+    </span><span class='kw'>if</span> <span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>&lt;</span> <span class='ident'>a</span>.<span class='ident'>cols</span>() {<span class='comment'>
+      // a&#39; = (usv&#39;)&#39; = vs&#39;u&#39;
+      </span><span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='ident'>t</span>());
+      <span class='kw'>return</span> <span class='ident'>SVD</span> {
+        <span class='ident'>u</span> : <span class='ident'>svd</span>.<span class='ident'>v</span>.<span class='ident'>clone</span>(),
+        <span class='ident'>s</span> : <span class='ident'>svd</span>.<span class='ident'>s</span>.<span class='ident'>t</span>(),
+        <span class='ident'>v</span> : <span class='ident'>svd</span>.<span class='ident'>u</span>.<span class='ident'>clone</span>()
+      }
+    }<span class='comment'>
+
     // Derived from LINPACK code.
     // Initialize.
     </span><span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>adata</span> <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>get_data</span>().<span class='ident'>clone</span>();
@@ -983,22 +1065,32 @@
 
   <span class='doccomment'>/// Calculates SVD using the direct method. Note that calculating it this way
 </span>  <span class='doccomment'>/// is not numerically stable, so it is mostly useful for testing purposes.
-</span><span class='comment'>  //pub fn direct(a : &amp;Matrix&lt;T&gt;) -&gt; SVD&lt;T&gt; {
-  </span><span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>direct</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span> {
+</span>  <span class='doccomment'>/// A = USV&#39;
+</span>  <span class='doccomment'>/// for A : m * n
+</span>  <span class='doccomment'>///     U : m * m
+</span>  <span class='doccomment'>///     S : m * n
+</span>  <span class='doccomment'>///     V : n * n
+</span>  <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>direct</span>(<span class='ident'>a</span> : <span class='kw-2'>&amp;</span><span class='ident'>Matrix</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>) <span class='op'>-&gt;</span> <span class='ident'>SVD</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='kw'>use</span> <span class='ident'>EigenDecomposition</span>;<span class='comment'>
 
     // A = USV&#39;
+    </span><span class='kw'>if</span> <span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>&lt;</span> <span class='ident'>a</span>.<span class='ident'>cols</span>() {<span class='comment'>
+      // a&#39; = (usv&#39;)&#39; = vs&#39;u&#39;
+      </span><span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='ident'>direct</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>.<span class='ident'>t</span>());
+      <span class='kw'>return</span> <span class='ident'>SVD</span> {
+        <span class='ident'>u</span> : <span class='ident'>svd</span>.<span class='ident'>v</span>.<span class='ident'>clone</span>(),
+        <span class='ident'>s</span> : <span class='ident'>svd</span>.<span class='ident'>s</span>.<span class='ident'>t</span>(),
+        <span class='ident'>v</span> : <span class='ident'>svd</span>.<span class='ident'>u</span>.<span class='ident'>clone</span>()
+      }
+    }<span class='comment'>
 
     // A&#39;A = VS&#39;U&#39;USV&#39;
     //     = VS&#39;SV&#39;
     </span><span class='kw'>let</span> <span class='ident'>ata</span> <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>t</span>().<span class='ident'>mul</span>(<span class='ident'>a</span>);
-    <span class='kw'>let</span> <span class='ident'>edc</span> <span class='op'>=</span> <span class='ident'>EigenDecomposition</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>ata</span>);<span class='comment'>
-    //let v = &amp;Matrix::id(2, 2);
-    </span><span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>edc</span>.<span class='ident'>get_v</span>();<span class='comment'>
-    //let temp = Matrix::zero_vector(2);
-    //let eigs = temp.get_data(); //edc.get_real_eigenvalues();
-    </span><span class='kw'>let</span> <span class='ident'>eigs</span> <span class='op'>=</span> <span class='ident'>edc</span>.<span class='ident'>get_real_eigenvalues</span>();
-    <span class='kw'>let</span> <span class='ident'>singular_values</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>eigs</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span><span class='ident'>e</span><span class='op'>|</span> <span class='ident'>e</span>.<span class='ident'>sqrt</span>()).<span class='ident'>collect</span>();<span class='comment'>
+    <span class='kw'>let</span> <span class='ident'>edc</span> <span class='op'>=</span> <span class='ident'>EigenDecomposition</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>ata</span>);
+    <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>edc</span>.<span class='ident'>get_v</span>();
+    <span class='kw'>let</span> <span class='ident'>eigs</span> <span class='op'>=</span> <span class='ident'>edc</span>.<span class='ident'>get_real_eigenvalues</span>();
+    <span class='kw'>let</span> <span class='ident'>singular_values</span> : <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>eigs</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span><span class='ident'>e</span><span class='op'>|</span> <span class='ident'>e</span>.<span class='ident'>sqrt</span>()).<span class='ident'>collect</span>();<span class='comment'>
 
     // U*S*V&#39; = A
     // U*S*V&#39;*V = A*V
@@ -1008,11 +1100,17 @@
     </span><span class='kw'>let</span> <span class='ident'>s_size</span> <span class='op'>=</span> <span class='ident'>singular_values</span>.<span class='ident'>len</span>();
     <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>Matrix</span>::<span class='ident'>block_diag</span>(<span class='ident'>s_size</span>, <span class='ident'>s_size</span>, <span class='ident'>singular_values</span>);
     <span class='kw'>let</span> <span class='ident'>s_inv</span> <span class='op'>=</span> <span class='ident'>s</span>.<span class='ident'>inverse</span>().<span class='ident'>unwrap</span>();
-    <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>mul</span>(<span class='ident'>v</span>).<span class='ident'>mul</span>(<span class='kw-2'>&amp;</span><span class='ident'>s_inv</span>);
+    <span class='kw'>let</span> (<span class='ident'>s_aug</span>, <span class='ident'>s_inv_aug</span>) <span class='op'>=</span>
+        <span class='kw'>if</span> <span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>==</span> <span class='ident'>a</span>.<span class='ident'>cols</span>() { (<span class='ident'>s</span>, <span class='ident'>s_inv</span>) }
+        <span class='kw'>else</span> {
+          (<span class='ident'>s</span>.<span class='ident'>cb</span>(<span class='kw-2'>&amp;</span><span class='ident'>Matrix</span>::<span class='ident'>zero</span>(<span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>-</span> <span class='ident'>a</span>.<span class='ident'>cols</span>(), <span class='ident'>s</span>.<span class='ident'>cols</span>())),
+           <span class='ident'>s_inv</span>.<span class='ident'>cr</span>(<span class='kw-2'>&amp;</span><span class='ident'>Matrix</span>::<span class='ident'>zero</span>(<span class='ident'>s_inv</span>.<span class='ident'>rows</span>(), <span class='ident'>a</span>.<span class='ident'>rows</span>() <span class='op'>-</span> <span class='ident'>a</span>.<span class='ident'>cols</span>())))
+        };
+    <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>mul</span>(<span class='ident'>v</span>).<span class='ident'>mul</span>(<span class='kw-2'>&amp;</span><span class='ident'>s_inv_aug</span>);
 
     <span class='ident'>SVD</span> {
       <span class='ident'>u</span> : <span class='ident'>u</span>.<span class='ident'>clone</span>(),
-      <span class='ident'>s</span> : <span class='ident'>s</span>.<span class='ident'>clone</span>(),
+      <span class='ident'>s</span> : <span class='ident'>s_aug</span>.<span class='ident'>clone</span>(),
       <span class='ident'>v</span> : <span class='ident'>v</span>.<span class='ident'>clone</span>()
     }
   }
@@ -1030,7 +1128,17 @@
 
 <span class='attribute'>#[<span class='ident'>test</span>]</span>
 <span class='kw'>fn</span> <span class='ident'>svd_test_m_over_n</span>() {
-  <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>1.0</span>, <span class='number'>2.0</span>; <span class='number'>3.0</span>, <span class='number'>4.0</span>; <span class='number'>5.0</span>, <span class='number'>6.0</span>);
+  <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>1.0</span>, <span class='number'>2.0</span>, <span class='number'>3.0</span>; <span class='number'>4.0</span>, <span class='number'>5.0</span>, <span class='number'>6.0</span>; <span class='number'>7.0</span>, <span class='number'>8.0</span>, <span class='number'>9.0</span>; <span class='number'>10.0</span>, <span class='number'>11.0</span>, <span class='number'>12.0</span>);
+  <span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>);
+  <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_u</span>();
+  <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
+  <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
+  <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
+}
+
+<span class='attribute'>#[<span class='ident'>test</span>]</span>
+<span class='kw'>fn</span> <span class='ident'>svd_test_n_over_m</span>() {
+  <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>1.0</span>, <span class='number'>2.0</span>, <span class='number'>3.0</span>, <span class='number'>4.0</span>; <span class='number'>5.0</span>, <span class='number'>6.0</span>, <span class='number'>7.0</span>, <span class='number'>8.0</span>; <span class='number'>9.0</span>, <span class='number'>10.0</span>, <span class='number'>11.0</span>, <span class='number'>12.0</span>);
   <span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='ident'>new</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>);
   <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_u</span>();
   <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
@@ -1046,6 +1154,32 @@
   <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
   <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
   <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
+<span class='ident'>s</span>.<span class='ident'>print</span>();
+<span class='macro'>fail</span><span class='macro'>!</span>();
+}
+
+<span class='attribute'>#[<span class='ident'>test</span>]</span>
+<span class='kw'>fn</span> <span class='ident'>direct_test_m_over_n</span>() {
+  <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>1.0</span>, <span class='number'>2.0</span>, <span class='number'>3.0</span>; <span class='number'>4.0</span>, <span class='number'>5.0</span>, <span class='number'>6.0</span>; <span class='number'>7.0</span>, <span class='number'>8.0</span>, <span class='number'>9.0</span>; <span class='number'>10.0</span>, <span class='number'>11.0</span>, <span class='number'>12.0</span>);
+  <span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span>::<span class='ident'>direct</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>);
+  <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_u</span>();
+  <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
+  <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
+  <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
+<span class='ident'>s</span>.<span class='ident'>print</span>();
+<span class='macro'>fail</span><span class='macro'>!</span>();
+}
+
+<span class='attribute'>#[<span class='ident'>test</span>]</span>
+<span class='kw'>fn</span> <span class='ident'>direct_test_n_over_m</span>() {
+  <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='macro'>m</span><span class='macro'>!</span>(<span class='number'>1.0</span>, <span class='number'>2.0</span>, <span class='number'>3.0</span>, <span class='number'>4.0</span>; <span class='number'>5.0</span>, <span class='number'>6.0</span>, <span class='number'>7.0</span>, <span class='number'>8.0</span>; <span class='number'>9.0</span>, <span class='number'>10.0</span>, <span class='number'>11.0</span>, <span class='number'>12.0</span>);
+  <span class='kw'>let</span> <span class='ident'>svd</span> <span class='op'>=</span> <span class='ident'>SVD</span>::<span class='op'>&lt;</span><span class='ident'>f64</span><span class='op'>&gt;</span>::<span class='ident'>direct</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>);
+  <span class='kw'>let</span> <span class='ident'>u</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_u</span>();
+  <span class='kw'>let</span> <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_s</span>();
+  <span class='kw'>let</span> <span class='ident'>v</span> <span class='op'>=</span> <span class='ident'>svd</span>.<span class='ident'>get_v</span>();
+  <span class='macro'>assert</span><span class='macro'>!</span>((<span class='ident'>u</span> <span class='op'>*</span> <span class='op'>*</span><span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>v</span>.<span class='ident'>t</span>()).<span class='ident'>approx_eq</span>(<span class='kw-2'>&amp;</span><span class='ident'>a</span>));
+<span class='ident'>s</span>.<span class='ident'>print</span>();
+<span class='macro'>fail</span><span class='macro'>!</span>();
 }
 
 </pre>

@@ -46,9 +46,14 @@
 <h4 id='method.get_s' class='method'><code>fn <a href='#method.get_s' class='fnname'>get_s</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_v' class='method'><code>fn <a href='#method.get_v' class='fnname'>get_v</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.rank' class='method'><code>fn <a href='#method.rank' class='fnname'>rank</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/std/primitive.uint.html'>uint</a></code></h4>
-<h4 id='method.direct' class='method'><code>fn <a href='#method.direct' class='fnname'>direct</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;<a href='http://doc.rust-lang.org/std/primitive.f64.html'>f64</a>&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;<a href='http://doc.rust-lang.org/std/primitive.f64.html'>f64</a>&gt;</code></h4>
+<h4 id='method.direct' class='method'><code>fn <a href='#method.direct' class='fnname'>direct</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h4>
 <div class='docblock'><p>Calculates SVD using the direct method. Note that calculating it this way
-is not numerically stable, so it is mostly useful for testing purposes.</p>
+is not numerically stable, so it is mostly useful for testing purposes.
+A = USV&#39;
+for A : m * n
+    U : m * m
+    S : m * n
+    V : n * n</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
 
