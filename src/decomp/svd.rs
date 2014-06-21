@@ -25,6 +25,17 @@ pub struct SVD<T> {
 // and the effective numerical rank can be computed from this decomposition.
 impl<T : FloatMath + ApproxEq<T>> SVD<T> {
   pub fn new(a : &Matrix<T>) -> SVD<T> {
+    // A = USV'
+    if a.rows() < a.cols() {
+      // a' = (usv')' = vs'u'
+      let svd = SVD::new(&a.t());
+      return SVD {
+        u : svd.v.clone(),
+        s : svd.s.t(),
+        v : svd.u.clone()
+      }
+    }
+
     // Derived from LINPACK code.
     // Initialize.
     let mut adata = a.get_data().clone();
@@ -438,19 +449,30 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
   /// Calculates SVD using the direct method. Note that calculating it this way
   /// is not numerically stable, so it is mostly useful for testing purposes.
+  /// A = USV'
+  /// for A : m * n
+  ///     U : m * m
+  ///     S : m * n
+  ///     V : n * n
   pub fn direct(a : &Matrix<T>) -> SVD<T> {
     use EigenDecomposition;
 
     // A = USV'
+    if a.rows() < a.cols() {
+      // a' = (usv')' = vs'u'
+      let svd = SVD::direct(&a.t());
+      return SVD {
+        u : svd.v.clone(),
+        s : svd.s.t(),
+        v : svd.u.clone()
+      }
+    }
 
     // A'A = VS'U'USV'
     //     = VS'SV'
     let ata = a.t().mul(a);
     let edc = EigenDecomposition::new(&ata);
-    //let v = &Matrix::id(2, 2);
     let v = edc.get_v();
-    //let temp = Matrix::zero_vector(2);
-    //let eigs = temp.get_data(); //edc.get_real_eigenvalues();
     let eigs = edc.get_real_eigenvalues();
     let singular_values : Vec<T> = eigs.iter().map(|&e| e.sqrt()).collect();
 
@@ -462,11 +484,17 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     let s_size = singular_values.len();
     let s = Matrix::block_diag(s_size, s_size, singular_values);
     let s_inv = s.inverse().unwrap();
-    let u = a.mul(v).mul(&s_inv);
+    let (s_aug, s_inv_aug) =
+        if a.rows() == a.cols() { (s, s_inv) }
+        else {
+          (s.cb(&Matrix::zero(a.rows() - a.cols(), s.cols())),
+           s_inv.cr(&Matrix::zero(s_inv.rows(), a.rows() - a.cols())))
+        };
+    let u = a.mul(v).mul(&s_inv_aug);
 
     SVD {
       u : u.clone(),
-      s : s.clone(),
+      s : s_aug.clone(),
       v : v.clone()
     }
   }
@@ -484,7 +512,17 @@ fn svd_test() {
 
 #[test]
 fn svd_test_m_over_n() {
-  let a = m!(1.0, 2.0; 3.0, 4.0; 5.0, 6.0);
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0; 7.0, 8.0, 9.0; 10.0, 11.0, 12.0);
+  let svd = SVD::new(&a);
+  let u = svd.get_u();
+  let s = svd.get_s();
+  let v = svd.get_v();
+  assert!((u * *s * v.t()).approx_eq(&a));
+}
+
+#[test]
+fn svd_test_n_over_m() {
+  let a = m!(1.0, 2.0, 3.0, 4.0; 5.0, 6.0, 7.0, 8.0; 9.0, 10.0, 11.0, 12.0);
   let svd = SVD::new(&a);
   let u = svd.get_u();
   let s = svd.get_s();
@@ -495,6 +533,26 @@ fn svd_test_m_over_n() {
 #[test]
 fn direct_test() {
   let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0; 7.0, 8.0, 9.0);
+  let svd = SVD::<f64>::direct(&a);
+  let u = svd.get_u();
+  let s = svd.get_s();
+  let v = svd.get_v();
+  assert!((u * *s * v.t()).approx_eq(&a));
+}
+
+#[test]
+fn direct_test_m_over_n() {
+  let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0; 7.0, 8.0, 9.0; 10.0, 11.0, 12.0);
+  let svd = SVD::<f64>::direct(&a);
+  let u = svd.get_u();
+  let s = svd.get_s();
+  let v = svd.get_v();
+  assert!((u * *s * v.t()).approx_eq(&a));
+}
+
+#[test]
+fn direct_test_n_over_m() {
+  let a = m!(1.0, 2.0, 3.0, 4.0; 5.0, 6.0, 7.0, 8.0; 9.0, 10.0, 11.0, 12.0);
   let svd = SVD::<f64>::direct(&a);
   let u = svd.get_u();
   let s = svd.get_s();
