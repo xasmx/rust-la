@@ -1,6 +1,5 @@
 use std::cmp;
-use std::fmt::{Show};
-use std::io;
+use std::fmt::{Formatter, Result, Show};
 use std::num;
 use std::num::Zero;
 use std::rand;
@@ -528,18 +527,34 @@ impl<T : Clone> Matrix<T> {
 
 impl<T : Show> Matrix<T> {
   pub fn print(&self) {
-    print!("{:10s} ", "");
-    for col in range(0u, self.cols()) {
-      print!("{:10u} ", col);
-    }
-    println!("");
-    for row in range(0u, self.no_rows) {
-      print!("{:10u} ", row);
-      for col in range(0u, self.cols()) {
-        print!("{:10.10}? ", self.get_ref(row, col))
+    print!("{}", self);
+  }
+}
+
+impl<T : Show> Show for Matrix<T> {
+  // fmt implementation borrowed (with changes) from matrixrs <https://github.com/doomsplayer/matrixrs>.
+  fn fmt(&self, fmt: &mut Formatter) -> Result {
+    let max_width =
+      self.data.iter().fold(0, |maxlen, elem| {
+        let l = format!("{}", elem).len();
+        if maxlen > l { maxlen } else { l }
+      });
+
+    try!(write!(fmt, "\n"));
+    for row in range(0, self.rows()) {
+      try!(write!(fmt, "|"));
+      for col in range(0, self.cols()) {
+        let v = self.get_ref(row, col).clone();
+        let slen = format!("{}", v).len();
+        let mut padding = " ".to_str();
+        for _ in range(0, max_width-slen) {
+          padding.push_str(" ");
+        }
+        try!(write!(fmt, "{}{}", padding, v));
       }
-      io::println("")
+      try!(write!(fmt, " |\n"));
     }
+    Ok(())
   }
 }
 
