@@ -220,17 +220,18 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
       *edata.get_mut(l as uint) = num::zero();
     }
 
-    // Sort eigenvalues and corresponding vectors.
+    // Bubble sort eigenvalues and corresponding vectors.
     for i in range(0u, n - 1) {
       let mut k = i;
       let mut p = ddata.get(i as uint).clone();
       for j in range(i + 1, n) {
-        if *ddata.get(j as uint) < p {
+        if *ddata.get(j as uint) > p {
           k = j;
           p = ddata.get(j as uint).clone();
         }
       }
       if k != i {
+        // Swap columns k and i of the diagonal and v.
         *ddata.get_mut(k as uint) = ddata.get(i as uint).clone();
         *ddata.get_mut(i as uint) = p.clone();
         for j in range(0u, n) {
@@ -841,7 +842,7 @@ fn eigen_test_symmetric() {
   let ata = a.t() * a;
   let _eig = EigenDecomposition::new(&ata);
   let r = _eig.get_real_eigenvalues();
-  assert!(Matrix::vector(r.clone()).approx_eq(&m!(0.036923; 4.301868; 56.661209)));
+  assert!(Matrix::vector(r.clone()).approx_eq(&m!(56.661209; 4.301868; 0.036923)));
 }
 
 #[test]

@@ -18,6 +18,10 @@ pub struct SVD<T> {
 // an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
 // an n-by-n orthogonal matrix V so that A = U*S*V'.
 //
+// For an m-by-n matrix A with m < n, the singular value decomposition is
+// an m-by-m orthogonal matrix U, an m-by-m diagonal matrix S, and
+// an n-by-m orthogonal matrix V so that A = U*S*V'.
+//
 // The singular values, sigma[k] = S[k][k], are ordered so that
 // sigma[0] >= sigma[1] >= ... >= sigma[n-1].
 //
@@ -449,11 +453,15 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
 
   /// Calculates SVD using the direct method. Note that calculating it this way
   /// is not numerically stable, so it is mostly useful for testing purposes.
+  ///
   /// A = USV'
   /// for A : m * n
   ///     U : m * m
   ///     S : m * n
   ///     V : n * n
+  ///
+  /// The singular values, sigma[k] = S[k][k], are ordered so that
+  /// sigma[0] >= sigma[1] >= ... >= sigma[n-1].
   pub fn direct(a : &Matrix<T>) -> SVD<T> {
     use EigenDecomposition;
 
