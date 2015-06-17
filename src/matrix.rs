@@ -1,24 +1,29 @@
 use std::cmp;
-use std::fmt::{Formatter, Result, Show};
-use std::num;
-use std::num::Zero;
-use std::rand;
-use std::rand::{Rand};
+#[cfg(test)]
+use std::f32;
+use std::fmt::{Formatter, Result};
+use std::fmt::Debug;
+use std::ops::{Add, BitOr, Index, Mul, Neg, Sub};
 use std::vec::Vec;
+use num;
+use num::traits::{Float, Num, Signed};
+use num::Zero;
+use rand;
+use rand::Rand;
 
 use ApproxEq;
 use decomp::lu;
 use decomp::qr;
 use internalutil::{alloc_dirty_vec};
 
-#[deriving(PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Matrix<T> {
-  no_rows : uint,
+  no_rows : usize,
   data : Vec<T>
 }
 
 impl<T> Matrix<T> {
-  pub fn new(no_rows : uint, no_cols : uint, data : Vec<T>) -> Matrix<T> {
+  pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
     assert!(no_rows * no_cols == data.len());
     assert!(no_rows > 0 && no_cols > 0);
     Matrix { no_rows : no_rows, data : data }
@@ -35,10 +40,10 @@ impl<T> Matrix<T> {
   }
 
   #[inline]
-  pub fn rows(&self) -> uint { self.no_rows }
+  pub fn rows(&self) -> usize { self.no_rows }
 
   #[inline]
-  pub fn cols(&self) -> uint { self.data.len() / self.no_rows }
+  pub fn cols(&self) -> usize { self.data.len() / self.no_rows }
 
   #[inline]
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
@@ -46,22 +51,22 @@ impl<T> Matrix<T> {
   #[inline]
   pub fn get_mut_data<'a>(&'a mut self) -> &'a mut Vec<T> { &mut self.data }
 
-  pub fn get_ref<'lt>(&'lt self, row : uint, col : uint) -> &'lt T {
+  pub fn get_ref<'lt>(&'lt self, row : usize, col : usize) -> &'lt T {
     assert!(row < self.no_rows && col < self.cols());
-    self.data.get(row * self.cols() + col)
+    unsafe { self.data.get_unchecked(row * self.cols() + col) }
   }
 
-  pub fn get_mref<'lt>(&'lt mut self, row : uint, col : uint) -> &'lt mut T {
+  pub fn get_mref<'lt>(&'lt mut self, row : usize, col : usize) -> &'lt mut T {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
-    self.data.get_mut(row * no_cols + col)
+    unsafe { self.data.get_unchecked_mut(row * no_cols + col) }
   }
 
-  pub fn map<S>(&self, f : |&T| -> S) -> Matrix<S> {
+  pub fn map<S>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = f(self.data.get(i));
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = f(self.data.get_unchecked(i)); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -69,21 +74,21 @@ impl<T> Matrix<T> {
     }
   }
 
-  pub fn mmap(&mut self, f : |&T| -> T) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = f(self.data.get(i));
+  pub fn mmap(&mut self, f : &Fn(&T) -> T) {
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = f(self.data.get_unchecked(i)); }
     }
   }
 
-  pub fn reduce<S : Clone>(&self, init: &Vec<S>, f: |&S, &T| -> S) -> Matrix<S> {
+  pub fn reduce<S : Clone>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
     assert!(init.len() == self.cols());
 
     let mut data = init.clone();
-    let mut dataIdx = 0;
-    for i in range(0, self.data.len()) {
-      *data.get_mut(dataIdx) = f(data.get(dataIdx), self.data.get(i));
-      dataIdx += 1;
-      dataIdx %= data.len();
+    let mut data_idx = 0;
+    for i in 0..self.data.len() {
+      unsafe { *data.get_unchecked_mut(data_idx) = f(data.get_unchecked(data_idx), self.data.get_unchecked(i)); }
+      data_idx += 1;
+      data_idx %= data.len();
     }
 
     Matrix {
@@ -104,23 +109,23 @@ impl<T> Matrix<T> {
 }
 
 impl<T : Num + Clone> Matrix<T> {
-  pub fn id(m : uint, n : uint) -> Matrix<T> {
+  pub fn id(m : usize, n : usize) -> Matrix<T> {
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = num::zero();
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
     }
-    for i in range(0u, cmp::min(m, n)) {
-      *d.get_mut(i * n + i) = num::one();
+    for i in 0..cmp::min(m, n) {
+      unsafe { *d.get_unchecked_mut(i * n + i) = num::one(); }
     }
     Matrix { no_rows : m, data : d }
   }
 
-  pub fn zero(no_rows : uint, no_cols : uint) -> Matrix<T> {
+  pub fn zero(no_rows : usize, no_cols : usize) -> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = num::zero();
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
     }
     Matrix {
       no_rows : no_rows,
@@ -132,58 +137,60 @@ impl<T : Num + Clone> Matrix<T> {
     let size = data.len();
     let elems = size * size;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = num::zero();
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
     }
-    for i in range(0u, size) {
-      *d.get_mut(i * size + i) = data.get(i).clone();
+    for i in 0..size {
+      unsafe { *d.get_unchecked_mut(i * size + i) = data.get_unchecked(i).clone(); }
     }
     Matrix::new(size, size, d)
   }
 
-  pub fn block_diag(m : uint, n : uint, data : Vec<T>) -> Matrix<T> {
+  pub fn block_diag(m : usize, n : usize, data : Vec<T>) -> Matrix<T> {
     let min_dim = cmp::min(m, n);
     assert!(data.len() == min_dim);
 
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = num::zero();
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
     }
 
-    for i in range(0u, min_dim) {
-      *d.get_mut(i * n + i) = data.get(i).clone();
+    for i in 0..min_dim {
+      unsafe { *d.get_unchecked_mut(i * n + i) = data.get_unchecked(i).clone(); }
     }
     Matrix::new(m, n, d)
   }
 
-  pub fn zero_vector(no_rows : uint) -> Matrix<T> {
+  pub fn zero_vector(no_rows : usize) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
-    for i in range(0u, no_rows) {
-      *d.get_mut(i) = num::zero();
+    for i in 0..no_rows {
+      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
     }
     Matrix { no_rows : no_rows, data : d }
   }
 
-  pub fn one_vector(no_rows : uint) -> Matrix<T> {
+  pub fn one_vector(no_rows : usize) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
-    for i in range(0u, no_rows) {
-      *d.get_mut(i) = num::one();
+    for i in 0..no_rows {
+      unsafe { *d.get_unchecked_mut(i) = num::one(); }
     }
     Matrix { no_rows : no_rows, data : d }
   }
+}
 
+impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
   pub fn mneg(&mut self) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = - *self.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = - self.data.get_unchecked(i).clone(); }
     }
   }
 
   pub fn scale(&self, factor : T) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = factor * *self.data.get(i);
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = factor.clone() * self.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -192,8 +199,8 @@ impl<T : Num + Clone> Matrix<T> {
   }
 
   pub fn mscale(&mut self, factor : T) {
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = factor * *self.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = factor.clone() * self.data.get_unchecked(i).clone(); }
     }
   }
 
@@ -201,8 +208,8 @@ impl<T : Num + Clone> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) + *m.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() + m.data.get_unchecked(i).clone(); }
     }
   }
 
@@ -210,8 +217,8 @@ impl<T : Num + Clone> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) - *m.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() - m.data.get_unchecked(i).clone() }
     }
   }
 
@@ -221,8 +228,8 @@ impl<T : Num + Clone> Matrix<T> {
 
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) * *m.data.get(i);
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() * m.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -234,8 +241,8 @@ impl<T : Num + Clone> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) * *m.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() * m.data.get_unchecked(i).clone(); }
     }
   }
 
@@ -245,8 +252,8 @@ impl<T : Num + Clone> Matrix<T> {
 
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) / *m.data.get(i);
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() / m.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -258,8 +265,8 @@ impl<T : Num + Clone> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
-    for i in range(0u, self.data.len()) {
-      *self.data.get_mut(i) = *self.data.get(i) / *m.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() / m.data.get_unchecked(i).clone(); }
     }
   }
 
@@ -268,13 +275,13 @@ impl<T : Num + Clone> Matrix<T> {
 
     let elems = self.no_rows * m.cols();
     let mut d = alloc_dirty_vec(elems);
-    for row in range(0u, self.no_rows) {
-      for col in range(0u, m.cols()) {
+    for row in 0..self.no_rows {
+      for col in 0..m.cols() {
         let mut res : T = num::zero();
-        for idx in range(0u, self.cols()) {
-          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
+        for idx in 0..self.cols() {
+          res = res + self.get(row, idx) * m.get(idx, col);
         }
-        *d.get_mut(row * m.cols() + col) = res;
+        unsafe { *d.get_unchecked_mut(row * m.cols() + col) = res; }
       }
     }
 
@@ -284,34 +291,34 @@ impl<T : Num + Clone> Matrix<T> {
 
 
 impl<T : Clone> Matrix<T> {
-  pub fn get(&self, row : uint, col : uint) -> T {
+  pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
-    self.data.get(row * self.cols() + col).clone()
+    unsafe { self.data.get_unchecked(row * self.cols() + col).clone() }
   }
 
-  pub fn set(&mut self, row : uint, col : uint, val : T) {
+  pub fn set(&mut self, row : usize, col : usize, val : T) {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
-    *self.data.get_mut(row * no_cols + col) = val.clone()
+    unsafe { *self.data.get_unchecked_mut(row * no_cols + col) = val.clone() }
   }
 
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     let elems = self.data.len() + m.data.len();
     let mut d = alloc_dirty_vec(elems);
-    let mut srcIdx1 = 0;
-    let mut srcIdx2 = 0;
-    let mut destIdx = 0;
-    for _ in range(0u, self.no_rows) {
-      for _ in range(0u, self.cols()) {
-        *d.get_mut(destIdx) = self.data.get(srcIdx1).clone();
-        srcIdx1 += 1;
-        destIdx += 1;
+    let mut src_idx1 = 0;
+    let mut src_idx2 = 0;
+    let mut dest_idx = 0;
+    for _ in 0..self.no_rows {
+      for _ in 0..self.cols() {
+        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(src_idx1).clone(); }
+        src_idx1 += 1;
+        dest_idx += 1;
       }
-      for _ in range(0u, m.cols()) {
-        *d.get_mut(destIdx) = m.data.get(srcIdx2).clone();
-        srcIdx2 += 1;
-        destIdx += 1;
+      for _ in 0..m.cols() {
+        unsafe { *d.get_unchecked_mut(dest_idx) = m.data.get_unchecked(src_idx2).clone(); }
+        src_idx2 += 1;
+        dest_idx += 1;
       }
     }
     Matrix {
@@ -324,12 +331,12 @@ impl<T : Clone> Matrix<T> {
     assert!(self.cols() == m.cols());
     let elems = self.data.len() + m.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, self.data.len()) {
-      *d.get_mut(i) = self.data.get(i).clone();
+    for i in 0..self.data.len() {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone(); }
     }
     let offset = self.data.len();
-    for i in range(0u, m.data.len()) {
-      *d.get_mut(offset + i) = m.data.get(i).clone();
+    for i in 0..m.data.len() {
+      unsafe { *d.get_unchecked_mut(offset + i) = m.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows : self.no_rows + m.no_rows,
@@ -340,13 +347,13 @@ impl<T : Clone> Matrix<T> {
   pub fn t(&self) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    let mut srcIdx = 0;
-    for i in range(0u, elems) {
-      *d.get_mut(i) = self.data.get(srcIdx).clone();
-      srcIdx += self.cols();
-      if srcIdx >= elems {
-        srcIdx -= elems;
-        srcIdx += 1;
+    let mut src_idx = 0;
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(src_idx).clone(); }
+      src_idx += self.cols();
+      if src_idx >= elems {
+        src_idx -= elems;
+        src_idx += 1;
       }
     }
     Matrix {
@@ -356,47 +363,47 @@ impl<T : Clone> Matrix<T> {
   }
 
   pub fn mt(&mut self) {
-    let mut visited = Vec::from_elem(self.data.len(), false);
+    let mut visited = vec![false; self.data.len()];
 
-    for cycleIdx in range(1u, self.data.len() - 1) {
-      if *visited.get(cycleIdx) {
+    for cycle_idx in 1..(self.data.len() - 1) {
+      if unsafe { *visited.get_unchecked(cycle_idx) } {
         continue;
       }
 
-      let mut idx = cycleIdx;
-      let mut prevValue = self.data.get(idx).clone();
+      let mut idx = cycle_idx;
+      let mut prev_value = unsafe { self.data.get_unchecked(idx).clone() };
       loop {
         idx = (self.no_rows * idx) % (self.data.len() - 1);
-        let currentValue = self.data.get(idx).clone();
-        *self.data.get_mut(idx) = prevValue;
-        if idx == cycleIdx {
+        let current_value = unsafe { self.data.get_unchecked(idx).clone() };
+        unsafe { *self.data.get_unchecked_mut(idx) = prev_value }
+        if idx == cycle_idx {
           break;
         }
 
-        prevValue = currentValue;
-        *visited.get_mut(idx) = true;
+        prev_value = current_value;
+        unsafe { *visited.get_unchecked_mut(idx) = true; }
       }
     }
 
     self.no_rows = self.cols();
   }
 
-  pub fn minor(&self, row : uint, col : uint) -> Matrix<T> {
+  pub fn minor(&self, row : usize, col : usize) -> Matrix<T> {
     assert!(row < self.no_rows && col < self.cols() && self.no_rows > 1 && self.cols() > 1);
     let elems = (self.cols() - 1) * (self.no_rows - 1);
     let mut d = alloc_dirty_vec(elems);
-    let mut sourceRowIdx = 0u;
-    let mut destIdx = 0u;
-    for currentRow in range(0u, self.no_rows) {
-      if currentRow != row {
-        for currentCol in range(0u, self.cols()) {
-          if currentCol != col {
-            *d.get_mut(destIdx) = self.data.get(sourceRowIdx + currentCol).clone();
-            destIdx += 1;
+    let mut source_row_idx = 0;
+    let mut dest_idx = 0;
+    for current_row in 0..self.no_rows {
+      if current_row != row {
+        for current_col in 0..self.cols() {
+          if current_col != col {
+            unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(source_row_idx + current_col).clone(); }
+            dest_idx += 1;
           }
         }
       }
-      sourceRowIdx = sourceRowIdx + self.cols();
+      source_row_idx = source_row_idx + self.cols();
     }
     Matrix {
       no_rows : self.no_rows - 1,
@@ -404,22 +411,22 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn sub_matrix(&self, startRow : uint, startCol : uint, endRow : uint, endCol : uint) -> Matrix<T> {
-    assert!(startRow < endRow);
-    assert!(startCol < endCol);
-    assert!((endRow - startRow) < self.no_rows && (endCol - startCol) < self.cols() && startRow != endRow && startCol != endCol);
-    let rows = endRow - startRow;
-    let cols = endCol - startCol;
+  pub fn sub_matrix(&self, start_row : usize, start_col : usize, end_row : usize, end_col : usize) -> Matrix<T> {
+    assert!(start_row < end_row);
+    assert!(start_col < end_col);
+    assert!((end_row - start_row) < self.no_rows && (end_col - start_col) < self.cols() && start_row != end_row && start_col != end_col);
+    let rows = end_row - start_row;
+    let cols = end_col - start_col;
     let elems = rows * cols;
     let mut d = alloc_dirty_vec(elems);
-    let mut srcIdx = startRow * self.cols() + startCol;
-    let mut destIdx = 0u;
-    for _ in range(0u, rows) {
-      for colOffset in range(0u, cols) {
-        *d.get_mut(destIdx + colOffset) = self.data.get(srcIdx + colOffset).clone();
+    let mut src_idx = start_row * self.cols() + start_col;
+    let mut dest_idx = 0;
+    for _ in 0..rows {
+      for col_offset in 0..cols {
+        unsafe { *d.get_unchecked_mut(dest_idx + col_offset) = self.data.get_unchecked(src_idx + col_offset).clone(); }
       }
-      srcIdx += self.cols();
-      destIdx += cols;
+      src_idx += self.cols();
+      dest_idx += cols;
     }
     Matrix {
       no_rows : rows,
@@ -427,12 +434,12 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn get_column(&self, column : uint) -> Matrix<T> {
+  pub fn get_column(&self, column : usize) -> Matrix<T> {
     assert!(column < self.cols());
     let mut d = alloc_dirty_vec(self.no_rows);
     let mut src_idx = column;
-    for i in range(0, self.no_rows) {
-      *d.get_mut(i) = self.data.get(src_idx).clone();
+    for i in 0..self.no_rows {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(src_idx).clone(); }
       src_idx += self.cols();
     }
     Matrix {
@@ -441,17 +448,18 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn permute_rows(&self, rows : &Vec<uint>) -> Matrix<T> {
+  pub fn permute_rows(&self, rows : &Vec<usize>) -> Matrix<T> {
     let no_rows = rows.len();
     let no_cols = self.cols();
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
-    let mut destIdx = 0;
-    for row in range(0u, no_rows) {
-      let row_idx = *rows.get(row) * no_cols;
-      for col in range(0u, no_cols) {
-        *d.get_mut(destIdx) = self.data.get(row_idx + col).clone();
-        destIdx += 1;
+    let mut dest_idx = 0;
+    for row in 0..no_rows {
+      let row_idx = unsafe { *rows.get_unchecked(row) } * no_cols;
+      assert!(rows[row] < self.no_rows);
+      for col in 0..no_cols {
+        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(row_idx + col).clone(); }
+        dest_idx += 1;
       }
     }
 
@@ -461,17 +469,18 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn permute_columns(&self, columns : &Vec<uint>) -> Matrix<T> {
+  pub fn permute_columns(&self, columns : &Vec<usize>) -> Matrix<T> {
     let no_rows = self.no_rows;
     let no_cols = columns.len();
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
-    let mut destIdx = 0;
+    let mut dest_idx = 0;
     let mut row_idx = 0;
-    for _ in range(0u, no_rows) {
-      for col in range(0u, no_cols) {
-        *d.get_mut(destIdx) = self.data.get(row_idx + *columns.get(col)).clone();
-        destIdx += 1;
+    for _ in 0..no_rows {
+      for col in 0..no_cols {
+        assert!(columns[col] < self.cols());
+        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(row_idx + *columns.get_unchecked(col)).clone(); }
+        dest_idx += 1;
       }
       row_idx += self.cols();
     }
@@ -482,9 +491,9 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn filter_rows(&self, f : |m : &Matrix<T>, row : uint| -> bool) -> Matrix<T> {
+  pub fn filter_rows(&self, f : &Fn(&Matrix<T>, usize) -> bool) -> Matrix<T> {
     let mut rows = Vec::with_capacity(self.rows());
-    for row in range(0u, self.rows()) {
+    for row in 0..self.rows() {
       if f(self, row) {
         rows.push(row);
       }
@@ -492,9 +501,9 @@ impl<T : Clone> Matrix<T> {
     self.permute_rows(&rows)
   }
 
-  pub fn filter_columns(&self, f : |m : &Matrix<T>, col : uint| -> bool) -> Matrix<T> {
+  pub fn filter_columns(&self, f : &Fn(&Matrix<T>, usize) -> bool) -> Matrix<T> {
     let mut cols = Vec::with_capacity(self.cols());
-    for col in range(0u, self.cols()) {
+    for col in 0..self.cols() {
       if f(self, col) {
         cols.push(col);
       }
@@ -505,7 +514,7 @@ impl<T : Clone> Matrix<T> {
   pub fn select_rows(&self, selector : &[bool]) -> Matrix<T> {
     assert!(self.no_rows == selector.len());
     let mut rows = Vec::with_capacity(self.no_rows);
-    for i in range(0, selector.len()) {
+    for i in 0..selector.len() {
       if selector[i] {
         rows.push(i);
       }
@@ -516,7 +525,7 @@ impl<T : Clone> Matrix<T> {
   pub fn select_columns(&self, selector : &[bool]) -> Matrix<T> {
     assert!(self.cols() == selector.len());
     let mut cols = Vec::with_capacity(self.cols());
-    for i in range(0, selector.len()) {
+    for i in 0..selector.len() {
       if selector[i] {
         cols.push(i);
       }
@@ -525,32 +534,32 @@ impl<T : Clone> Matrix<T> {
   }
 }
 
-impl<T : Show> Matrix<T> {
+impl<T : Debug> Matrix<T> {
   pub fn print(&self) {
-    print!("{}", self);
+    print!("{:?}", self);
   }
 }
 
-impl<T : Show> Show for Matrix<T> {
+impl<T : Debug> Debug for Matrix<T> {
   // fmt implementation borrowed (with changes) from matrixrs <https://github.com/doomsplayer/matrixrs>.
   fn fmt(&self, fmt: &mut Formatter) -> Result {
     let max_width =
       self.data.iter().fold(0, |maxlen, elem| {
-        let l = format!("{}", elem).len();
+        let l = format!("{:?}", elem).len();
         if maxlen > l { maxlen } else { l }
       });
 
     try!(write!(fmt, "\n"));
-    for row in range(0, self.rows()) {
+    for row in 0..self.rows() {
       try!(write!(fmt, "|"));
-      for col in range(0, self.cols()) {
+      for col in 0..self.cols() {
         let v = self.get_ref(row, col).clone();
-        let slen = format!("{}", v).len();
-        let mut padding = " ".to_str();
-        for _ in range(0, max_width-slen) {
+        let slen = format!("{:?}", v).len();
+        let mut padding = " ".to_owned();
+        for _ in 0..(max_width-slen) {
           padding.push_str(" ");
         }
-        try!(write!(fmt, "{}{}", padding, v));
+        try!(write!(fmt, "{}{:?}", padding, v));
       }
       try!(write!(fmt, " |\n"));
     }
@@ -559,22 +568,24 @@ impl<T : Show> Show for Matrix<T> {
 }
 
 impl<T : Rand> Matrix<T> {
-  pub fn random(no_rows : uint, no_cols : uint) -> Matrix<T> {
+  pub fn random(no_rows : usize, no_cols : usize) -> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = rand::random::<T>();
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = rand::random::<T>(); }
     }
     Matrix { no_rows : no_rows, data : d }
   }
 }
 
-impl <T : Neg<T>> Neg<Matrix<T>> for Matrix<T> {
-  fn neg(&self) -> Matrix<T> {
+impl<'a, T : Neg<Output = T> + Clone> Neg for &'a Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn neg(self) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = - *self.data.get(i)
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = - self.data.get_unchecked(i).clone() }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -583,15 +594,24 @@ impl <T : Neg<T>> Neg<Matrix<T>> for Matrix<T> {
   }
 }
 
-impl <T : Add<T, T>> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn add(&self, m: &Matrix<T>) -> Matrix<T> {
+impl<T : Neg<Output = T> + Clone> Neg for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn neg(self) -> Matrix<T> { (&self).neg() }
+}
+
+impl <'a, 'b, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for &'b Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn add(self, m: &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) + *m.data.get(i);
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() + m.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -600,15 +620,38 @@ impl <T : Add<T, T>> Add<Matrix<T>, Matrix<T>> for Matrix<T> {
   }
 }
 
-impl <T : Sub<T, T>> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn sub(&self, m: &Matrix<T>) -> Matrix<T> {
+impl <'a, T : Add<T, Output = T> + Clone> Add<Matrix<T>> for &'a Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn add(self, m: Matrix<T>) -> Matrix<T> { self + &m }
+}
+
+impl <'a, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn add(self, m: &Matrix<T>) -> Matrix<T> { (&self) + m }
+}
+
+impl <T : Add<T, Output = T> + Clone> Add<Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn add(self, m: Matrix<T>) -> Matrix<T> { (&self) + &m }
+}
+
+impl <'a, 'b, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for &'b Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn sub(self, m: &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
-    for i in range(0u, elems) {
-      *d.get_mut(i) = *self.data.get(i) - *m.data.get(i);
+    for i in 0..elems {
+      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() - m.data.get_unchecked(i).clone(); }
     }
     Matrix {
       no_rows: self.no_rows,
@@ -617,19 +660,43 @@ impl <T : Sub<T, T>> Sub<Matrix<T>, Matrix<T>> for Matrix<T> {
   }
 }
 
-impl<T : Add<T, T> + Mul<T, T> + Zero> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
-  fn mul(&self, m: &Matrix<T>) -> Matrix<T> {
+impl <'a, T : Sub<T, Output = T> + Clone> Sub<Matrix<T>> for &'a Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn sub(self, m: Matrix<T>) -> Matrix<T> { self - &m }
+}
+
+impl <'a, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn sub(self, m: &Matrix<T>) -> Matrix<T> { (&self) - m }
+}
+
+impl <T : Sub<T, Output = T> + Clone> Sub<Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn sub(self, m: Matrix<T>) -> Matrix<T> { (&self) - &m }
+}
+
+
+impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a Matrix<T>> for &'b Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn mul(self, m: &'a Matrix<T>) -> Matrix<T> {
     assert!(self.cols() == m.no_rows);
 
     let elems = self.no_rows * m.cols();
     let mut d = alloc_dirty_vec(elems);
-    for row in range(0u, self.no_rows) {
-      for col in range(0u, m.cols()) {
+    for row in 0..self.no_rows {
+      for col in 0..m.cols() {
         let mut res : T = num::zero();
-        for idx in range(0u, self.cols()) {
-          res = res + *self.get_ref(row, idx) * *m.get_ref(idx, col);
+        for idx in 0..self.cols() {
+          res = res + self.get_ref(row, idx).clone() * m.get_ref(idx, col).clone();
         }
-        *d.get_mut(row * m.cols() + col) = res;
+        unsafe { *d.get_unchecked_mut(row * m.cols() + col) = res; }
       }
     }
 
@@ -640,22 +707,44 @@ impl<T : Add<T, T> + Mul<T, T> + Zero> Mul<Matrix<T>, Matrix<T>> for Matrix<T> {
   }
 }
 
-impl<T : Clone> Index<(uint, uint), T> for Matrix<T> {
-  #[inline]
-  fn index(&self, &(y, x): &(uint, uint)) -> T { self.get(y, x) }
+impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<Matrix<T>> for &'a Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn mul(self, m: Matrix<T>) -> Matrix<T> { self * &m }
 }
 
-impl<T : Clone> BitOr<Matrix<T>, Matrix<T>> for Matrix<T> {
-  #[inline]
-  fn bitor(&self, rhs: &Matrix<T>) -> Matrix<T> { self.cr(rhs) }
+impl<T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn mul(self, m: Matrix<T>) -> Matrix<T> { (&self) * &m }
 }
 
-impl<T : Float + ApproxEq<T>> Matrix<T> {
+impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  fn mul(self, m: &'a Matrix<T>) -> Matrix<T> { (&self) * m }
+}
+
+impl<T : Clone> Index<(usize, usize)> for Matrix<T> {
+  type Output = T;
+
+  #[inline]
+  fn index<'a>(&'a self, (y, x): (usize, usize)) -> &'a T { self.get_ref(y, x) }
+}
+
+impl<'a, T : Clone> BitOr<&'a Matrix<T>> for Matrix<T> {
+  type Output = Matrix<T>;
+
+  #[inline]
+  fn bitor(self, rhs: &Matrix<T>) -> Matrix<T> { self.cr(rhs) }
+}
+
+impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
   pub fn trace(&self) -> T {
     let mut sum : T = num::zero();
     let mut idx = 0;
-    for _ in range(0u, cmp::min(self.no_rows, self.cols())) {
-      sum = sum + *self.data.get(idx);
+    for _ in 0..cmp::min(self.no_rows, self.cols()) {
+      unsafe { sum = sum + self.data.get_unchecked(idx).clone(); }
       idx += self.cols() + 1;
     }
     sum
@@ -692,15 +781,15 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
     //    = (R'R)^-1 A'
     let qr = qr::QRDecomposition::new(self);
     let r = qr.get_r();
-    (r.t() * r).inverse().unwrap() * self.t()
+    (r.t() * &r).inverse().unwrap() * &self.t()
   }
 
   pub fn vector_euclidean_norm(&self) -> T {
     assert!(self.cols() == 1);
 
     let mut s : T = num::zero();
-    for i in range(0, self.data.len()) {
-      s = s + *self.data.get(i) * *self.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { s = s + self.data.get_unchecked(i).clone() * self.data.get_unchecked(i).clone(); }
     }
 
     s.sqrt()
@@ -715,8 +804,8 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
     assert!(self.cols() == 1);
 
     let mut s : T = num::zero();
-    for i in range(0, self.data.len()) {
-      s = s + num::abs(self.data.get(i).clone());
+    for i in 0..self.data.len() {
+      s = s + num::abs(unsafe { self.data.get_unchecked(i).clone() });
     }
 
     s
@@ -731,8 +820,8 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
     assert!(self.cols() == 1);
 
     let mut s : T = num::zero();
-    for i in range(0, self.data.len()) {
-      s = s + num::abs(self.data.get(i).powf(p.clone()));
+    for i in 0..self.data.len() {
+      s = s + num::abs(unsafe { self.data.get_unchecked(i) }.powf(p.clone()));
     }
 
     s.powf(num::one::<T>() / p)
@@ -740,8 +829,8 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
 
   pub fn frobenius_norm(&self) -> T {
     let mut s : T = num::zero();
-    for i in range(0, self.data.len()) {
-      s = s + *self.data.get(i) * *self.data.get(i);
+    for i in 0..self.data.len() {
+      unsafe { s = s + self.data.get_unchecked(i).clone() * self.data.get_unchecked(i).clone(); }
     }
 
     s.sqrt()
@@ -750,9 +839,9 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
   pub fn vector_inf_norm(&self) -> T {
     assert!(self.cols() == 1);
 
-    let mut current_max : T = num::abs(self.data.get(0).clone());
-    for i in range(1, self.data.len()) {
-      let v = num::abs(self.data.get(i).clone());
+    let mut current_max : T = num::abs(unsafe { self.data.get_unchecked(0).clone() });
+    for i in 1..self.data.len() {
+      let v = num::abs(unsafe { self.data.get_unchecked(i).clone() });
       if v > current_max {
         current_max = v;
       }
@@ -763,8 +852,8 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
 
   pub fn is_symmetric(&self) -> bool {
     if self.no_rows != self.cols() { return false; }
-    for row in range(1, self.no_rows) {
-      for col in range(0, row) {
+    for row in 1..self.no_rows {
+      for col in 0..row {
         if !self.get(row, col).approx_eq(self.get_ref(col, row)) { return false; }
       }
     }
@@ -779,8 +868,8 @@ impl<T : Float + ApproxEq<T>> Matrix<T> {
 
   pub fn approx_eq(&self, m : &Matrix<T>) -> bool {
     if self.rows() != m.rows() || self.cols() != m.cols() { return false };
-    for i in range(0u, self.data.len()) {
-      if !self.data.get(i).approx_eq(m.data.get(i)) { return false }
+    for i in 0..self.data.len() {
+      if !unsafe { self.data.get_unchecked(i).clone() }.approx_eq(unsafe { m.data.get_unchecked(i) }) { return false }
     }
     true
   }
@@ -796,26 +885,26 @@ fn test_new() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_new_invalid_data() {
   Matrix::new(1, 2, vec![1, 2, 3]);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_new_invalid_row_count() {
-  Matrix::<uint>::new(0, 2, vec![]);
+  Matrix::<usize>::new(0, 2, vec![]);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_new_invalid_col_count() {
-  Matrix::<uint>::new(2, 0, vec![]);
+  Matrix::<usize>::new(2, 0, vec![]);
 }
 
 #[test]
 fn test_id_square() {
-  let m = Matrix::<uint>::id(2, 2);
+  let m = Matrix::<usize>::id(2, 2);
   assert!(m.rows() == 2);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 1]);
@@ -823,7 +912,7 @@ fn test_id_square() {
 
 #[test]
 fn test_id_m_over_n() {
-  let m = Matrix::<uint>::id(3, 2);
+  let m = Matrix::<usize>::id(3, 2);
   assert!(m.rows() == 3);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 1, 0, 0]);
@@ -831,7 +920,7 @@ fn test_id_m_over_n() {
 
 #[test]
 fn test_id_n_over_m() {
-  let m = Matrix::<uint>::id(2, 3);
+  let m = Matrix::<usize>::id(2, 3);
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![1, 0, 0, 0, 1, 0]);
@@ -839,7 +928,7 @@ fn test_id_n_over_m() {
 
 #[test]
 fn test_zero() {
-  let m = Matrix::<uint>::zero(2, 3);
+  let m = Matrix::<usize>::zero(2, 3);
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![0, 0, 0, 0, 0, 0]);
@@ -847,7 +936,7 @@ fn test_zero() {
 
 #[test]
 fn test_diag() {
-  let m = Matrix::<uint>::diag(vec![1, 2]);
+  let m = Matrix::<usize>::diag(vec![1, 2]);
   assert!(m.rows() == 2);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 2]);
@@ -855,12 +944,12 @@ fn test_diag() {
 
 #[test]
 fn test_block_diag() {
-  let m = Matrix::<uint>::block_diag(2, 3, vec![1, 2]);
+  let m = Matrix::<usize>::block_diag(2, 3, vec![1, 2]);
   assert!(m.rows() == 2);
   assert!(m.cols() == 3);
   assert!(m.data == vec![1, 0, 0, 0, 2, 0]);
 
-  let m = Matrix::<uint>::block_diag(3, 2, vec![1, 2]);
+  let m = Matrix::<usize>::block_diag(3, 2, vec![1, 2]);
   assert!(m.rows() == 3);
   assert!(m.cols() == 2);
   assert!(m.data == vec![1, 0, 0, 2, 0, 0]);
@@ -876,7 +965,7 @@ fn test_vector() {
 
 #[test]
 fn test_zero_vector() {
-  let v = Matrix::<uint>::zero_vector(2);
+  let v = Matrix::<usize>::zero_vector(2);
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
   assert!(v.data == vec![0, 0]);
@@ -884,7 +973,7 @@ fn test_zero_vector() {
 
 #[test]
 fn test_one_vector() {
-  let v = Matrix::<uint>::one_vector(2);
+  let v = Matrix::<usize>::one_vector(2);
 
   assert!(v.rows() == 2);
   assert!(v.cols() == 1);
@@ -915,56 +1004,56 @@ fn test_get_set() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_out_of_bounds_x() {
   let m = m!(1, 2; 3, 4);
   let _ = m.get(2, 0);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_out_of_bounds_y() {
   let m = m!(1, 2; 3, 4);
   let _ = m.get(0, 2);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_ref_out_of_bounds_x() {
   let m = m!(1, 2; 3, 4);
   let _ = m.get_ref(2, 0);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_ref_out_of_bounds_y() {
   let m = m!(1, 2; 3, 4);
   let _ = m.get_ref(0, 2);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_mref_out_of_bounds_x() {
   let mut m = m!(1, 2; 3, 4);
   let _ = m.get_mref(2, 0);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_mref_out_of_bounds_y() {
   let mut m = m!(1, 2; 3, 4);
   let _ = m.get_mref(0, 2);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_set_out_of_bounds_x() {
   let mut m = m!(1, 2; 3, 4);
   m.set(2, 0, 0);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_set_out_of_bounds_y() {
   let mut m = m!(1, 2; 3, 4);
   m.set(0, 2, 0);
@@ -973,9 +1062,9 @@ fn test_set_out_of_bounds_y() {
 #[test]
 fn test_map() {
   let mut m = m!(1, 2; 3, 4);
-  assert!(m.map(|x : &uint| -> uint { *x + 1 }).data == vec![2, 3, 4, 5]);
+  assert!(m.map(&|x : &usize| -> usize { *x + 1 }).data == vec![2, 3, 4, 5]);
 
-  m.mmap(|x : &uint| { *x + 2 });
+  m.mmap(&|x : &usize| { *x + 2 });
   assert!(m.data == vec![3, 4, 5, 6]);
 }
 
@@ -1026,21 +1115,21 @@ fn test_sub() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_minor_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.minor(1, 4);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_sub_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.sub_matrix(1, 1, 3, 4);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_get_column_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.get_column(3);
@@ -1054,7 +1143,7 @@ fn test_permute_rows() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_permute_rows_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.permute_rows(&vec![1, 0, 5]);
@@ -1068,7 +1157,7 @@ fn test_permute_columns() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_permute_columns_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.permute_columns(&vec![1, 0, 5]);
@@ -1077,7 +1166,7 @@ fn test_permute_columns_out_of_bounds() {
 #[test]
 fn test_filter_rows() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let m2 = m.filter_rows(|_, row| { ((row % 2) == 0) });
+  let m2 = m.filter_rows(&|_, row| { ((row % 2) == 0) });
   assert!(m2.rows() == 2);
   assert!(m2.cols() == 3);
   assert!(m2.data == vec![1, 2, 3, 7, 8, 9]); 
@@ -1086,7 +1175,7 @@ fn test_filter_rows() {
 #[test]
 fn test_filter_columns() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let m2 = m.filter_columns(|_, col| { (col >= 1) });
+  let m2 = m.filter_columns(&|_, col| { (col >= 1) });
   m2.print();
   assert!(m2.rows() == 3);
   assert!(m2.cols() == 2);
@@ -1096,7 +1185,7 @@ fn test_filter_columns() {
 #[test]
 fn test_select_rows() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let m2 = m.select_rows([false, true, true]);
+  let m2 = m.select_rows(&[false, true, true]);
   assert!(m2.rows() == 2);
   assert!(m2.cols() == 3);
   assert!(m2.data == vec![4, 5, 6, 7, 8, 9]); 
@@ -1105,7 +1194,7 @@ fn test_select_rows() {
 #[test]
 fn test_select_columns() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let m2 = m.select_columns([true, false, true]);
+  let m2 = m.select_columns(&[true, false, true]);
   assert!(m2.rows() == 3);
   assert!(m2.cols() == 2);
   assert!(m2.data == vec![1, 3, 4, 6, 7, 9]); 
@@ -1115,12 +1204,12 @@ fn test_select_columns() {
 fn test_algebra() {
   let a = m!(1, 2; 3, 4);
   let b = m!(3, 4; 5, 6);
-  assert!(a.neg().data == vec![-1, -2, -3, -4]);
-  assert!(a.scale(2).data == vec![2, 4, 6, 8]);
-  assert!(a.add(&b).data == vec![4, 6, 8, 10]);
-  assert!(b.sub(&a).data == vec![2, 2, 2, 2]);
-  assert!(a.elem_mul(&b).data == vec![3, 8, 15, 24]);
-  assert!(b.elem_div(&a).data == vec![3, 2, 1, 1]);
+  assert!((&a).neg().data == vec![-1, -2, -3, -4]);
+  assert!((&a).scale(2).data == vec![2, 4, 6, 8]);
+  assert!((&a).add(&b).data == vec![4, 6, 8, 10]);
+  assert!((&b).sub(&a).data == vec![2, 2, 2, 2]);
+  assert!((&a).elem_mul(&b).data == vec![3, 8, 15, 24]);
+  assert!((&b).elem_div(&a).data == vec![3, 2, 1, 1]);
 
   let mut a = m!(1, 2; 3, 4);
   a.mneg();
@@ -1154,21 +1243,21 @@ fn test_algebra() {
 fn test_mul() {
   let mut a = m!(1, 2; 3, 4);
   let b = m!(3, 4; 5, 6);
-  assert!(a.mul(&b).data == vec![13, 16, 29, 36]);
+  assert!((&a).mul(&b).data == vec![13, 16, 29, 36]);
   a.mmul(&b);
   assert!(a.data == vec![13, 16, 29, 36]);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_mul_incompatible() {
   let a = m!(1, 2; 3, 4);
   let b = m!(1, 2; 3, 4; 5, 6);
-  let _ = a.mul(&b);
+  let _ = (&a).mul(&b);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_mmul_incompatible() {
   let mut a = m!(1, 2; 3, 4);
   let b = m!(1, 2; 3, 4; 5, 6);
@@ -1190,11 +1279,11 @@ fn test_trace() {
 #[test]
 fn test_det() {
   let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0; 0.0, 5.0, -7.0);
-  assert!((a.det() - -96.0) <= Float::epsilon());
+  assert!((a.det() - -96.0) <= f32::EPSILON);
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_det_not_square() {
   let _ = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0).det();
 }
@@ -1211,13 +1300,13 @@ fn test_solve() {
 #[test]
 fn test_inverse() {
   let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0; 0.0, 5.0, -7.0);
-  let data : Vec<f64> = vec![16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].mut_iter().map(|x : &mut f64| -> f64 { *x / 96.0 }).collect();
+  let data : Vec<f64> = vec![16.0, -1.0, 23.0, 0.0, 42.0, -6.0, 0.0, 30.0, -18.0].iter_mut().map(|x : &mut f64| -> f64 { *x / 96.0 }).collect();
   let a_inv = Matrix::new(3, 3, data);
   assert!(a.inverse().unwrap().approx_eq(&a_inv));
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_inverse_not_square() {
   let a = m!(6.0, -7.0, 10.0; 0.0, 3.0, -1.0);
   let _ = a.inverse();
@@ -1242,7 +1331,7 @@ fn test_is_singular() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_is_singular_non_square() {
   let m = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   assert!(m.is_singular());
@@ -1288,7 +1377,7 @@ fn test_vector_euclidean_norm() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_vector_euclidean_norm_not_vector() {
   let _ = m!(1.0, 2.0; 3.0, 4.0).vector_euclidean_norm();
 }
@@ -1301,7 +1390,7 @@ fn test_vector_1_norm() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_vector_1_norm_not_vector() {
   let _ = m!(1.0, 2.0; 3.0, 4.0).vector_1_norm();
 }
@@ -1314,7 +1403,7 @@ fn test_vector_p_norm() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_vector_p_norm_not_vector() {
   let _ = m!(1.0, 2.0; 3.0, 4.0).vector_p_norm(1.0);
 }
@@ -1327,7 +1416,7 @@ fn test_vector_inf_norm() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_vector_inf_norm_not_vector() {
   let _ = m!(1.0, 2.0; 3.0, 4.0).vector_inf_norm();
 }

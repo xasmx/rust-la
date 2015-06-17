@@ -1,5 +1,7 @@
 use std::cmp;
-use std::num;
+use num;
+//use num::Zero;
+use num::traits::{ Float, Signed };
 
 use ApproxEq;
 use Matrix;
@@ -95,71 +97,71 @@ pub struct LUDecomposition<T> {
   // L is stored below diagonals. Diagonal elements are one for U and elements above diagonals are zero.
   lu : Matrix<T>,
   pospivsign : bool,
-  piv : Vec<uint>
+  piv : Vec<usize>
 }
 
-impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
+impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
   pub fn new(a : &Matrix<T>) -> LUDecomposition<T> {
     let mut ludata = a.get_data().clone();
-    let m = a.rows() as int;
-    let n = a.cols() as int;
-    let mut pivdata = alloc_dirty_vec(m as uint);
-    for i in range(0, m) {
-      *pivdata.get_mut(i as uint) = i as uint;
+    let m = a.rows();
+    let n = a.cols();
+    let mut pivdata = alloc_dirty_vec(m);
+    for i in 0..m {
+      unsafe { *pivdata.get_unchecked_mut(i) = i; }
     }
 
     let mut pospivsign = true;
 
     // Solve columns 0..(n-1) of L and U in order.
-    for j in range(0, n) {
+    for j in 0..n {
       // Solve column j of L and U.
 
       // Note that apart from the division, both L and U elements are calculated the same way,
       // so we only need one loop:
       // lu[i][j] = a[i][j] - <l[0 .. (j - 1)][:], u[:][0 .. (j - 1)]>
-      for i in range(0, m) {
+      for i in 0..m {
         let mut s : T = num::zero();
-        for k in range(0, cmp::min(i, j)) {
-          s = s + *ludata.get((i * n + k) as uint) * *ludata.get((k * n + j) as uint);
+        for k in 0..cmp::min(i, j) {
+          unsafe { s = s + ludata.get_unchecked(i * n + k).clone() * ludata.get_unchecked(k * n + j).clone(); }
         }
 
-        *ludata.get_mut((i * n + j) as uint) = *ludata.get((i * n + j) as uint) - s;
+        unsafe { *ludata.get_unchecked_mut(i * n + j) = ludata.get_unchecked(i * n + j).clone() - s; }
       }
 
       // Find row with maximum pivot element at or below the diagonal.
       let mut p = j;
-      for i in range(j + 1, m) {
-        if num::abs(ludata.get((i * n + j) as uint).clone()) > num::abs(ludata.get((p * n + j) as uint).clone()) {
+      for i in (j + 1)..m {
+        if num::abs(unsafe { ludata.get_unchecked(i * n + j).clone() }) > num::abs(unsafe { ludata.get_unchecked(p * n + j).clone() }) {
           p = i;
         }
       }
 
       // Swap pivot row with the maximum row (unless pivot row is the maximum row already).
       if p != j {
-        for k in range(0, n) {
-          let t = ludata.get((p * n + k) as uint).clone();
-          *ludata.get_mut((p * n + k) as uint) = ludata.get((j * n + k) as uint).clone();
-          *ludata.get_mut((j * n + k) as uint) = t;
+        for k in 0..n {
+          let t = unsafe { ludata.get_unchecked(p * n + k).clone() };
+          unsafe { *ludata.get_unchecked_mut(p * n + k) = ludata.get_unchecked(j * n + k).clone(); }
+          unsafe { *ludata.get_unchecked_mut(j * n + k) = t; }
         }
 
-        let k = *pivdata.get(p as uint);
-        *pivdata.get_mut(p as uint) = *pivdata.get(j as uint);
-        *pivdata.get_mut(j as uint) = k;
+        let k = unsafe { pivdata.get_unchecked(p as usize).clone() };
+        unsafe { *pivdata.get_unchecked_mut(p as usize) = pivdata.get_unchecked(j).clone(); }
+        unsafe { *pivdata.get_unchecked_mut(j as usize) = k; }
 
         pospivsign = !pospivsign;
       }
 
       // Complete calculating the elements of the column of L:
       //  l[i][j] := 1 / u[j][j] * l[i][j]
-      if (j < m) && (*ludata.get((j * n + j) as uint) != num::zero()) {
-        for i in range(j + 1, m) {
-          *ludata.get_mut((i * n + j) as uint) = *ludata.get((i * n + j) as uint) / *ludata.get((j * n + j) as uint);
+      if (j < m) && (unsafe { ludata.get_unchecked(j * n + j).clone() } != num::zero()) {
+        for i in (j + 1)..m {
+          unsafe { *ludata.get_unchecked_mut(i * n + j) = ludata.get_unchecked(i * n + j).clone() / ludata.get_unchecked(j * n + j).clone(); }
         }
       }
     }
 
     LUDecomposition { 
-      lu : Matrix::new(m as uint, n as uint, ludata),
+      lu : Matrix::new(m as usize, n as usize, ludata),
       pospivsign : pospivsign,
       piv : pivdata
     }
@@ -171,8 +173,8 @@ impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
 
   pub fn is_non_singular(&self) -> bool {
     let n = self.lu.cols();
-    for j in range(0, n) {
-      if *self.lu.get_data().get((j * n + j) as uint) == num::zero() {
+    for j in 0..n {
+      if unsafe { self.lu.get_data().get_unchecked(j * n + j).clone() == num::zero() } {
         return false;
       }
     }
@@ -184,16 +186,17 @@ impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
     let m = self.lu.rows();
     let n = if self.lu.rows() >= self.lu.cols() { self.lu.cols() } else { self.lu.rows() };
     let mut ldata = alloc_dirty_vec(m * n);
-    for i in range(0, m) {
-      for j in range(0, n) {
-        *ldata.get_mut((i * n + j) as uint) =
+    for i in 0..m {
+      for j in 0..n {
+        unsafe { *ldata.get_unchecked_mut(i * n + j) =
             if i > j {
-              self.lu.get_data().get((i * self.lu.cols() + j) as uint).clone()
+              self.lu.get_data().get_unchecked(i * self.lu.cols() + j).clone()
             } else if i == j {
               num::one()
             } else {
               num::zero()
             }
+        }
       }
     }
     Matrix::new(m, n, ldata)
@@ -201,15 +204,15 @@ impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
 
   pub fn get_u(&self) -> Matrix<T> {
     // U is stored in diagonals and above. Elements below diagonals are zero for U.
-    let m = if self.lu.rows() >= self.lu.cols() { self.lu.cols() as int } else { self.lu.rows() as int };
-    let n = self.lu.cols() as int;
-    let mut udata = alloc_dirty_vec((m * n) as uint);
-    for i in range(0, m) {
-      for j in range(0, n) {
-        *udata.get_mut((i * n + j) as uint) = if i <= j { self.lu.get_data().get((i * n + j) as uint).clone() } else { num::zero() };
+    let m = if self.lu.rows() >= self.lu.cols() { self.lu.cols() } else { self.lu.rows() };
+    let n = self.lu.cols();
+    let mut udata = alloc_dirty_vec(m * n);
+    for i in 0..m {
+      for j in 0..n {
+        unsafe { *udata.get_unchecked_mut(i * n + j) = if i <= j { self.lu.get_data().get_unchecked(i * n + j).clone() } else { num::zero() }; }
       }
     }
-    Matrix::new(m as uint, n as uint, udata)
+    Matrix::new(m as usize, n as usize, udata)
   }
 
   pub fn get_p(&self) -> Matrix<T> {
@@ -217,14 +220,14 @@ impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
     Matrix::id(len, len).permute_rows(&self.piv)
   }
 
-  pub fn get_piv<'lt>(&'lt self) -> &'lt Vec<uint> { &self.piv }
+  pub fn get_piv<'lt>(&'lt self) -> &'lt Vec<usize> { &self.piv }
 
   pub fn det(&self) -> T {
     assert!(self.lu.rows() == self.lu.cols());
-    let n = self.lu.cols() as int;
+    let n = self.lu.cols();
     let mut d = if self.pospivsign { num::one::<T>() } else { - num::one::<T>() };
-    for j in range(0, n) {
-      d = d * *self.lu.get_data().get((j * n + j) as uint);
+    for j in 0..n {
+      unsafe { d = d * self.lu.get_data().get_unchecked(j * n + j).clone(); }
     }
     d
   }
@@ -233,41 +236,41 @@ impl<T : Float + ApproxEq<T>> LUDecomposition<T> {
   // B   A Matrix with as many rows as A and any number of columns.
   // Returns X so that L*U*X = B(piv,:)
   pub fn solve(&self, b : &Matrix<T>) -> Option<Matrix<T>> {
-    let m = self.lu.rows() as int;
-    let n = self.lu.cols() as int;
-    assert!(b.rows() == m as uint);
+    let m = self.lu.rows();
+    let n = self.lu.cols();
+    assert!(b.rows() == m as usize);
     if !self.is_non_singular() {
       return None
     }
 
     // Copy right hand side with pivoting
-    let nx = b.cols() as int;
-    let mut xdata = alloc_dirty_vec((m * nx) as uint);
-    let mut destIdx = 0;
-    for i in range(0, self.piv.len()) {
-      for j in range(0, nx) {
-        *xdata.get_mut(destIdx) = b.get_data().get(((*self.piv.get(i) as int) * (b.cols() as int) + j) as uint).clone();
-        destIdx += 1;
+    let nx = b.cols();
+    let mut xdata = alloc_dirty_vec((m * nx) as usize);
+    let mut dest_idx = 0;
+    for i in 0..self.piv.len() {
+      for j in 0..nx {
+        unsafe { *xdata.get_unchecked_mut(dest_idx) = b.get_data().get_unchecked(self.piv.get_unchecked(i).clone() * b.cols() + j).clone(); }
+        dest_idx += 1;
       }
     }
 
     // Solve L*Y = B(piv,:)
-    for k in range(0, n) {
-      for i in range(k + 1, n) {
-        for j in range(0, nx) {
-          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.get_data().get((i * (self.lu.cols() as int) + k) as uint);
+    for k in 0..n {
+      for i in (k + 1)..n {
+        for j in 0..nx {
+          unsafe { *xdata.get_unchecked_mut(i * nx + j) = xdata.get_unchecked(i * nx + j).clone() - xdata.get_unchecked(k * nx + j).clone() * self.lu.get_data().get_unchecked(i * self.lu.cols() + k).clone(); }
         }
       }
     }
 
     // Solve U*X = Y;
-    for k in range(0, n).rev() {
-      for j in range(0, nx) {
-        *xdata.get_mut((k * nx + j) as uint) = *xdata.get((k * nx + j) as uint) / *self.lu.get_data().get((k * (self.lu.cols() as int) + k) as uint);
+    for k in (0..n).rev() {
+      for j in 0..nx {
+        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / self.lu.get_data().get_unchecked(k * self.lu.cols() + k).clone(); }
       }
-      for i in range(0, k) {
-        for j in range(0, nx) {
-          *xdata.get_mut((i * nx + j) as uint) = *xdata.get((i * nx + j) as uint) - *xdata.get((k * nx + j) as uint) * *self.lu.get_data().get((i * (self.lu.cols() as int) + k) as uint);
+      for i in 0..k {
+        for j in 0..nx {
+          unsafe { *xdata.get_unchecked_mut(i * nx + j) = xdata.get_unchecked(i * nx + j).clone() - xdata.get_unchecked(k * nx + j).clone() * self.lu.get_data().get_unchecked(i * self.lu.cols() + k).clone(); }
         }
       }
     }
@@ -315,7 +318,7 @@ fn lu_solve_test() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn lu_solve_test_incompatible() {
   let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let lu = LUDecomposition::new(&a);
@@ -365,7 +368,7 @@ fn lu_det_test() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn lu_det_test_not_square() {
   let a = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
   let lu = LUDecomposition::new(&a);

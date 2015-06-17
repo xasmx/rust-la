@@ -1,19 +1,21 @@
+use std::fs;
 use std::io;
+use std::io::BufRead;
 use std::path;
 use std::vec;
 
 use Matrix;
 
-pub fn read_csv<T>(file_name : &str, parser : |&str| -> T) -> Matrix<T> {
+pub fn read_csv<T>(buf_reader_name : &str, parser : &Fn(&str) -> T) -> Matrix<T> {
   let mut data = vec::Vec::with_capacity(16384);
   let mut row_count = 0;
   let mut col_count = None;
 
-  let path = path::Path::new(file_name);
-  let mut file = io::BufferedReader::new(io::File::open(&path));
-  for line in file.lines() {
+  let path = path::Path::new(buf_reader_name);
+  let buf_reader = io::BufReader::new(fs::File::open(&path).unwrap());
+  for line in buf_reader.lines() {
     let element_count = data.len();
-    for item in line.unwrap().as_slice().split_str(",") {
+    for item in line.unwrap().split(",") {
       data.push(parser(item.trim()))
     }
     let line_col_count = data.len() - element_count;

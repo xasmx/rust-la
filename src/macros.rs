@@ -1,18 +1,10 @@
-#![macro_escape]
+#![macro_use]
 
 /// Macro for building matrices.
 ///
 /// # Example
 ///
-/// ```
-/// #![feature(phase)]
-/// #[phase(plugin, link)] extern crate la;
-///
-/// ...
-/// # fn main() {
 /// let _m = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
-/// # }
-/// ```
 
 /// Helper macro for m!
 #[macro_export]
@@ -32,7 +24,7 @@ macro_rules! m_rec(
        vec![$($i),*]
      )
   })
-)
+);
 
 /// Macro for building matrices.
 #[macro_export]

@@ -1,7 +1,5 @@
-#![crate_type = "lib"]
-#![crate_id = "la#0.1"]
-
-#![feature(globs, macro_rules)]
+extern crate rand;
+extern crate num;
 
 pub use approxeq::ApproxEq;
 pub use decomp::cholesky::CholeskyDecomposition;
@@ -25,7 +23,7 @@ mod decomp {
   pub mod svd;
 }
 
-pub mod eig {
-  pub mod powermethod;
-}
+//pub mod eig {
+//  pub mod powermethod;
+//}
 

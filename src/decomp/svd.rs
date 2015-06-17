@@ -1,5 +1,7 @@
 use std::cmp;
-use std::num;
+use std::ops::Mul;
+use num;
+use num::{ Float, Signed };
 
 use ApproxEq;
 use Matrix;
@@ -24,7 +26,7 @@ pub struct SVD<T> {
   v : Matrix<T>
 }
 
-impl<T : FloatMath + ApproxEq<T>> SVD<T> {
+impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
   /// Calculates SVD.
   pub fn new(a : &Matrix<T>) -> SVD<T> {
     // A = USV'
@@ -61,89 +63,89 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     // Reduce A to bidiagonal form, storing the diagonal elements
     // in s and the super-diagonal elements in e.
     let nct = cmp::min(m - 1, n);
-    let nrt = cmp::max(0 as int, cmp::min((n as int) - 2, m as int)) as uint;
-    for k in range(0u, cmp::max(nct, nrt)) {
+    let nrt = cmp::max(0 as isize, cmp::min((n as isize) - 2, m as isize)) as usize;
+    for k in 0..cmp::max(nct, nrt) {
       if k < nct {
         // Compute the transformation for the k-th column and
         // place the k-th diagonal in s[k].
         // Compute 2-norm of k-th column without under/overflow.
-        *sdata.get_mut(k) = num::zero();
-        for i in range(k, m) {
-          *sdata.get_mut(k) = hypot(sdata.get(k).clone(), adata.get(i * n + k).clone());
+        unsafe { *sdata.get_unchecked_mut(k) = num::zero(); }
+        for i in k..m {
+          unsafe { *sdata.get_unchecked_mut(k) = hypot(sdata.get_unchecked(k).clone(), adata.get_unchecked(i * n + k).clone()); }
         }
-        if *sdata.get(k) != num::zero() {
-          if *adata.get(k * n + k) < num::zero() {
-            *sdata.get_mut(k) = - *sdata.get(k);
+        if unsafe { sdata.get_unchecked(k).clone() } != num::zero() {
+          if unsafe { adata.get_unchecked(k * n + k).clone() } < num::zero() {
+            unsafe { *sdata.get_unchecked_mut(k) = - sdata.get_unchecked(k).clone(); }
           }
-          for i in range(k, m) {
-            *adata.get_mut(i * n + k) = *adata.get(i * n + k) / *sdata.get(k);
+          for i in k..m {
+            unsafe { *adata.get_unchecked_mut(i * n + k) = adata.get_unchecked(i * n + k).clone() / sdata.get_unchecked(k).clone(); }
           }
-          *adata.get_mut(k * n + k) = *adata.get(k * n + k) + num::one();
+          unsafe { *adata.get_unchecked_mut(k * n + k) = adata.get_unchecked(k * n + k).clone() + num::one(); }
         }
-        *sdata.get_mut(k) = - *sdata.get(k);
+        unsafe { *sdata.get_unchecked_mut(k) = - sdata.get_unchecked(k).clone(); }
       }
-      for j in range(k + 1, n) {
-        if (k < nct) && (*sdata.get(k) != num::zero()) {
+      for j in (k + 1)..n {
+        if (k < nct) && (unsafe { sdata.get_unchecked(k).clone() } != num::zero()) {
           // Apply the transformation.
           let mut t : T = num::zero();
-          for i in range(k, m) {
-            t = t + *adata.get(i * n + k) * *adata.get(i * n + j);
+          for i in k..m {
+            unsafe { t = t + adata.get_unchecked(i * n + k).clone() * adata.get_unchecked(i * n + j).clone(); }
           }
-          t = - t / *adata.get(k * n + k);
-          for i in range(k, m) {
-            *adata.get_mut(i * n + j) = *adata.get(i * n + j) + t * *adata.get(i * n + k);
+          unsafe { t = - t / adata.get_unchecked(k * n + k).clone(); }
+          for i in k..m {
+            unsafe { *adata.get_unchecked_mut(i * n + j) = adata.get_unchecked(i * n + j).clone() + t * adata.get_unchecked(i * n + k).clone(); }
           }
         }
         // Place the k-th row of A into e for the
         // subsequent calculation of the row transformation.
-        *edata.get_mut(j) = adata.get(k * n + j).clone();
+        unsafe { *edata.get_unchecked_mut(j) = adata.get_unchecked(k * n + j).clone(); }
       }
 
       if k < nct {
         // Place the transformation in U for subsequent back multiplication.
-        for i in range(k, m) {
-          *udata.get_mut(i * m + k) = adata.get(i * n + k).clone();
+        for i in k..m {
+          unsafe { *udata.get_unchecked_mut(i * m + k) = adata.get_unchecked(i * n + k).clone(); }
         }
       }
 
       if k < nrt {
         // Compute the k-th row transformation and place the k-th super-diagonal in e[k].
         // Compute 2-norm without under/overflow.
-        *edata.get_mut(k) = num::zero();
-        for i in range(k + 1, n) {
-          *edata.get_mut(k) = hypot(edata.get(k).clone(), edata.get(i).clone());
+        unsafe { *edata.get_unchecked_mut(k) = num::zero(); }
+        for i in (k + 1)..n {
+          unsafe { *edata.get_unchecked_mut(k) = hypot(edata.get_unchecked(k).clone(), edata.get_unchecked(i).clone()); }
         }
-        if *edata.get(k) != num::zero() {
-          if *edata.get(k + 1) < num::zero() {
-            *edata.get_mut(k) = - *edata.get(k);
+        if unsafe { edata.get_unchecked(k).clone() } != num::zero() {
+          if unsafe { edata.get_unchecked(k + 1).clone() } < num::zero() {
+            unsafe { *edata.get_unchecked_mut(k) = - edata.get_unchecked(k).clone(); }
           }
-          for i in range(k + 1, n) {
-            *edata.get_mut(i) = *edata.get(i) / *edata.get(k);
+          for i in (k + 1)..n {
+            unsafe { *edata.get_unchecked_mut(i) = edata.get_unchecked(i).clone() / edata.get_unchecked(k).clone(); }
           }
-          *edata.get_mut(k + 1) = *edata.get(k + 1) + num::one();
+          unsafe { *edata.get_unchecked_mut(k + 1) = edata.get_unchecked(k + 1).clone() + num::one(); }
         }
-        *edata.get_mut(k) = - *edata.get(k);
-        if (k + 1 < m) && (*edata.get(k) != num::zero()) {
+        unsafe { *edata.get_unchecked_mut(k) = - edata.get_unchecked(k).clone(); }
+        if (k + 1 < m) && (unsafe { edata.get_unchecked(k).clone() } != num::zero()) {
           // Apply the transformation.
-          for i in range(k + 1, m) {
-            *workdata.get_mut(i) = num::zero();
+          for i in (k + 1)..m {
+            unsafe { *workdata.get_unchecked_mut(i) = num::zero(); }
           }
-          for j in range(k + 1, n) {
-            for i in range(k + 1, m) {
-              *workdata.get_mut(i) = *workdata.get(i) + *edata.get(j) * *adata.get(i * n + j);
+          for j in (k + 1)..n {
+            for i in (k + 1)..m {
+              unsafe { *workdata.get_unchecked_mut(i) = workdata.get_unchecked(i).clone() + edata.get_unchecked(j).clone() * adata.get_unchecked(i * n + j).clone(); }
             }
           }
-          for j in range(k + 1, n) {
-            let t = - *edata.get(j) / *edata.get(k + 1);
-            for i in range(k + 1, m) {
-              *adata.get_mut(i * n + j) = *adata.get(i * n + j) + t * *workdata.get(i);
+          for j in (k + 1)..n {
+            let t = unsafe { - edata.get_unchecked(j).clone() / edata.get_unchecked(k + 1).clone() };
+            for i in (k + 1)..m {
+              unsafe { *adata.get_unchecked_mut(i * n + j) = adata.get_unchecked(i * n + j).clone() + t * workdata.get_unchecked(i).clone(); }
             }
           }
         }
 
         // Place the transformation in V for subsequent back multiplication.
-        for i in range(k + 1, n) {
-          *vdata.get_mut(i * n + k) = edata.get(i).clone();
+        for i in (k + 1)..n {
+          unsafe { *vdata.get_unchecked_mut(i * n + k) = edata.get_unchecked(i).clone(); }
         }
       }
     }
@@ -151,72 +153,72 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     // Set up the final bidiagonal matrix or order p.
     let mut p = cmp::min(n, m + 1);
     if nct < n {
-      *sdata.get_mut(nct) = adata.get(nct * n + nct).clone();
+      unsafe { *sdata.get_unchecked_mut(nct) = adata.get_unchecked(nct * n + nct).clone(); }
     }
     if m < p {
-      *sdata.get_mut(p - 1) = num::zero();
+      unsafe { *sdata.get_unchecked_mut(p - 1) = num::zero(); }
     }
     if (nrt + 1) < p {
-      *edata.get_mut(nrt) = adata.get(nrt * n + (p - 1)).clone();
+      unsafe { *edata.get_unchecked_mut(nrt) = adata.get_unchecked(nrt * n + (p - 1)).clone(); }
     }
-    *edata.get_mut(p - 1) = num::zero();
+    unsafe { *edata.get_unchecked_mut(p - 1) = num::zero(); }
 
     // Generate U.
-    for j in range(nct, m) {
-      for i in range(0u, m) {
-        *udata.get_mut(i * m + j) = num::zero();
+    for j in nct..m {
+      for i in 0..m {
+        unsafe { *udata.get_unchecked_mut(i * m + j) = num::zero(); }
       }
-      *udata.get_mut(j * m + j) = num::one();
+      unsafe { *udata.get_unchecked_mut(j * m + j) = num::one(); }
     }
-    for k in range(0u, nct).rev() {
-      if *sdata.get(k) != num::zero() {
-        for j in range(k + 1, m) {
+    for k in (0..nct).rev() {
+      if unsafe { sdata.get_unchecked(k).clone() } != num::zero() {
+        for j in (k + 1)..m {
           let mut t : T = num::zero();
-          for i in range(k, m) {
-            t = t + *udata.get(i * m + k) * *udata.get(i * m + j);
+          for i in k..m {
+            unsafe { t = t + udata.get_unchecked(i * m + k).clone() * udata.get_unchecked(i * m + j).clone(); }
           }
-          t = - t / *udata.get(k * m + k);
-          for i in range(k, m) {
-            *udata.get_mut(i * m + j) = *udata.get(i * m + j) + t * *udata.get(i * m + k);
+          unsafe { t = - t / udata.get_unchecked(k * m + k).clone(); }
+          for i in k..m {
+            unsafe { *udata.get_unchecked_mut(i * m + j) = udata.get_unchecked(i * m + j).clone() + t * udata.get_unchecked(i * m + k).clone(); }
           }
         }
-        for i in range(k, m) {
-          *udata.get_mut(i * m + k) = - *udata.get(i * m + k);
+        for i in k..m {
+          unsafe { *udata.get_unchecked_mut(i * m + k) = - udata.get_unchecked(i * m + k).clone(); }
         }
-        *udata.get_mut(k * m + k) = num::one::<T>() + *udata.get(k * m + k);
-        for i in range(0, k) {
-          *udata.get_mut((i as uint) * m + k) = num::zero();
+        unsafe { *udata.get_unchecked_mut(k * m + k) = num::one::<T>() + udata.get_unchecked(k * m + k).clone(); }
+        for i in 0..k {
+          unsafe { *udata.get_unchecked_mut((i as usize) * m + k) = num::zero(); }
         }
         //let mut i = 0;
-        //while i < ((k as int) - 1) {
+        //while i < ((k as isize) - 1) {
         //  i -= 1;
         //}
       } else {
-        for i in range(0u, m) {
-          *udata.get_mut(i * m + k) = num::zero();
+        for i in 0..m {
+          unsafe { *udata.get_unchecked_mut(i * m + k) = num::zero(); }
         }
-        *udata.get_mut(k * m + k) = num::one();
+        unsafe { *udata.get_unchecked_mut(k * m + k) = num::one(); }
       }
     }
 
     // Generate V.
-    for k in range(0u, n).rev() {
-      if (k < nrt) && (*edata.get(k) != num::zero()) {
-        for j in range(k + 1, n) {
+    for k in (0..n).rev() {
+      if (k < nrt) && (unsafe { edata.get_unchecked(k).clone() } != num::zero()) {
+        for j in (k + 1)..n {
           let mut t : T = num::zero();
-          for i in range(k + 1, n) {
-            t = t + *vdata.get(i * n + k) * *vdata.get(i * n + j);
+          for i in (k + 1)..n {
+            unsafe { t = t + vdata.get_unchecked(i * n + k).clone() * vdata.get_unchecked(i * n + j).clone(); }
           }
-          t = - t / *vdata.get((k + 1) * n + k);
-          for i in range(k + 1, n) {
-            *vdata.get_mut(i * n + j) = *vdata.get(i * n + j) + t * *vdata.get(i * n + k);
+          unsafe { t = - t / vdata.get_unchecked((k + 1) * n + k).clone(); }
+          for i in (k + 1)..n {
+            unsafe { *vdata.get_unchecked_mut(i * n + j) = vdata.get_unchecked(i * n + j).clone() + t * vdata.get_unchecked(i * n + k).clone(); }
           }
         }
       }
-      for i in range(0u, n) {
-        *vdata.get_mut(i * n + k) = num::zero();
+      for i in 0..n {
+        unsafe { *vdata.get_unchecked_mut(i * n + k) = num::zero(); }
       }
-      *vdata.get_mut(k * n + k) = num::one();
+      unsafe { *vdata.get_unchecked_mut(k * n + k) = num::one(); }
     }
 
     // Main iteration loop for the singular values.
@@ -236,31 +238,31 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
       //              s(k), ..., s(p) are not negligible (qr step).
       // kase = 4     if e(p-1) is negligible (convergence).
       let mut kase;
-      let mut k = (p as int) - 2;
+      let mut k = (p as isize) - 2;
       while k >= 0 {
-        if num::abs(edata.get(k as uint).clone()) <= (tiny + eps * (num::abs(sdata.get(k as uint).clone()) + num::abs(sdata.get((k + 1) as uint).clone()))) {
-          *edata.get_mut(k as uint) = num::zero();
+        if num::abs(unsafe { edata.get_unchecked(k as usize).clone() }) <= (tiny + eps * (num::abs(unsafe { sdata.get_unchecked(k as usize).clone() }) + num::abs(unsafe { sdata.get_unchecked((k + 1) as usize).clone() }))) {
+          unsafe { *edata.get_unchecked_mut(k as usize) = num::zero(); }
           break;
         }
         k -= 1;
       }
 
-      if k == ((p as int) - 2) {
+      if k == ((p as isize) - 2) {
         kase = 4;
       } else {
-        let mut ks = (p as int) - 1;
+        let mut ks = (p as isize) - 1;
         while ks > k {
-          let t = (if ks != (p as int) { num::abs(edata.get(ks as uint).clone()) } else { num::zero() })
-                  + (if ks != (k + 1) { num::abs(edata.get((ks - 1) as uint).clone()) } else { num::zero() });
-          if num::abs(sdata.get(ks as uint).clone()) <= (tiny + eps * t) {
-            *sdata.get_mut(ks as uint) = num::zero();
+          let t = (if ks != (p as isize) { num::abs(unsafe { edata.get_unchecked(ks as usize).clone() }) } else { num::zero() })
+                  + (if ks != (k + 1) { num::abs(unsafe { edata.get_unchecked((ks - 1) as usize).clone() }) } else { num::zero() });
+          if num::abs(unsafe { sdata.get_unchecked(ks as usize).clone() }) <= (tiny + eps * t) {
+            unsafe { *sdata.get_unchecked_mut(ks as usize) = num::zero(); }
             break;
           }
           ks -= 1;
         }
         if ks == k {
           kase = 3;
-        } else if ks == ((p as int) - 1) {
+        } else if ks == ((p as isize) - 1) {
           kase = 1;
         } else {
           kase = 2;
@@ -272,58 +274,58 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
       // Perform the task indicated by kase.
       if kase == 1 {
         // Deflate negligible s(p).
-        let mut f = edata.get(p - 2).clone();
-        *edata.get_mut(p - 2) = num::zero();
-        let mut j = (p as int) - 2;
+        let mut f = unsafe { edata.get_unchecked(p - 2).clone() };
+        unsafe { *edata.get_unchecked_mut(p - 2) = num::zero(); }
+        let mut j = (p as isize) - 2;
         while j >= k {
-          let mut t = hypot(sdata.get(j as uint).clone(), f.clone());
-          let cs = *sdata.get(j as uint) / t;
+          let mut t = unsafe { hypot(sdata.get_unchecked(j as usize).clone(), f.clone()) };
+          let cs = unsafe { sdata.get_unchecked(j as usize).clone() } / t;
           let sn = f / t;
-          *sdata.get_mut(j as uint) = t;
+          unsafe { *sdata.get_unchecked_mut(j as usize) = t; }
           if j != k {
-            f = - sn * *edata.get((j - 1) as uint);
-            *edata.get_mut((j - 1) as uint) = cs * *edata.get((j - 1) as uint);
+            f = - sn * unsafe { edata.get_unchecked((j - 1) as usize).clone() };
+            unsafe { *edata.get_unchecked_mut((j - 1) as usize) = cs * edata.get_unchecked((j - 1) as usize).clone(); }
           }
 
-          for i in range(0u, n) {
-            t = cs * *vdata.get(i * n + (j as uint)) + sn * *vdata.get(i * n + (p - 1));
-            *vdata.get_mut(i * n + (p - 1)) = - sn * *vdata.get(i * n + (j as uint)) + cs * *vdata.get(i * n + (p - 1));
-            *vdata.get_mut(i * n + (j as uint)) = t;
+          for i in 0..n {
+            unsafe { t = cs * vdata.get_unchecked(i * n + (j as usize)).clone() + sn * vdata.get_unchecked(i * n + (p - 1)).clone(); }
+            unsafe { *vdata.get_unchecked_mut(i * n + (p - 1)) = - sn * vdata.get_unchecked(i * n + (j as usize)).clone() + cs * vdata.get_unchecked(i * n + (p - 1)).clone(); }
+            unsafe { *vdata.get_unchecked_mut(i * n + (j as usize)) = t; }
           }
           j -= 1;
         }
       } else if kase == 2 {
         // Split at negligible s(k).
-        let mut f = edata.get((k - 1) as uint).clone();
-        *edata.get_mut((k - 1) as uint) = num::zero();
-        for j in range(k, p as int) {
-          let mut t = hypot(sdata.get(j as uint).clone(), f.clone());
-          let cs = *sdata.get(j as uint) / t;
+        let mut f = unsafe { edata.get_unchecked((k - 1) as usize).clone() };
+        unsafe { *edata.get_unchecked_mut((k - 1) as usize) = num::zero(); }
+        for j in k..(p as isize) {
+          let mut t = unsafe { hypot(sdata.get_unchecked(j as usize).clone(), f.clone()) };
+          let cs = unsafe { sdata.get_unchecked(j as usize).clone() } / t;
           let sn = f / t;
-          *sdata.get_mut(j as uint) = t;
-          f = - sn * *edata.get(j as uint);
-          *edata.get_mut(j as uint) = cs * *edata.get(j as uint);
+          unsafe { *sdata.get_unchecked_mut(j as usize) = t; }
+          unsafe { f = - sn * edata.get_unchecked(j as usize).clone() };
+          unsafe { *edata.get_unchecked_mut(j as usize) = cs * edata.get_unchecked(j as usize).clone(); }
 
-          for i in range(0u, m) {
-            t = cs * *udata.get(i * m + (j as uint)) + sn * *udata.get(i * m + ((k as uint) - 1));
-            *udata.get_mut(i * m + ((k as uint) - 1)) = - sn * *udata.get(i * m + (j as uint)) + cs * *udata.get(i * m + ((k as uint) - 1));
-            *udata.get_mut(i * m + (j as uint)) = t;
+          for i in 0..m {
+            unsafe { t = cs * udata.get_unchecked(i * m + (j as usize)).clone() + sn * udata.get_unchecked(i * m + ((k as usize) - 1)).clone(); }
+            unsafe { *udata.get_unchecked_mut(i * m + ((k as usize) - 1)) = - sn * udata.get_unchecked(i * m + (j as usize)).clone() + cs * udata.get_unchecked(i * m + ((k as usize) - 1)).clone(); }
+            unsafe { *udata.get_unchecked_mut(i * m + (j as usize)) = t; }
           }
         }
       } else if kase == 3 {
         // Perform one qr step.
 
         // Calculate the shift.
-        let scale = num::abs(sdata.get(p - 1).clone())
-                      .max(num::abs(sdata.get(p - 2).clone()))
-                      .max(num::abs(edata.get(p - 2).clone()))
-                      .max(num::abs(sdata.get(k as uint).clone()))
-                      .max(num::abs(edata.get(k as uint).clone()));
-        let sp = *sdata.get(p - 1) / scale;
-        let spm1 = *sdata.get(p - 2) / scale;
-        let epm1 = *edata.get(p - 2) / scale;
-        let sk = *sdata.get(k as uint) / scale;
-        let ek = *edata.get(k as uint) / scale;
+        let scale = num::abs(unsafe { sdata.get_unchecked(p - 1).clone() })
+                      .max(num::abs(unsafe { sdata.get_unchecked(p - 2).clone() }))
+                      .max(num::abs(unsafe { edata.get_unchecked(p - 2).clone() }))
+                      .max(num::abs(unsafe { sdata.get_unchecked(k as usize).clone() }))
+                      .max(num::abs(unsafe { edata.get_unchecked(k as usize).clone() }));
+        let sp = unsafe { sdata.get_unchecked(p - 1).clone() } / scale;
+        let spm1 = unsafe { sdata.get_unchecked(p - 2).clone() } / scale;
+        let epm1 = unsafe { edata.get_unchecked(p - 2).clone() } / scale;
+        let sk = unsafe { sdata.get_unchecked(k as usize).clone() } / scale;
+        let ek = unsafe { edata.get_unchecked(k as usize).clone() } / scale;
         let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / num::cast(2.0).unwrap();
         let c = (sp * epm1) * (sp * epm1);
         let mut shift = num::zero();
@@ -339,73 +341,73 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
         let mut g = sk * ek;
 
         // Chase zeros.
-        for j in range(k, (p as int) - 1) {
+        for j in k..((p as isize) - 1) {
           let mut t = hypot(f.clone(), g.clone());
           let mut cs = f / t;
           let mut sn = g / t;
           if j != k {
-            *edata.get_mut((j - 1) as uint) = t;
+            unsafe { *edata.get_unchecked_mut((j - 1) as usize) = t; }
           }
-          f = cs * *sdata.get(j as uint) + sn * *edata.get(j as uint);
-          *edata.get_mut(j as uint) = cs * *edata.get(j as uint) - sn * *sdata.get(j as uint);
-          g = sn * *sdata.get((j + 1) as uint);
-          *sdata.get_mut((j + 1) as uint) = cs * *sdata.get((j + 1) as uint);
+          unsafe { f = cs * sdata.get_unchecked(j as usize).clone() + sn * edata.get_unchecked(j as usize).clone(); }
+          unsafe { *edata.get_unchecked_mut(j as usize) = cs * edata.get_unchecked(j as usize).clone() - sn * sdata.get_unchecked(j as usize).clone(); }
+          unsafe { g = sn * sdata.get_unchecked((j + 1) as usize).clone(); }
+          unsafe { *sdata.get_unchecked_mut((j + 1) as usize) = cs * sdata.get_unchecked((j + 1) as usize).clone(); }
 
-          for i in range(0u, n) {
-            t = cs * *vdata.get(i * n + (j as uint)) + sn * *vdata.get(i * n + ((j as uint) + 1));
-            *vdata.get_mut(i * n + ((j as uint) + 1)) = - sn * *vdata.get(i * n + (j as uint)) + cs * *vdata.get(i * n + ((j as uint) + 1));
-            *vdata.get_mut(i * n + (j as uint)) = t;
+          for i in 0..n {
+            unsafe { t = cs * vdata.get_unchecked(i * n + (j as usize)).clone() + sn * vdata.get_unchecked(i * n + ((j as usize) + 1)).clone(); }
+            unsafe { *vdata.get_unchecked_mut(i * n + ((j as usize) + 1)) = - sn * vdata.get_unchecked(i * n + (j as usize)).clone() + cs * vdata.get_unchecked(i * n + ((j as usize) + 1)).clone(); }
+            unsafe { *vdata.get_unchecked_mut(i * n + (j as usize)) = t; }
           }
 
           t = hypot(f.clone(), g.clone());
           cs = f / t;
           sn = g / t;
-          *sdata.get_mut(j as uint) = t;
-          f = cs * *edata.get(j as uint) + sn * *sdata.get((j + 1) as uint);
-          *sdata.get_mut((j + 1) as uint) = - sn * *edata.get(j as uint) + cs * *sdata.get((j + 1) as uint);
-          g = sn * *edata.get((j + 1) as uint);
-          *edata.get_mut((j + 1) as uint) = cs * *edata.get((j + 1) as uint);
-          if j < ((m as int) - 1) {
-            for i in range(0u, m) {
-              t = cs * *udata.get(i * m + (j as uint)) + sn * *udata.get(i * m + ((j as uint) + 1));
-              *udata.get_mut(i * m + ((j as uint) + 1)) = - sn * *udata.get(i * m + (j as uint)) + cs * *udata.get(i * m + ((j as uint) + 1));
-              *udata.get_mut(i * m + (j as uint)) = t;
+          unsafe { *sdata.get_unchecked_mut(j as usize) = t; }
+          unsafe { f = cs * edata.get_unchecked(j as usize).clone() + sn * sdata.get_unchecked((j + 1) as usize).clone(); }
+          unsafe { *sdata.get_unchecked_mut((j + 1) as usize) = - sn * edata.get_unchecked(j as usize).clone() + cs * sdata.get_unchecked((j + 1) as usize).clone(); }
+          unsafe { g = sn * edata.get_unchecked((j + 1) as usize).clone(); }
+          unsafe { *edata.get_unchecked_mut((j + 1) as usize) = cs * edata.get_unchecked((j + 1) as usize).clone(); }
+          if j < ((m as isize) - 1) {
+            for i in 0..m {
+              unsafe { t = cs * udata.get_unchecked(i * m + (j as usize)).clone() + sn * udata.get_unchecked(i * m + ((j as usize) + 1)).clone(); }
+              unsafe { *udata.get_unchecked_mut(i * m + ((j as usize) + 1)) = - sn * udata.get_unchecked(i * m + (j as usize)).clone() + cs * udata.get_unchecked(i * m + ((j as usize) + 1)).clone(); }
+              unsafe { *udata.get_unchecked_mut(i * m + (j as usize)) = t; }
             }
           }
         }
 
-        *edata.get_mut(p - 2) = f;
+        unsafe { *edata.get_unchecked_mut(p - 2) = f; }
       } else if kase == 4 {
         // Convergence.
 
         // Make the singular values positive.
-        if *sdata.get(k as uint) <= num::zero() {
-          *sdata.get_mut(k as uint) = if *sdata.get(k as uint) < num::zero() { - *sdata.get(k as uint) } else { num::zero() };
-          for i in range(0u, pp + 1) {
-            *vdata.get_mut(i * n + (k as uint)) = - *vdata.get(i * n + (k as uint));
+        if unsafe { sdata.get_unchecked(k as usize).clone() } <= num::zero() {
+          unsafe { *sdata.get_unchecked_mut(k as usize) = if sdata.get_unchecked(k as usize).clone() < num::zero() { - sdata.get_unchecked(k as usize).clone() } else { num::zero() }; }
+          for i in 0..(pp + 1) {
+            unsafe { *vdata.get_unchecked_mut(i * n + (k as usize)) = - vdata.get_unchecked(i * n + (k as usize)).clone(); }
           }
         }
 
         // Order the singular values.
-        while k < (pp as int) {
-          if *sdata.get(k as uint) >= *sdata.get((k + 1) as uint) {
+        while k < (pp as isize) {
+          if unsafe { sdata.get_unchecked(k as usize).clone() } >= unsafe { sdata.get_unchecked((k + 1) as usize).clone() } {
             break;
           }
-          let mut t = sdata.get(k as uint).clone();
-          *sdata.get_mut(k as uint) = sdata.get((k + 1) as uint).clone();
-          *sdata.get_mut((k + 1) as uint) = t;
-          if k < ((n as int) - 1) {
-            for i in range(0u, n) {
-              t = vdata.get(i * n + ((k as uint) + 1)).clone();
-              *vdata.get_mut(i * n + ((k as uint) + 1)) = vdata.get(i * n + (k as uint)).clone();
-              *vdata.get_mut(i * n + (k as uint)) = t;
+          let mut t = unsafe { sdata.get_unchecked(k as usize).clone() };
+          unsafe { *sdata.get_unchecked_mut(k as usize) = sdata.get_unchecked((k + 1) as usize).clone(); }
+          unsafe { *sdata.get_unchecked_mut((k + 1) as usize) = t; }
+          if k < ((n as isize) - 1) {
+            for i in 0..n {
+              unsafe { t = vdata.get_unchecked(i * n + ((k as usize) + 1)).clone(); }
+              unsafe { *vdata.get_unchecked_mut(i * n + ((k as usize) + 1)) = vdata.get_unchecked(i * n + (k as usize)).clone(); }
+              unsafe { *vdata.get_unchecked_mut(i * n + (k as usize)) = t; }
             }
           }
-          if k < ((m as int) - 1) {
-            for i in range(0u, m) {
-              t = udata.get(i * m + ((k as uint) + 1)).clone();
-              *udata.get_mut(i * m + ((k as uint) + 1)) = udata.get(i * m + (k as uint)).clone();
-              *udata.get_mut(i * m + (k as uint)) = t;
+          if k < ((m as isize) - 1) {
+            for i in 0..m {
+              unsafe { t = udata.get_unchecked(i * m + ((k as usize) + 1)).clone(); }
+              unsafe { *udata.get_unchecked_mut(i * m + ((k as usize) + 1)) = udata.get_unchecked(i * m + (k as usize)).clone(); }
+              unsafe { *udata.get_unchecked_mut(i * m + (k as usize)) = t; }
             }
           }
           k += 1;
@@ -434,12 +436,12 @@ impl<T : FloatMath + ApproxEq<T>> SVD<T> {
     &self.v
   }
 
-  pub fn rank(&self) -> uint {
+  pub fn rank(&self) -> usize {
     let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
-    let maxDim : T = num::cast(cmp::max(self.u.rows(), self.v.rows())).unwrap();
-    let tol = maxDim * self.s.get(0, 0) * eps;
+    let max_dim : T = num::cast(cmp::max(self.u.rows(), self.v.rows())).unwrap();
+    let tol = max_dim * self.s.get(0, 0) * eps;
     let mut r = 0;
-    for i in range(0u, self.s.rows()) {
+    for i in 0..self.s.rows() {
       if self.s.get(i, i) > tol {
         r += 1;
       }
@@ -502,7 +504,7 @@ fn svd_test() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -512,7 +514,7 @@ fn svd_test_m_over_n() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -522,7 +524,7 @@ fn svd_test_n_over_m() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -532,7 +534,7 @@ fn direct_test() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -542,7 +544,7 @@ fn direct_test_m_over_n() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 
 #[test]
@@ -552,6 +554,6 @@ fn direct_test_n_over_m() {
   let u = svd.get_u();
   let s = svd.get_s();
   let v = svd.get_v();
-  assert!((u * *s * v.t()).approx_eq(&a));
+  assert!((u * s * v.t()).approx_eq(&a));
 }
 

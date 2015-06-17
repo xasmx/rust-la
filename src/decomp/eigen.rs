@@ -1,6 +1,6 @@
 use std::cmp;
-use std::num;
-use std::num::FloatMath;
+use num;
+use num::traits::{Float, Signed};
 
 use ApproxEq;
 use Matrix;
@@ -21,139 +21,140 @@ use internalutil::{alloc_dirty_vec, hypot};
 /// The matrix V may be badly conditioned, or even singular, so the validity
 /// of the equation A = V * D * V^-1 depends upon V.cond().
 pub struct EigenDecomposition<T> {
-  n : uint,
+  n : usize,
   d : Vec<T>,
   e : Vec<T>,
   v : Matrix<T>
 }
 
-impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
+//impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
+impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
   // Symmetric Householder reduction to tridiagonal form.
-  fn tred2(n : uint, ddata : &mut Vec<T>, vdata : &mut Vec<T>, edata : &mut Vec<T>) {
+  fn tred2(n : usize, ddata : &mut Vec<T>, vdata : &mut Vec<T>, edata : &mut Vec<T>) {
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.    
-    for j in range(0u, n) {
-      *ddata.get_mut(j as uint) = vdata.get(((n - 1) * n + j) as uint).clone();
+    for j in 0..n {
+      unsafe { *ddata.get_unchecked_mut(j) = vdata.get_unchecked((n - 1) * n + j).clone(); }
     }
 
     // Householder reduction to tridiagonal form.
-    for i in range(1, n).rev() {
+    for i in (1..n).rev() {
       // Scale to avoid under/overflow.
       let mut scale : T = num::zero();
       let mut h : T = num::zero();
-      for k in range(0u, i) {
-        scale = scale + num::abs(ddata.get(k as uint).clone());
+      for k in 0..i {
+        scale = scale + num::abs(unsafe { ddata.get_unchecked(k).clone() });
       }
       if scale == num::zero() {
-        *edata.get_mut(i as uint) = ddata.get((i - 1) as uint).clone();
-        for j in range(0u, i) {
-          *ddata.get_mut(j as uint) = vdata.get(((i - 1) * n + j) as uint).clone();
-          *vdata.get_mut((i * n + j) as uint) = num::zero();
-          *vdata.get_mut((j * n + i) as uint) = num::zero();
+        unsafe { *edata.get_unchecked_mut(i) = ddata.get_unchecked(i - 1).clone(); }
+        for j in 0..i {
+          unsafe { *ddata.get_unchecked_mut(j) = vdata.get_unchecked((i - 1) * n + j).clone(); }
+          unsafe { *vdata.get_unchecked_mut(i * n + j) = num::zero(); }
+          unsafe { *vdata.get_unchecked_mut(j * n + i) = num::zero(); }
         }
       } else {
         // Generate Householder vector.
-        for k in range(0u, i) {
-          *ddata.get_mut(k as uint) = *ddata.get(k as uint) / scale;
-          h = h + *ddata.get(k as uint) * *ddata.get(k as uint);
+        for k in 0..i {
+          unsafe { *ddata.get_unchecked_mut(k) = ddata.get_unchecked(k).clone() / scale; }
+          unsafe { h = h + ddata.get_unchecked(k).clone() * ddata.get_unchecked(k).clone(); }
         }
-        let mut f = ddata.get((i - 1) as uint).clone();
+        let mut f = unsafe { ddata.get_unchecked(i - 1).clone() };
         let mut g = h.sqrt();
         if f > num::zero() {
           g = - g;
         }
-        *edata.get_mut(i as uint) = scale * g;
+        unsafe { *edata.get_unchecked_mut(i) = scale * g; }
         h = h - f * g;
-        *ddata.get_mut((i - 1) as uint) = f - g;
-        for j in range(0u, i) {
-          *edata.get_mut(j as uint) = num::zero();
+        unsafe { *ddata.get_unchecked_mut(i - 1) = f - g; }
+        for j in 0..i {
+          unsafe { *edata.get_unchecked_mut(j) = num::zero(); }
         }
 
         // Apply similarity transformation to remaining columns.
-        for j in range(0u, i) {
-          f = ddata.get(j as uint).clone();
-          *vdata.get_mut((j * n + i) as uint) = f.clone();
-          g = *edata.get(j as uint) + *vdata.get((j * n + j) as uint) * f;
-          for k in range(j + 1, i) {
-            g = g + *vdata.get((k * n + j) as uint) * *ddata.get(k as uint);
-            *edata.get_mut(k as uint) = *edata.get(k as uint) + *vdata.get((k * n + j) as uint) * f;
+        for j in 0..i {
+          unsafe { f = ddata.get_unchecked(j).clone(); }
+          unsafe { *vdata.get_unchecked_mut(j * n + i) = f.clone(); }
+          unsafe { g = edata.get_unchecked(j).clone() + vdata.get_unchecked(j * n + j).clone() * f; }
+          for k in (j + 1)..i {
+            unsafe { g = g + vdata.get_unchecked(k * n + j).clone() * ddata.get_unchecked(k).clone(); }
+            unsafe { *edata.get_unchecked_mut(k) = edata.get_unchecked(k).clone() + vdata.get_unchecked(k * n + j).clone() * f; }
           }
-          *edata.get_mut(j as uint) = g;
+          unsafe { *edata.get_unchecked_mut(j) = g; }
         }
         f = num::zero();
-        for j in range(0u, i) {
-          *edata.get_mut(j as uint) = *edata.get(j as uint) / h;
-          f = f + *edata.get(j as uint) * *ddata.get(j as uint);
+        for j in 0..i {
+          unsafe { *edata.get_unchecked_mut(j) = edata.get_unchecked(j).clone() / h; }
+          unsafe { f = f + edata.get_unchecked(j).clone() * ddata.get_unchecked(j).clone(); }
         }
         let hh = f / (h + h);
-        for j in range(0u, i) {
-          *edata.get_mut(j as uint) = *edata.get(j as uint) - hh * *ddata.get(j as uint);
+        for j in 0..i {
+          unsafe { *edata.get_unchecked_mut(j) = edata.get_unchecked(j).clone() - hh * ddata.get_unchecked(j).clone(); }
         }
-        for j in range(0u, i) {
-          f = ddata.get(j as uint).clone();
-          g = edata.get(j as uint).clone();
-          for k in range(j, i) {
-            let orig_val = vdata.get((k * n + j) as uint).clone();
-            *vdata.get_mut((k * n + j) as uint) = orig_val - (f * *edata.get(k as uint) + g * *ddata.get(k as uint));
+        for j in 0..i {
+          unsafe { f = ddata.get_unchecked(j).clone(); }
+          unsafe { g = edata.get_unchecked(j).clone(); }
+          for k in j..i {
+            let orig_val = unsafe { vdata.get_unchecked(k * n + j).clone() };
+            unsafe { *vdata.get_unchecked_mut(k * n + j) = orig_val - (f * edata.get_unchecked(k).clone() + g * ddata.get_unchecked(k).clone()); }
           }
-          *ddata.get_mut(j as uint) = vdata.get(((i - 1) * n + j) as uint).clone();
-          *vdata.get_mut((i * n + j) as uint) = num::zero();
+          unsafe { *ddata.get_unchecked_mut(j) = vdata.get_unchecked((i - 1) * n + j).clone(); }
+          unsafe { *vdata.get_unchecked_mut(i * n + j) = num::zero(); }
         }
       }
-      *ddata.get_mut(i as uint) = h;
+      unsafe { *ddata.get_unchecked_mut(i) = h; }
     }
 
     // Accumulate transformations.
-    for i in range(0u, n - 1) {
-      let orig_val = vdata.get((i * n + i) as uint).clone();
-      *vdata.get_mut(((n - 1) * n + i) as uint) = orig_val;
-      *vdata.get_mut((i * n + i) as uint) = num::one();
-      let h = ddata.get((i + 1) as uint).clone();
+    for i in 0..(n - 1) {
+      let orig_val = unsafe { vdata.get_unchecked(i * n + i).clone() };
+      unsafe { *vdata.get_unchecked_mut((n - 1) * n + i) = orig_val; }
+      unsafe { *vdata.get_unchecked_mut(i * n + i) = num::one(); }
+      let h = unsafe { ddata.get_unchecked(i + 1).clone() };
       if h != num::zero() {
-        for k in range(0, i + 1) {
-          *ddata.get_mut(k as uint) = *vdata.get((k * n + (i + 1)) as uint) / h;
+        for k in 0..(i + 1) {
+          unsafe { *ddata.get_unchecked_mut(k) = *vdata.get_unchecked(k * n + (i + 1)) / h; }
         }
-        for j in range(0u, i + 1) {
+        for j in 0..(i + 1) {
           let mut g : T = num::zero();
-          for k in range(0u, i + 1) {
-            g = g + *vdata.get((k * n + (i + 1)) as uint) * *vdata.get((k * n + j) as uint);
+          for k in 0..(i + 1) {
+            unsafe { g = g + vdata.get_unchecked(k * n + (i + 1)).clone() * vdata.get_unchecked(k * n + j).clone(); }
           }
-          for k in range(0u, i + 1) {
-            let orig_val = vdata.get((k * n + j) as uint).clone();
-            *vdata.get_mut((k * n + j) as uint) = orig_val - g * *ddata.get(k as uint);
+          for k in 0..(i + 1) {
+            let orig_val = unsafe { vdata.get_unchecked(k * n + j).clone() };
+            unsafe { *vdata.get_unchecked_mut(k * n + j) = orig_val - g * ddata.get_unchecked(k).clone(); }
           }
         }
       }
-      for k in range(0u, i + 1) {
-        *vdata.get_mut((k * n + (i + 1)) as uint) = num::zero();
+      for k in 0..(i + 1) {
+        unsafe { *vdata.get_unchecked_mut(k * n + (i + 1)) = num::zero(); }
       }
     }
-    for j in range(0u, n) {
-      *ddata.get_mut(j as uint) = vdata.get(((n - 1) * n + j) as uint).clone();
-      *vdata.get_mut(((n - 1) * n + j) as uint) = num::zero();
+    for j in 0..n {
+      unsafe { *ddata.get_unchecked_mut(j) = vdata.get_unchecked((n - 1) * n + j).clone(); }
+      unsafe { *vdata.get_unchecked_mut((n - 1) * n + j) = num::zero(); }
     }
-    *vdata.get_mut(((n - 1) * n + (n - 1)) as uint) = num::one();
-    *edata.get_mut(0) = num::zero();
+    unsafe { *vdata.get_unchecked_mut((n - 1) * n + (n - 1)) = num::one(); }
+    unsafe { *edata.get_unchecked_mut(0) = num::zero(); }
   }
 
   // Symmetric tridiagonal QL algorithm.
-  fn tql2(n : uint, edata : &mut Vec<T>, ddata : &mut Vec<T>, vdata : &mut Vec<T>) {
+  fn tql2(n : usize, edata : &mut Vec<T>, ddata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedures tql2, by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     // Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
-    for i in range(1, n) {
-      *edata.get_mut((i - 1) as uint) = edata.get(i as uint).clone();
+    for i in 1..n {
+      unsafe { *edata.get_unchecked_mut(i - 1) = edata.get_unchecked(i).clone(); }
     }
-    *edata.get_mut((n - 1) as uint) = num::zero();
+    unsafe { *edata.get_unchecked_mut(n - 1) = num::zero(); }
 
     let mut f : T = num::zero();
     let mut tst1 : T = num::zero();
     let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
-    for l in range(0u, n) {
+    for l in 0..n {
       // Find small subdiagonal element
-      tst1 = tst1.max(num::abs(ddata.get(l as uint).clone()) + num::abs(edata.get(l as uint).clone()));
+      tst1 = tst1.max(num::abs(unsafe { ddata.get_unchecked(l).clone() }) + num::abs(unsafe { edata.get_unchecked(l).clone() }));
       let mut m = l;
       while m < n {
-        if num::abs(edata.get(m as uint).clone()) <= (eps * tst1) {
+        if num::abs(unsafe { edata.get_unchecked(m).clone() }) <= (eps * tst1) {
           break;
         }
         m += 1;
@@ -163,89 +164,89 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
       if m > l {
         loop {
           // Compute implicit shift
-          let mut g = ddata.get(l as uint).clone();
+          let mut g = unsafe { ddata.get_unchecked(l).clone() };
           let tmp : T = num::cast(2.0).unwrap();
-          let mut p = (*ddata.get((l + 1) as uint) - g) / (tmp * *edata.get(l as uint));
+          let mut p = (unsafe { ddata.get_unchecked(l + 1).clone() } - g) / (tmp * unsafe { edata.get_unchecked(l).clone() });
           let mut r = hypot::<T>(p.clone(), num::one());
           if p < num::zero() {
             r = -r;
           }
-          *ddata.get_mut(l as uint) = *edata.get(l as uint) / (p + r);
-          *ddata.get_mut((l + 1) as uint) = *edata.get(l as uint) * (p + r);
-          let dl1 = ddata.get((l + 1) as uint).clone();
-          let mut h = g - *ddata.get(l as uint);
-          for i in range(l + 2, n) {
-            *ddata.get_mut(i as uint) = *ddata.get(i as uint) - h;
+          unsafe { *ddata.get_unchecked_mut(l) = edata.get_unchecked(l).clone() / (p + r); }
+          unsafe { *ddata.get_unchecked_mut(l + 1) = edata.get_unchecked(l).clone() * (p + r); }
+          let dl1 = unsafe { ddata.get_unchecked(l + 1).clone() };
+          let mut h = g - unsafe { ddata.get_unchecked(l).clone() };
+          for i in (l + 2)..n {
+            unsafe { *ddata.get_unchecked_mut(i) = ddata.get_unchecked(i).clone() - h; }
           }
           f = f + h;
 
           // Implicit QL transformation.
-          p = ddata.get(m as uint).clone();
+          unsafe { p = ddata.get_unchecked(m).clone(); }
           let mut c : T = num::one();
           let mut c2 = c.clone();
           let mut c3 = c.clone();
-          let el1 = edata.get((l + 1) as uint).clone();
+          let el1 = unsafe { edata.get_unchecked(l + 1).clone() };
           let mut s : T = num::zero();
           let mut s2 = num::zero();
-          for i in range(l, m).rev() {
+          for i in (l..m).rev() {
             c3 = c2.clone();
             c2 = c.clone();
             s2 = s.clone();
-            g = c * *edata.get(i as uint);
+            unsafe { g = c * edata.get_unchecked(i).clone(); }
             h = c * p;
-            r = hypot::<T>(p.clone(), edata.get(i as uint).clone());
-            *edata.get_mut((i + 1) as uint) = s * r;
-            s = *edata.get(i as uint) / r;
+            r = hypot::<T>(p.clone(), unsafe { edata.get_unchecked(i).clone() });
+            unsafe { *edata.get_unchecked_mut(i + 1) = s * r; }
+            s = unsafe { edata.get_unchecked(i).clone() } / r;
             c = p / r;
-            p = c * *ddata.get(i as uint) - s * g;
-            *ddata.get_mut((i + 1) as uint) = h + s * (c * g + s * *ddata.get(i as uint));
+            unsafe { p = c * ddata.get_unchecked(i).clone() - s * g; }
+            unsafe { *ddata.get_unchecked_mut(i + 1) = h + s * (c * g + s * ddata.get_unchecked(i).clone()); }
 
             // Accumulate transformation.
-            for k in range(0u, n) {
-              h = vdata.get((k * n + (i + 1)) as uint).clone();
-              *vdata.get_mut((k * n + (i + 1)) as uint) = s * *vdata.get((k * n + i) as uint) + c * h;
-              *vdata.get_mut((k * n + i) as uint) = c * *vdata.get((k * n + i) as uint) - s * h;
+            for k in 0..n {
+              unsafe { h = vdata.get_unchecked(k * n + (i + 1)).clone(); }
+              unsafe { *vdata.get_unchecked_mut(k * n + (i + 1)) = s * vdata.get_unchecked(k * n + i).clone() + c * h; }
+              unsafe { *vdata.get_unchecked_mut(k * n + i) = c * vdata.get_unchecked(k * n + i).clone() - s * h; }
             }
           }
-          p = - s * s2 * c3 * el1 * *edata.get(l as uint) / dl1;
-          *edata.get_mut(l as uint) = s * p;
-          *ddata.get_mut(l as uint) = c * p;
+          unsafe { p = - s * s2 * c3 * el1 * edata.get_unchecked(l).clone() / dl1; }
+          unsafe { *edata.get_unchecked_mut(l) = s * p; }
+          unsafe { *ddata.get_unchecked_mut(l) = c * p; }
 
           // Check for convergence.
-          if num::abs(edata.get(l as uint).clone()) <= (eps * tst1) {
+          if num::abs(unsafe { edata.get_unchecked(l).clone() }) <= (eps * tst1) {
             break;
           }
         }
       }
-      *ddata.get_mut(l as uint) = *ddata.get(l as uint) + f;
-      *edata.get_mut(l as uint) = num::zero();
+      unsafe { *ddata.get_unchecked_mut(l) = ddata.get_unchecked(l).clone() + f; }
+      unsafe { *edata.get_unchecked_mut(l) = num::zero(); }
     }
 
     // Bubble sort eigenvalues and corresponding vectors.
-    for i in range(0u, n - 1) {
+    for i in 0..(n - 1) {
       let mut k = i;
-      let mut p = ddata.get(i as uint).clone();
-      for j in range(i + 1, n) {
-        if *ddata.get(j as uint) > p {
+      let mut p = unsafe { ddata.get_unchecked(i).clone() };
+      for j in (i + 1)..n {
+        if unsafe { ddata.get_unchecked(j).clone() } > p {
           k = j;
-          p = ddata.get(j as uint).clone();
+          unsafe { p = ddata.get_unchecked(j).clone(); }
         }
       }
       if k != i {
         // Swap columns k and i of the diagonal and v.
-        *ddata.get_mut(k as uint) = ddata.get(i as uint).clone();
-        *ddata.get_mut(i as uint) = p.clone();
-        for j in range(0u, n) {
-          p = vdata.get((j * n + i) as uint).clone();
-          *vdata.get_mut((j * n + i) as uint) = vdata.get((j * n + k) as uint).clone();
-          *vdata.get_mut((j * n + k) as uint) = p;
+        unsafe { *ddata.get_unchecked_mut(k) = ddata.get_unchecked(i).clone(); }
+        unsafe { *ddata.get_unchecked_mut(i) = p.clone(); }
+        for j in 0..n {
+          unsafe { p = vdata.get_unchecked(j * n + i).clone(); }
+          unsafe { *vdata.get_unchecked_mut(j * n + i) = vdata.get_unchecked(j * n + k).clone(); }
+          unsafe { *vdata.get_unchecked_mut(j * n + k) = p; }
         }
       }
     }
   }
 
   // Nonsymmetric reduction to Hessenberg form.
-  fn orthes(n : uint, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
+  fn orthes(n : usize, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedures orthes and ortran, by Martin and Wilkinson, Handbook for Auto. Comp.,
     // Vol.ii-Linear Algebra, and the corresponding Fortran subroutines in EISPACK.
 
@@ -254,75 +255,75 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
     let low = 0;
     let high = n - 1;
 
-    for m in range(low + 1, high) {
+    for m in (low + 1)..high {
       // Scale column.
       let mut scale : T = num::zero();
-      for i in range(m, high + 1) {
-        scale = scale + num::abs(hdata.get((i * n + (m - 1)) as uint).clone());
+      for i in m..(high + 1) {
+        scale = scale + num::abs(unsafe { hdata.get_unchecked(i * n + (m - 1)).clone() });
       }
       if scale != num::zero() {
         // Compute Householder transformation.
         let mut h : T = num::zero();
-        for i in range(m, high + 1).rev() {
-          *ort.get_mut(i) = *hdata.get((i * n + (m - 1)) as uint) / scale;
-          h = h + *ort.get(i) * *ort.get(i);
+        for i in (m..(high + 1)).rev() {
+          unsafe { *ort.get_unchecked_mut(i) = hdata.get_unchecked(i * n + (m - 1)).clone() / scale; }
+          unsafe { h = h + ort.get_unchecked(i).clone() * ort.get_unchecked(i).clone(); }
         }
         let mut g = h.sqrt();
-        if *ort.get(m) > num::zero() {
+        if unsafe { ort.get_unchecked(m).clone() } > num::zero() {
           g = -g;
         }
-        h = h - *ort.get(m) * g;
-        *ort.get_mut(m) = *ort.get(m) - g;
+        unsafe { h = h - ort.get_unchecked(m).clone() * g; }
+        unsafe { *ort.get_unchecked_mut(m) = ort.get_unchecked(m).clone() - g; }
 
         // Apply Householder similarity transformation
         // H = (I-u*u'/h)*H*(I-u*u')/h)
-        for j in range(m, n) {
+        for j in m..n {
           let mut f : T = num::zero();
-          for i in range(m, high + 1).rev() {
-            f = f + *ort.get(i) * *hdata.get((i * n + j) as uint);
+          for i in (m..(high + 1)).rev() {
+            unsafe { f = f + ort.get_unchecked(i).clone() * hdata.get_unchecked(i * n + j).clone(); }
           }
           f = f / h;
-          for i in range(m, high + 1) {
-            *hdata.get_mut((i * n + j) as uint) = *hdata.get((i * n + j) as uint) - f * *ort.get(i);
+          for i in m..(high + 1) {
+            unsafe { *hdata.get_unchecked_mut(i * n + j) = hdata.get_unchecked(i * n + j).clone() - f * ort.get_unchecked(i).clone(); }
           }
         }
 
-        for i in range(0u, high + 1) {
+        for i in 0..(high + 1) {
           let mut f : T = num::zero();
-          for j in range(m, high + 1).rev() {
-            f = f + *ort.get(j) * *hdata.get((i * n + j) as uint);
+          for j in (m..(high + 1)).rev() {
+            unsafe { f = f + ort.get_unchecked(j).clone() * hdata.get_unchecked(i * n + j).clone(); }
           }
           f = f / h;
-          for j in range(m, high + 1) {
-            *hdata.get_mut((i * n + j) as uint) = *hdata.get((i * n + j) as uint) - f * *ort.get(j);
+          for j in m..(high + 1) {
+            unsafe { *hdata.get_unchecked_mut(i * n + j) = hdata.get_unchecked(i * n + j).clone() - f * ort.get_unchecked(j).clone(); }
           }
         }
-        *ort.get_mut(m) = scale * *ort.get(m);
-        *hdata.get_mut((m * n + (m - 1)) as uint) = scale * g;
+        unsafe { *ort.get_unchecked_mut(m) = scale * ort.get_unchecked(m).clone(); }
+        unsafe { *hdata.get_unchecked_mut(m * n + (m - 1)) = scale * g; }
       }
     }
 
     // Accumulate transformations (Algol's ortran).
-    for i in range(0u, n) {
-      for j in range(0u, n) {
-        *vdata.get_mut((i * n + j) as uint) = if i == j { num::one() } else { num::zero() };
+    for i in 0..n {
+      for j in 0..n {
+        unsafe { *vdata.get_unchecked_mut(i * n + j) = if i == j { num::one() } else { num::zero() }; }
       }
     }
 
-    for m in range(low + 1, high).rev() {
-      if *hdata.get((m * n + (m - 1)) as uint) != num::zero() {
-        for i in range(m + 1, high + 1) {
-          *ort.get_mut(i) = hdata.get((i * n + (m - 1)) as uint).clone();
+    for m in ((low + 1)..high).rev() {
+      if unsafe { hdata.get_unchecked(m * n + (m - 1)).clone() } != num::zero() {
+        for i in (m + 1)..(high + 1) {
+          unsafe { *ort.get_unchecked_mut(i) = hdata.get_unchecked(i * n + (m - 1)).clone(); }
         }
-        for j in range(m, high + 1) {
+        for j in m..(high + 1) {
           let mut g : T = num::zero();
-          for i in range(m, high + 1) {
-            g = g + *ort.get(i) * *vdata.get((i * n + j) as uint);
+          for i in m..(high + 1) {
+            unsafe { g = g + ort.get_unchecked(i).clone() * vdata.get_unchecked(i * n + j).clone(); }
           }
           // Double division avoids possible underflow
-          g = (g / *ort.get(m)) / *hdata.get((m * n + (m - 1)) as uint);
-          for i in range(m, high + 1) {
-            *vdata.get_mut((i * n + j) as uint) = *vdata.get((i * n + j) as uint) + g * *ort.get(i);
+          unsafe { g = (g / ort.get_unchecked(m).clone()) / hdata.get_unchecked(m * n + (m - 1)).clone(); }
+          for i in m..(high + 1) {
+            unsafe { *vdata.get_unchecked_mut(i * n + j) = vdata.get_unchecked(i * n + j).clone() + g * ort.get_unchecked(i).clone(); }
           }
         }
       }
@@ -343,14 +344,14 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
   }
 
   // Nonsymmetric reduction from Hessenberg to real Schur form.
-  fn hqr2(n : uint, ddata : &mut Vec<T>, edata : &mut Vec<T>, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
+  fn hqr2(n : usize, ddata : &mut Vec<T>, edata : &mut Vec<T>, hdata : &mut Vec<T>, vdata : &mut Vec<T>) {
     // This is derived from the Algol procedure hqr2, by Martin and Wilkinson, Handbook for Auto. Comp.,
     // Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
 
     // Initialize
-    let nn = n as int;
+    let nn = n as isize;
     let mut n = nn - 1;
-    let low : int = 0;
+    let low : isize = 0;
     let high = nn - 1;
     let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
     let mut exshift = num::zero();
@@ -366,13 +367,13 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
 
     // Store roots isolated by balanc and compute matrix norm
     let mut norm : T = num::zero();
-    for i in range(0, nn) {
+    for i in 0..nn {
       if (i < low) || (i > high) {
-        *ddata.get_mut(i as uint) = hdata.get((i * nn + i) as uint).clone();
-        *edata.get_mut(i as uint) = num::zero();
+        unsafe { *ddata.get_unchecked_mut(i as usize) = hdata.get_unchecked((i * nn + i) as usize).clone(); }
+        unsafe { *edata.get_unchecked_mut(i as usize) = num::zero(); }
       }
-      for j in range(cmp::max(i - 1, 0), nn) {
-        norm = norm + num::abs(hdata.get((i * nn + j) as uint).clone());
+      for j in cmp::max(i - 1, 0)..nn {
+        unsafe { norm = norm + num::abs(hdata.get_unchecked((i * nn + j) as usize).clone()); }
       }
     }
 
@@ -383,11 +384,11 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
       // Look for single small sub-diagonal element
       let mut l = n;
       while l > low {
-        s = num::abs(hdata.get(((l - 1) * nn + (l - 1)) as uint).clone()) + num::abs(hdata.get((l * nn + l) as uint).clone());
+        unsafe { s = num::abs(hdata.get_unchecked(((l - 1) * nn + (l - 1)) as usize).clone()) + num::abs(hdata.get_unchecked((l * nn + l) as usize).clone()); }
         if s == num::zero() {
           s = norm.clone();
         }
-        if num::abs(hdata.get((l * nn + (l - 1)) as uint).clone()) < (eps * s) {
+        if num::abs(unsafe { hdata.get_unchecked((l * nn + (l - 1)) as usize).clone() }) < (eps * s) {
           break;
         }
         l -= 1;
@@ -396,32 +397,32 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
       // Check for convergence.
       if l == n {
         //One root found.
-        *hdata.get_mut((n * nn + n) as uint) = *hdata.get((n * nn + n) as uint) + exshift;
-        *ddata.get_mut(n as uint) = hdata.get((n * nn + n) as uint).clone();
-        *edata.get_mut(n as uint) = num::zero();
+        unsafe { *hdata.get_unchecked_mut((n * nn + n) as usize) = hdata.get_unchecked((n * nn + n) as usize).clone() + exshift; }
+        unsafe { *ddata.get_unchecked_mut(n as usize) = hdata.get_unchecked((n * nn + n) as usize).clone(); }
+        unsafe { *edata.get_unchecked_mut(n as usize) = num::zero(); }
         n -= 1;
         iter = 0;
       } else if l == (n - 1) {
         // Two roots found
-        w = *hdata.get((n * nn + (n - 1)) as uint) * *hdata.get(((n - 1) * nn + n) as uint);
-        p = (*hdata.get(((n - 1) * nn + (n - 1)) as uint) - *hdata.get((n * nn + n) as uint)) / num::cast(2.0).unwrap();
+        unsafe { w = hdata.get_unchecked((n * nn + (n - 1)) as usize).clone() * hdata.get_unchecked(((n - 1) * nn + n) as usize).clone(); }
+        unsafe { p = (hdata.get_unchecked(((n - 1) * nn + (n - 1)) as usize).clone() - hdata.get_unchecked((n * nn + n) as usize).clone()) / num::cast(2.0).unwrap(); }
         q = p * p + w;
         z = num::abs(q.clone()).sqrt();
-        *hdata.get_mut((n * nn + n) as uint) = *hdata.get((n * nn + n) as uint) + exshift;
-        *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = *hdata.get(((n - 1) * nn + (n - 1)) as uint) + exshift;
-        x = hdata.get((n * nn + n) as uint).clone();
+        unsafe { *hdata.get_unchecked_mut((n * nn + n) as usize) = hdata.get_unchecked((n * nn + n) as usize).clone() + exshift; }
+        unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + (n - 1)) as usize) = hdata.get_unchecked(((n - 1) * nn + (n - 1)) as usize).clone() + exshift; }
+        unsafe { x = hdata.get_unchecked((n * nn + n) as usize).clone(); }
 
         // Real pair
         if q >= num::zero() {
           z = if p >= num::zero() { p + z } else { p - z };
-          *ddata.get_mut((n - 1) as uint) = x + z;
-          *ddata.get_mut(n as uint) = ddata.get((n - 1) as uint).clone();
+          unsafe { *ddata.get_unchecked_mut((n - 1) as usize) = x + z; }
+          unsafe { *ddata.get_unchecked_mut(n as usize) = ddata.get_unchecked((n - 1) as usize).clone(); }
           if z != num::zero() {
-            *ddata.get_mut(n as uint) = x - w / z;
+            unsafe { *ddata.get_unchecked_mut(n as usize) = x - w / z; }
           }
-          *edata.get_mut((n - 1) as uint) = num::zero();
-          *edata.get_mut(n as uint) = num::zero();
-          x = hdata.get((n * nn + (n - 1)) as uint).clone();
+          unsafe { *edata.get_unchecked_mut((n - 1) as usize) = num::zero(); }
+          unsafe { *edata.get_unchecked_mut(n as usize) = num::zero(); }
+          unsafe { x = hdata.get_unchecked((n * nn + (n - 1)) as usize).clone(); }
           s = num::abs(x.clone()) + num::abs(z.clone());
           p = x / s;
           q = z / s;
@@ -430,31 +431,31 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
           q = q / r;
 
           // Row modification
-          for j in range(n - 1, nn) {
-            z = hdata.get(((n - 1) * nn + j) as uint).clone();
-            *hdata.get_mut(((n - 1) * nn + j) as uint) = q * z + p * *hdata.get((n * nn + j) as uint);
-            *hdata.get_mut((n * nn + j) as uint) = q * *hdata.get((n * nn + j) as uint) - p * z;
+          for j in (n - 1)..nn {
+            unsafe { z = hdata.get_unchecked(((n - 1) * nn + j) as usize).clone(); }
+            unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + j) as usize) = q * z + p * hdata.get_unchecked((n * nn + j) as usize).clone(); }
+            unsafe { *hdata.get_unchecked_mut((n * nn + j) as usize) = q * hdata.get_unchecked((n * nn + j) as usize).clone() - p * z; }
           }
 
           // Column modification
-          for i in range(0, n + 1) {
-            z = hdata.get((i * nn + (n - 1)) as uint).clone();
-            *hdata.get_mut((i * nn + (n - 1)) as uint) = q * z + p * *hdata.get((i * nn + n) as uint);
-            *hdata.get_mut((i * nn + n) as uint) = q * *hdata.get((i * nn + n) as uint) - p * z;
+          for i in 0..(n + 1) {
+            unsafe { z = hdata.get_unchecked((i * nn + (n - 1)) as usize).clone(); }
+            unsafe { *hdata.get_unchecked_mut((i * nn + (n - 1)) as usize) = q * z + p * hdata.get_unchecked((i * nn + n) as usize).clone(); }
+            unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = q * hdata.get_unchecked((i * nn + n) as usize).clone() - p * z; }
           }
 
           // Accumulate transformations
-          for i in range(low, high + 1) {
-            z = vdata.get((i * nn + (n - 1)) as uint).clone();
-            *vdata.get_mut((i * nn + (n - 1)) as uint) = q * z + p * *vdata.get((i * nn + n) as uint);
-            *vdata.get_mut((i * nn + n) as uint) = q * *vdata.get((i * nn + n) as uint) - p * z;
+          for i in low..(high + 1) {
+            unsafe { z = vdata.get_unchecked((i * nn + (n - 1)) as usize).clone(); }
+            unsafe { *vdata.get_unchecked_mut((i * nn + (n - 1)) as usize) = q * z + p * vdata.get_unchecked((i * nn + n) as usize).clone(); }
+            unsafe { *vdata.get_unchecked_mut((i * nn + n) as usize) = q * vdata.get_unchecked((i * nn + n) as usize).clone() - p * z; }
           }
         } else {
           // Complex pair
-          *ddata.get_mut((n - 1) as uint) = x + p;
-          *ddata.get_mut(n as uint) = x + p;
-          *edata.get_mut((n - 1) as uint) = z.clone();
-          *edata.get_mut(n as uint) = - z;
+          unsafe { *ddata.get_unchecked_mut((n - 1) as usize) = x + p; }
+          unsafe { *ddata.get_unchecked_mut(n as usize) = x + p; }
+          unsafe { *edata.get_unchecked_mut((n - 1) as usize) = z.clone(); }
+          unsafe { *edata.get_unchecked_mut(n as usize) = - z; }
         }
         n = n - 2;
         iter = 0;
@@ -462,21 +463,21 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
         // No convergence yet
 
         // Form shift
-        x = hdata.get((n * nn + n) as uint).clone();
+        unsafe { x = hdata.get_unchecked((n * nn + n) as usize).clone(); }
         y = num::zero();
         w = num::zero();
         if l < n {
-          y = hdata.get(((n - 1) * nn + (n - 1)) as uint).clone();
-          w = *hdata.get((n * nn + (n - 1)) as uint) * *hdata.get(((n - 1) * nn + n) as uint);
+          unsafe { y = hdata.get_unchecked(((n - 1) * nn + (n - 1)) as usize).clone(); }
+          unsafe { w = hdata.get_unchecked((n * nn + (n - 1)) as usize).clone() * hdata.get_unchecked(((n - 1) * nn + n) as usize).clone(); }
         }
 
         // Wilkinson's original ad hoc shift
         if iter == 10 {
           exshift = exshift + x;
-          for i in range(low, n + 1) {
-            *hdata.get_mut((i * nn + i) as uint) = *hdata.get((i * nn + i) as uint) - x;
+          for i in low..(n + 1) {
+            unsafe { *hdata.get_unchecked_mut((i * nn + i) as usize) = hdata.get_unchecked((i * nn + i) as usize).clone() - x; }
           }
-          s = num::abs(hdata.get((n * nn + (n - 1)) as uint).clone()) + num::abs(hdata.get(((n - 1) * nn + (n - 2)) as uint).clone());
+          unsafe { s = num::abs(hdata.get_unchecked((n * nn + (n - 1)) as usize).clone()) + num::abs(hdata.get_unchecked(((n - 1) * nn + (n - 2)) as usize).clone()); }
           let tmp : T = num::cast(0.75).unwrap();
           y = tmp * s;
           x = y.clone();
@@ -494,8 +495,8 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
               s = - s;
             }
             s = x - w / ((y - x) / num::cast(2.0).unwrap() + s);
-            for i in range(low, n + 1) {
-              *hdata.get_mut((i * nn + i) as uint) = *hdata.get((i * nn + i) as uint) - s;
+            for i in low..(n + 1) {
+              unsafe { *hdata.get_unchecked_mut((i * nn + i) as usize) = hdata.get_unchecked((i * nn + i) as usize).clone() - s; }
             }
             exshift = exshift + s;
             w = num::cast(0.964).unwrap();
@@ -509,12 +510,12 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
         // Look for two consecutive small sub-diagonal elements
         let mut m = n - 2;
         while m >= l {
-          z = hdata.get((m * nn + m) as uint).clone();
+          unsafe { z = hdata.get_unchecked((m * nn + m) as usize).clone(); }
           r = x - z;
           s = y - z;
-          p = (r * s - w) / *hdata.get(((m + 1) * nn + m) as uint) + *hdata.get((m * nn + (m + 1)) as uint);
-          q = *hdata.get(((m + 1) * nn + (m + 1)) as uint) - z - r - s;
-          r = hdata.get(((m + 2) * nn + (m + 1)) as uint).clone();
+          unsafe { p = (r * s - w) / hdata.get_unchecked(((m + 1) * nn + m) as usize).clone() + hdata.get_unchecked((m * nn + (m + 1)) as usize).clone(); }
+          unsafe { q = hdata.get_unchecked(((m + 1) * nn + (m + 1)) as usize).clone() - z - r - s; }
+          unsafe { r = hdata.get_unchecked(((m + 2) * nn + (m + 1)) as usize).clone(); }
           s = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
           p = p / s;
           q = q / s;
@@ -522,27 +523,27 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
           if m == l {
             break;
           }
-          if (num::abs(hdata.get((m * nn + (m - 1)) as uint).clone()) * (num::abs(q.clone()) + num::abs(r.clone()))) <
-             eps * (num::abs(p.clone()) * (num::abs(hdata.get(((m - 1) * nn + (m - 1)) as uint).clone()) + num::abs(z.clone()) + num::abs(hdata.get(((m + 1) * nn + (m + 1)) as uint).clone()))) {
+          if (num::abs(unsafe { hdata.get_unchecked((m * nn + (m - 1)) as usize).clone() }) * (num::abs(q.clone()) + num::abs(r.clone()))) <
+             eps * (num::abs(p.clone()) * (num::abs(unsafe { hdata.get_unchecked(((m - 1) * nn + (m - 1)) as usize).clone() }) + num::abs(z.clone()) + num::abs(unsafe { hdata.get_unchecked(((m + 1) * nn + (m + 1)) as usize).clone() }))) {
             break;
           }
           m -= 1;
         }
 
-        for i in range(m + 2, n + 1) {
-          *hdata.get_mut((i * nn + (i - 2)) as uint) = num::zero();
+        for i in (m + 2)..(n + 1) {
+          unsafe { *hdata.get_unchecked_mut((i * nn + (i - 2)) as usize) = num::zero(); }
           if i > (m + 2) {
-            *hdata.get_mut((i * nn + (i - 3)) as uint) = num::zero();
+            unsafe { *hdata.get_unchecked_mut((i * nn + (i - 3)) as usize) = num::zero(); }
           }
         }
 
         // Double QR step involving rows l:n and columns m:n
-        for k in range(m, n) {
+        for k in m..n {
           let notlast = k != (n - 1);
           if k != m {
-            p = hdata.get((k * nn + (k - 1)) as uint).clone();
-            q = hdata.get(((k + 1) * nn + (k - 1)) as uint).clone();
-            r = if notlast { hdata.get(((k + 2) * nn + (k - 1)) as uint).clone() } else { num::zero() };
+            unsafe { p = hdata.get_unchecked((k * nn + (k - 1)) as usize).clone(); }
+            unsafe { q = hdata.get_unchecked(((k + 1) * nn + (k - 1)) as usize).clone(); }
+            unsafe { r = if notlast { hdata.get_unchecked(((k + 2) * nn + (k - 1)) as usize).clone() } else { num::zero() }; }
             x = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
             if x == num::zero() {
               continue;
@@ -558,9 +559,9 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
           }
           if s != num::zero() {
             if k != m {
-              *hdata.get_mut((k * nn + (k - 1)) as uint) = - s * x;
+              unsafe { *hdata.get_unchecked_mut((k * nn + (k - 1)) as usize) = - s * x; }
             } else if l != m {
-              *hdata.get_mut((k * nn + (k - 1)) as uint) = - *hdata.get((k * nn + (k - 1)) as uint);
+              unsafe { *hdata.get_unchecked_mut((k * nn + (k - 1)) as usize) = - hdata.get_unchecked((k * nn + (k - 1)) as usize).clone(); }
             }
             p = p + s;
             x = p / s;
@@ -570,36 +571,36 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
             r = r / p;
 
             // Row modification
-            for j in range(k, nn) {
-              p = *hdata.get((k * nn + j) as uint) + q * *hdata.get(((k + 1) * nn + j) as uint);
+            for j in k..nn {
+              unsafe { p = hdata.get_unchecked((k * nn + j) as usize).clone() + q * hdata.get_unchecked(((k + 1) * nn + j) as usize).clone(); }
               if notlast {
-                p = p + r * *hdata.get(((k + 2) * nn + j) as uint);
-                *hdata.get_mut(((k + 2) * nn + j) as uint) = *hdata.get(((k + 2) * nn + j) as uint) - p * z;
+                unsafe { p = p + r * hdata.get_unchecked(((k + 2) * nn + j) as usize).clone(); }
+                unsafe { *hdata.get_unchecked_mut(((k + 2) * nn + j) as usize) = hdata.get_unchecked(((k + 2) * nn + j) as usize).clone() - p * z; }
               }
-              *hdata.get_mut((k * nn + j) as uint) = *hdata.get((k * nn + j) as uint) - p * x;
-              *hdata.get_mut(((k + 1) * nn + j) as uint) = *hdata.get(((k + 1) * nn + j) as uint) - p * y;
+              unsafe { *hdata.get_unchecked_mut((k * nn + j) as usize) = hdata.get_unchecked((k * nn + j) as usize).clone() - p * x; }
+              unsafe { *hdata.get_unchecked_mut(((k + 1) * nn + j) as usize) = hdata.get_unchecked(((k + 1) * nn + j) as usize).clone() - p * y; }
             }
 
             // Column modification
-            for i in range(0, cmp::min(n, k + 3) + 1) {
-              p = x * *hdata.get((i * nn + k) as uint) + y * *hdata.get((i * nn + (k + 1)) as uint);
+            for i in 0..(cmp::min(n, k + 3) + 1) {
+              unsafe { p = x * hdata.get_unchecked((i * nn + k) as usize).clone() + y * hdata.get_unchecked((i * nn + (k + 1)) as usize).clone(); }
               if notlast {
-                p = p + z * *hdata.get((i * nn + (k + 2)) as uint);
-                *hdata.get_mut((i * nn + (k + 2)) as uint) = *hdata.get((i * nn + (k + 2)) as uint) - p * r;
+                unsafe { p = p + z * hdata.get_unchecked((i * nn + (k + 2)) as usize).clone(); }
+                unsafe { *hdata.get_unchecked_mut((i * nn + (k + 2)) as usize) = hdata.get_unchecked((i * nn + (k + 2)) as usize).clone() - p * r; }
               }
-              *hdata.get_mut((i * nn + k) as uint) = *hdata.get((i * nn + k) as uint) - p;
-              *hdata.get_mut((i * nn + (k + 1)) as uint) = *hdata.get((i * nn + (k + 1)) as uint) - p * q;
+              unsafe { *hdata.get_unchecked_mut((i * nn + k) as usize) = hdata.get_unchecked((i * nn + k) as usize).clone() - p; }
+              unsafe { *hdata.get_unchecked_mut((i * nn + (k + 1)) as usize) = hdata.get_unchecked((i * nn + (k + 1)) as usize).clone() - p * q; }
             }
 
             // Accumulate transformations
-            for i in range(low, high + 1) {
-              p = x * *vdata.get((i * nn + k) as uint) + y * *vdata.get((i * nn + (k + 1)) as uint);
+            for i in low..(high + 1) {
+              unsafe { p = x * vdata.get_unchecked((i * nn + k) as usize).clone() + y * vdata.get_unchecked((i * nn + (k + 1)) as usize).clone(); }
               if notlast {
-                p = p + z * *vdata.get((i * nn + (k + 2)) as uint);
-                *vdata.get_mut((i * nn + (k + 2)) as uint) = *vdata.get((i * nn + (k + 2)) as uint) - p * r;
+                unsafe { p = p + z * vdata.get_unchecked((i * nn + (k + 2)) as usize).clone(); }
+                unsafe { *vdata.get_unchecked_mut((i * nn + (k + 2)) as usize) = vdata.get_unchecked((i * nn + (k + 2)) as usize).clone() - p * r; }
               }
-              *vdata.get_mut((i * nn + k) as uint) = *vdata.get((i * nn + k) as uint) - p;
-              *vdata.get_mut((i * nn + (k + 1)) as uint) = *vdata.get((i * nn + (k + 1)) as uint) - p * q;
+              unsafe { *vdata.get_unchecked_mut((i * nn + k) as usize) = vdata.get_unchecked((i * nn + k) as usize).clone() - p; }
+              unsafe { *vdata.get_unchecked_mut((i * nn + (k + 1)) as usize) = vdata.get_unchecked((i * nn + (k + 1)) as usize).clone() - p * q; }
             }
           }
         }
@@ -611,50 +612,50 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
       return;
     }
 
-    for n in range(0, nn).rev() {
-      p = ddata.get(n as uint).clone();
-      q = edata.get(n as uint).clone();
+    for n in (0..nn).rev() {
+      unsafe { p = ddata.get_unchecked(n as usize).clone(); }
+      unsafe { q = edata.get_unchecked(n as usize).clone(); }
 
       // Real vector
       if q == num::zero() {
         let mut l = n;
-        *hdata.get_mut((n * nn + n) as uint) = num::one();
-        for i in range(0, n).rev() {
-          w = *hdata.get((i * nn + i) as uint) - p;
+        unsafe { *hdata.get_unchecked_mut((n * nn + n) as usize) = num::one(); }
+        for i in (0..n).rev() {
+          unsafe { w = hdata.get_unchecked((i * nn + i) as usize).clone() - p; }
           r = num::zero();
-          for j in range(l, n + 1) {
-            r = r + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + n) as uint);
+          for j in l..(n + 1) {
+            unsafe { r = r + hdata.get_unchecked((i * nn + j) as usize).clone() * hdata.get_unchecked((j * nn + n) as usize).clone(); }
           }
-          if *edata.get(i as uint) < num::zero() {
+          if unsafe { edata.get_unchecked(i as usize).clone() } < num::zero() {
             z = w.clone();
             s = r.clone();
           } else {
             l = i;
-            if *edata.get(i as uint) == num::zero() {
+            if unsafe { edata.get_unchecked(i as usize).clone() } == num::zero() {
               if w != num::zero() {
-                *hdata.get_mut((i * nn + n) as uint) = - r / w;
+                unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = - r / w; }
               } else {
-                *hdata.get_mut((i * nn + n) as uint) = - r / (eps * norm);
+                unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = - r / (eps * norm); }
               }
             } else {
               // Solve real equations
-              x = hdata.get((i * nn + (i + 1)) as uint).clone();
-              y = hdata.get(((i + 1) * nn + i) as uint).clone();
-              q = (*ddata.get(i as uint) - p) * (*ddata.get(i as uint) - p) + *edata.get(i as uint) * *edata.get(i as uint);
+              unsafe { x = hdata.get_unchecked((i * nn + (i + 1)) as usize).clone(); }
+              unsafe { y = hdata.get_unchecked(((i + 1) * nn + i) as usize).clone(); }
+              unsafe { q = (ddata.get_unchecked(i as usize).clone() - p) * (ddata.get_unchecked(i as usize).clone() - p) + edata.get_unchecked(i as usize).clone() * edata.get_unchecked(i as usize).clone(); }
               t = (x * s - z * r) / q;
-              *hdata.get_mut((i * nn + n) as uint) = t.clone();
+              unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = t.clone(); }
               if num::abs(x.clone()) > num::abs(z.clone()) {
-                *hdata.get_mut(((i + 1) * nn + n) as uint) = (-r - w * t) / x;
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + n) as usize) = (-r - w * t) / x; }
               } else {
-                *hdata.get_mut(((i + 1) * nn + n) as uint) = (-s - y * t) / z;
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + n) as usize) = (-s - y * t) / z; }
               }
             }
 
             // Overflow control
-            t = num::abs(hdata.get((i * nn + n) as uint).clone());
+            unsafe { t = num::abs(hdata.get_unchecked((i * nn + n) as usize).clone()); }
             if (eps * t) * t > num::one() {
-              for j in range(i, n + 1) {
-                *hdata.get_mut((j * nn + n) as uint) = *hdata.get((j * nn + n) as uint) / t;
+              for j in i..(n + 1) {
+                unsafe { *hdata.get_unchecked_mut((j * nn + n) as usize) = hdata.get_unchecked((j * nn + n) as usize).clone() / t; }
               }
             }
           }
@@ -664,65 +665,65 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
         let mut l = n - 1;
 
         // Last vector component imaginary so matrix is triangular
-        if num::abs(hdata.get((n * nn + (n - 1)) as uint).clone()) > num::abs(hdata.get(((n - 1) * nn + n) as uint).clone()) {
-          *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = q / *hdata.get((n * nn + (n - 1)) as uint);
-          *hdata.get_mut(((n - 1) * nn + n) as uint) = - (*hdata.get((n * nn + n) as uint) - p) / *hdata.get((n * nn + (n - 1)) as uint);
+        if num::abs(unsafe { hdata.get_unchecked((n * nn + (n - 1)) as usize).clone() }) > num::abs(unsafe { hdata.get_unchecked(((n - 1) * nn + n) as usize).clone() }) {
+          unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + (n - 1)) as usize) = q / hdata.get_unchecked((n * nn + (n - 1)) as usize).clone(); }
+          unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + n) as usize) = - (hdata.get_unchecked((n * nn + n) as usize).clone() - p) / hdata.get_unchecked((n * nn + (n - 1)) as usize).clone(); }
         } else {
-          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - *hdata.get(((n - 1) * nn + n) as uint), *hdata.get(((n - 1) * nn + (n - 1)) as uint) - p, q.clone());
-          *hdata.get_mut(((n - 1) * nn + (n - 1)) as uint) = cdivr;
-          *hdata.get_mut(((n - 1) * nn + n) as uint) = cdivi;
+          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - unsafe { hdata.get_unchecked(((n - 1) * nn + n) as usize).clone() }, unsafe { hdata.get_unchecked(((n - 1) * nn + (n - 1)) as usize).clone() } - p, q.clone());
+          unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + (n - 1)) as usize) = cdivr; }
+          unsafe { *hdata.get_unchecked_mut(((n - 1) * nn + n) as usize) = cdivi; }
         }
-        *hdata.get_mut((n * nn + (n - 1)) as uint) = num::zero();
-        *hdata.get_mut((n * nn + n) as uint) = num::one();
-        for i in range(0, n - 1).rev() {
+        unsafe { *hdata.get_unchecked_mut((n * nn + (n - 1)) as usize) = num::zero(); }
+        unsafe { *hdata.get_unchecked_mut((n * nn + n) as usize) = num::one(); }
+        for i in (0..(n - 1)).rev() {
           let mut ra : T = num::zero();
           let mut sa : T = num::zero();
           let mut vr;
           let mut vi;
-          for j in range(l, n + 1) {
-            ra = ra + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + (n - 1)) as uint);
-            sa = sa + *hdata.get((i * nn + j) as uint) * *hdata.get((j * nn + n) as uint);
+          for j in l..(n + 1) {
+            unsafe { ra = ra + hdata.get_unchecked((i * nn + j) as usize).clone() * hdata.get_unchecked((j * nn + (n - 1)) as usize).clone(); }
+            unsafe { sa = sa + hdata.get_unchecked((i * nn + j) as usize).clone() * hdata.get_unchecked((j * nn + n) as usize).clone(); }
           }
-          w = *hdata.get((i * nn + i) as uint) - p;
+          unsafe { w = hdata.get_unchecked((i * nn + i) as usize).clone() - p; }
 
-          if *edata.get(i as uint) < num::zero() {
+          if unsafe { edata.get_unchecked(i as usize).clone() } < num::zero() {
             z = w;
             r = ra;
             s = sa;
           } else {
             l = i;
-            if *edata.get(i as uint) == num::zero() {
+            if unsafe { edata.get_unchecked(i as usize).clone() } == num::zero() {
               let (cdivr, cdivi) = EigenDecomposition::cdiv(- ra, - sa, w.clone(), q.clone());
-              *hdata.get_mut((i * nn + (n - 1)) as uint) = cdivr;
-              *hdata.get_mut((i * nn + n) as uint) = cdivi;
+              unsafe { *hdata.get_unchecked_mut((i * nn + (n - 1)) as usize) = cdivr; }
+              unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = cdivi; }
             } else {
               // Solve complex equations
-              x = hdata.get((i * nn + (i + 1)) as uint).clone();
-              y = hdata.get(((i + 1) * nn + i) as uint).clone();
-              vr = (*ddata.get(i as uint) - p) * (*ddata.get(i as uint) - p) + *edata.get(i as uint) * *edata.get(i as uint) - q * q;
-              vi = (*ddata.get(i as uint) - p) * num::cast(2.0).unwrap() * q;
+              unsafe { x = hdata.get_unchecked((i * nn + (i + 1)) as usize).clone(); }
+              unsafe { y = hdata.get_unchecked(((i + 1) * nn + i) as usize).clone(); }
+              unsafe { vr = (ddata.get_unchecked(i as usize).clone() - p) * (ddata.get_unchecked(i as usize).clone() - p) + edata.get_unchecked(i as usize).clone() * edata.get_unchecked(i as usize).clone() - q * q; }
+              unsafe { vi = (ddata.get_unchecked(i as usize).clone() - p) * num::cast(2.0).unwrap() * q; }
               if (vr == num::zero()) && (vi == num::zero()) {
                 vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
               }
               let (cdivr, cdivi) = EigenDecomposition::cdiv(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
-              *hdata.get_mut((i * nn + (n - 1)) as uint) = cdivr;
-              *hdata.get_mut((i * nn + n) as uint) = cdivi;
+              unsafe { *hdata.get_unchecked_mut((i * nn + (n - 1)) as usize) = cdivr; }
+              unsafe { *hdata.get_unchecked_mut((i * nn + n) as usize) = cdivi; }
               if num::abs(x.clone()) > (num::abs(z.clone()) + num::abs(q.clone())) {
-                *hdata.get_mut(((i + 1) * nn + (n - 1)) as uint) = (- ra - w * *hdata.get((i * nn + (n - 1)) as uint) + q * *hdata.get((i * nn + n) as uint)) / x;
-                *hdata.get_mut(((i + 1) * nn + n) as uint) = (- sa - w * *hdata.get((i * nn + n) as uint) - q * *hdata.get((i * nn + (n - 1)) as uint)) / x;
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + (n - 1)) as usize) = (- ra - w * hdata.get_unchecked((i * nn + (n - 1)) as usize).clone() + q * hdata.get_unchecked((i * nn + n) as usize).clone()) / x; }
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + n) as usize) = (- sa - w * hdata.get_unchecked((i * nn + n) as usize).clone() - q * hdata.get_unchecked((i * nn + (n - 1)) as usize).clone()) / x; }
               } else {
-                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * *hdata.get((i * nn + (n - 1)) as uint), - s - y * *hdata.get((i * nn + n) as uint), z.clone(), q.clone());
-                *hdata.get_mut(((i + 1) * nn + (n - 1)) as uint) = cdivr;
-                *hdata.get_mut(((i + 1) * nn + n) as uint) = cdivi;
+                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * unsafe { hdata.get_unchecked((i * nn + (n - 1)) as usize).clone() }, - s - y * unsafe { hdata.get_unchecked((i * nn + n) as usize).clone() }, z.clone(), q.clone());
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + (n - 1)) as usize) = cdivr; }
+                unsafe { *hdata.get_unchecked_mut(((i + 1) * nn + n) as usize) = cdivi; }
               }
             }
 
             // Overflow control
-            t = num::abs(hdata.get((i * nn + (n - 1)) as uint).clone()).max(num::abs(hdata.get((i * nn + n) as uint).clone()));
+            t = num::abs(unsafe { hdata.get_unchecked((i * nn + (n - 1)) as usize).clone() }).max(num::abs(unsafe { hdata.get_unchecked((i * nn + n) as usize).clone() }));
             if (eps * t) * t > num::one() {
-              for j in range(i, n + 1) {
-                *hdata.get_mut((j * nn + (n - 1)) as uint) = *hdata.get((j * nn + (n - 1)) as uint) / t;
-                *hdata.get_mut((j * nn + n) as uint) = *hdata.get((j * nn + n) as uint) / t;
+              for j in i..(n + 1) {
+                unsafe { *hdata.get_unchecked_mut((j * nn + (n - 1)) as usize) = hdata.get_unchecked((j * nn + (n - 1)) as usize).clone() / t; }
+                unsafe { *hdata.get_unchecked_mut((j * nn + n) as usize) = hdata.get_unchecked((j * nn + n) as usize).clone() / t; }
               }
             }
           }
@@ -731,22 +732,22 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
     }
 
     // Vectors of isolated roots
-    for i in range(0, nn) {
+    for i in 0..nn {
       if (i < low) || (i > high) {
-        for j in range(i, nn) {
-          *vdata.get_mut((i * nn + j) as uint) = hdata.get((i * nn + j) as uint).clone();
+        for j in i..nn {
+          unsafe { *vdata.get_unchecked_mut((i * nn + j) as usize) = hdata.get_unchecked((i * nn + j) as usize).clone(); }
         }
       }
     }
 
     // Back transformation to get eigenvectors of original matrix
-    for j in range(low, nn).rev() {
-      for i in range(low, high + 1) {
+    for j in (low..nn).rev() {
+      for i in low..(high + 1) {
         z = num::zero();
-        for k in range(low, cmp::min(j, high) + 1) {
-          z = z + *vdata.get((i * nn + k) as uint) * *hdata.get((k * nn + j) as uint);
+        for k in low..(cmp::min(j, high) + 1) {
+          unsafe { z = z + vdata.get_unchecked((i * nn + k) as usize).clone() * hdata.get_unchecked((k * nn + j) as usize).clone(); }
         }
-        *vdata.get_mut((i * nn + j) as uint) = z;
+        unsafe { *vdata.get_unchecked_mut((i * nn + j) as usize) = z; }
       }
     }
   }
@@ -770,9 +771,9 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
     }
 
     if issymmetric {
-      for i in range(0, n) {
-        for j in range(0, n) {
-          *vdata.get_mut(i * n + j) = a.get(i as uint, j as uint).clone();
+      for i in 0..n {
+        for j in 0..n {
+          unsafe { *vdata.get_unchecked_mut(i * n + j) = a.get(i, j).clone(); }
         }
       }
 
@@ -791,9 +792,9 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
     } else {
       let mut hdata = alloc_dirty_vec(n * n);
 
-      for j in range(0, n) {
-        for i in range(0, n) {
-          *hdata.get_mut(i * n + j) = a.get(i as uint, j as uint);
+      for j in 0..n {
+        for i in 0..n {
+          unsafe { *hdata.get_unchecked_mut(i * n + j) = a.get(i, j); }
         }
       }
 
@@ -821,15 +822,15 @@ impl<T : FloatMath + ApproxEq<T>> EigenDecomposition<T> {
   pub fn get_d(&self) -> Matrix<T> {
     let mut ddata = alloc_dirty_vec(self.n * self.n);
 
-    for i in range(0u, self.n) {
-      for j in range(0u, self.n) {
-        *ddata.get_mut((i * self.n + j) as uint) = num::zero();
+    for i in 0..self.n {
+      for j in 0..self.n {
+        unsafe { *ddata.get_unchecked_mut(i * self.n + j) = num::zero(); }
       }
-      *ddata.get_mut((i * self.n + i) as uint) = self.d.get(i as uint).clone();
-      if *self.e.get(i as uint) > num::zero() {
-        *ddata.get_mut((i * self.n + (i + 1)) as uint) = self.e.get(i as uint).clone();
-      } else if *self.e.get(i as uint) < num::zero() {
-        *ddata.get_mut((i * self.n + (i - 1)) as uint) = self.e.get(i as uint).clone();
+      unsafe { *ddata.get_unchecked_mut(i * self.n + i) = self.d.get_unchecked(i).clone(); }
+      if unsafe { self.e.get_unchecked(i).clone() } > num::zero() {
+        unsafe { *ddata.get_unchecked_mut(i * self.n + (i + 1)) = self.e.get_unchecked(i).clone(); }
+      } else if unsafe { self.e.get_unchecked(i).clone() } < num::zero() {
+        unsafe { *ddata.get_unchecked_mut(i * self.n + (i - 1)) = self.e.get_unchecked(i).clone(); }
       }
     }
 

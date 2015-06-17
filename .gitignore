@@ -2,3 +2,5 @@ out
 doc
 *.swp
 TODO
+Cargo.lock
+target

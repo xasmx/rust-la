@@ -1,4 +1,5 @@
-use std::num;
+use num;
+use num::Float;
 
 use ApproxEq;
 use Matrix;
@@ -60,26 +61,26 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     let n = m.rows();
     let mut data : Vec<T> = alloc_dirty_vec(n * n);
 
-    for j in range(0u, n) {
+    for j in 0..n {
       // Solve row L[j].
 
       // d = SUM { L[j][0 .. (j - 1)]^2 }
       let mut d : T = num::zero();
 
       // Solve L[j][0 .. (j - 1)].
-      for k in range(0u, j) {
+      for k in 0..j {
         // Solve L[j][k].
 
         // s = SUM { L[k][0 .. (k - 1)] * L'[0 .. (k - 1)][j] }
         //   = SUM { L[k][0 .. (k - 1)] * L[j][0 .. (k - 1) }
         let mut s : T = num::zero();
-        for i in range(0u, k) {
-          s = s + *data.get(k * n + i) * *data.get(j * n + i);
+        for i in 0..k {
+          unsafe { s = s + data.get_unchecked(k * n + i).clone() * data.get_unchecked(j * n + i).clone(); }
         }
 
         // L[j][k] = (A[j][k] - SUM { L[k][0 .. (k - 1)] * L'[0 .. (k - 1)][j] }) / L[k][k].
-        s = (m.get(j, k) - s) / *data.get(k * n + k);
-        *data.get_mut(j * n + k) = s.clone();
+        unsafe { s = (m.get(j, k) - s) / data.get_unchecked(k * n + k).clone(); }
+        unsafe { *data.get_unchecked_mut(j * n + k) = s.clone(); }
 
         // Gather a sum of squres of L[j][0 .. (j - 1)] to d. Note: s = L[j][k].
         d = d + s * s;
@@ -97,11 +98,11 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
         // A is not positive definite; Cholesky decomposition does not exists.
         return None
       }
-      *data.get_mut(j * n + j) = d.sqrt();
+      unsafe { *data.get_unchecked_mut(j * n + j) = d.sqrt(); }
 
       // Solve L[j][(j + 1) .. (n - 1)]. (Always zero as L is lower triangular).
-      for k in range(j + 1, n) {
-        *data.get_mut(j * n + k) = num::zero();
+      for k in (j + 1)..n {
+        unsafe { *data.get_unchecked_mut(j * n + k) = num::zero(); }
       }
     }
 
@@ -120,22 +121,22 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     let nx = b.cols();
 
     // Solve L*Y = B
-    for k in range(0u, n) {
-      for j in range(0u, nx) {
-        for i in range(0u, k) {
-          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.get_data().get(k * n + i);
+    for k in 0..n {
+      for j in 0..nx {
+        for i in 0..k {
+          unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() - xdata.get_unchecked(i * nx + j).clone() * l.get_data().get_unchecked(k * n + i).clone(); }
         }
-        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.get_data().get(k * n + k);
+        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / l.get_data().get_unchecked(k * n + k).clone(); }
       }
     }
 
     // Solve L'*X = Y
-    for k in range(0u, n).rev() {
-      for j in range(0u, nx) {
-        for i in range(k + 1, n) {
-          *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) - *xdata.get(i * nx + j) * *l.get_data().get(i * n + k);
+    for k in (0..n).rev() {
+      for j in 0..nx {
+        for i in (k + 1)..n {
+          unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() - xdata.get_unchecked(i * nx + j).clone() * l.get_data().get_unchecked(i * n + k).clone(); }
         }
-        *xdata.get_mut(k * nx + j) = *xdata.get(k * nx + j) / *l.get_data().get(k * n + k);
+        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / l.get_data().get_unchecked(k * n + k).clone(); }
       }
     }
 
@@ -172,7 +173,7 @@ fn cholesky_solve_test() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn cholesky_solve_test_incompatible() {
   let a = m!(2.0, 1.0, 0.0; 1.0, 1.0, 0.0; 0.0, 0.0, 1.0);
   let c = CholeskyDecomposition::new(&a).unwrap();
