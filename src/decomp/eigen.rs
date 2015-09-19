@@ -679,7 +679,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
           let mut ra : T = num::zero();
           let mut sa : T = num::zero();
           let mut vr;
-          let mut vi;
+          let vi;
           for j in l..(n + 1) {
             unsafe { ra = ra + hdata.get_unchecked((i * nn + j) as usize).clone() * hdata.get_unchecked((j * nn + (n - 1)) as usize).clone(); }
             unsafe { sa = sa + hdata.get_unchecked((i * nn + j) as usize).clone() * hdata.get_unchecked((j * nn + n) as usize).clone(); }

@@ -237,7 +237,7 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
       // kase = 3     if e[k-1] is negligible, k<p, and
       //              s(k), ..., s(p) are not negligible (qr step).
       // kase = 4     if e(p-1) is negligible (convergence).
-      let mut kase;
+      let kase;
       let mut k = (p as isize) - 2;
       while k >= 0 {
         if num::abs(unsafe { edata.get_unchecked(k as usize).clone() }) <= (tiny + eps * (num::abs(unsafe { sdata.get_unchecked(k as usize).clone() }) + num::abs(unsafe { sdata.get_unchecked((k + 1) as usize).clone() }))) {
