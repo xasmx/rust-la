@@ -75,12 +75,12 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
         //   = SUM { L[k][0 .. (k - 1)] * L[j][0 .. (k - 1) }
         let mut s : T = num::zero();
         for i in 0..k {
-          unsafe { s = s + data.get_unchecked(k * n + i).clone() * data.get_unchecked(j * n + i).clone(); }
+          s = s + data[k * n + i].clone() * data[j * n + i].clone();
         }
 
         // L[j][k] = (A[j][k] - SUM { L[k][0 .. (k - 1)] * L'[0 .. (k - 1)][j] }) / L[k][k].
-        unsafe { s = (m.get(j, k) - s) / data.get_unchecked(k * n + k).clone(); }
-        unsafe { *data.get_unchecked_mut(j * n + k) = s.clone(); }
+        s = (m.get(j, k) - s) / data[k * n + k].clone();
+        data[j * n + k] = s.clone();
 
         // Gather a sum of squres of L[j][0 .. (j - 1)] to d. Note: s = L[j][k].
         d = d + s * s;
@@ -98,11 +98,11 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
         // A is not positive definite; Cholesky decomposition does not exists.
         return None
       }
-      unsafe { *data.get_unchecked_mut(j * n + j) = d.sqrt(); }
+      data[j * n + j] = d.sqrt();
 
       // Solve L[j][(j + 1) .. (n - 1)]. (Always zero as L is lower triangular).
       for k in (j + 1)..n {
-        unsafe { *data.get_unchecked_mut(j * n + k) = num::zero(); }
+        data[j * n + k] = num::zero();
       }
     }
 
@@ -124,9 +124,9 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     for k in 0..n {
       for j in 0..nx {
         for i in 0..k {
-          unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() - xdata.get_unchecked(i * nx + j).clone() * l.get_data().get_unchecked(k * n + i).clone(); }
+          xdata[k * nx + j] = xdata[k * nx + j].clone() - xdata[i * nx + j].clone() * l.get_data()[k * n + i].clone();
         }
-        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / l.get_data().get_unchecked(k * n + k).clone(); }
+        xdata[k * nx + j] = xdata[k * nx + j].clone() / l.get_data()[k * n + k].clone();
       }
     }
 
@@ -134,9 +134,9 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     for k in (0..n).rev() {
       for j in 0..nx {
         for i in (k + 1)..n {
-          unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() - xdata.get_unchecked(i * nx + j).clone() * l.get_data().get_unchecked(i * n + k).clone(); }
+          xdata[k * nx + j] = xdata[k * nx + j].clone() - xdata[i * nx + j].clone() * l.get_data()[i * n + k].clone();
         }
-        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / l.get_data().get_unchecked(k * n + k).clone(); }
+        xdata[k * nx + j] = xdata[k * nx + j].clone() / l.get_data()[k * n + k].clone();
       }
     }
 

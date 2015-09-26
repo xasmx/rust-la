@@ -48,15 +48,15 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // the column vector corresponds to the row range minor .. (m - 1).
     let mut x_norm_sqr : T = num::zero();
     for i in minor..m {
-      let c = unsafe { qrdata.get_unchecked(i * n + minor).clone() };
+      let c = qrdata[i * n + minor].clone();
       x_norm_sqr = x_norm_sqr + c * c;
     }
 
     // We know the size of the reflected coordinate (the lenght of the column vector), but not the sign yet.
     // Reflection will flip the sign of the corresponding coordinate element, so sign of the reflected
     // coordinate will be the opposite of the current coordinate element.
-    let a = if unsafe { qrdata.get_unchecked(minor * n + minor).clone() } > num::zero() { - x_norm_sqr.sqrt() } else { x_norm_sqr.sqrt() };
-    unsafe { *rdiag.get_unchecked_mut(minor) = a.clone(); }
+    let a = if qrdata[minor * n + minor].clone() > num::zero() { - x_norm_sqr.sqrt() } else { x_norm_sqr.sqrt() };
+    rdiag[minor] = a.clone();
 
     // If the length of the column vector is zero, the column is already zero and there's nothing to do.
     if a != num::zero() {
@@ -73,7 +73,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
       //       = 2a^2 - 2a<x, e>
       //       = 2a^2 - 2a*qrdata[k * n + k]	// As <x, e> is the projection of x to the axis aligned unit vector e.
       //       = 2a(a - qrdata[k * n + k])
-      unsafe { *qrdata.get_unchecked_mut(minor * n + minor) = qrdata.get_unchecked(minor * n + minor).clone() - a };
+      qrdata[minor * n + minor] = qrdata[minor * n + minor].clone() - a;
 
       // Note that now:
       // |u|^2 = 2a(a - (qrdata[k * n + k] + a))
@@ -93,13 +93,13 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
         // factor = <x, u>/(a * qrdata[k * n + k])
         let mut x_dot_u : T = num::zero();
         for row in minor..m {
-          unsafe { x_dot_u = x_dot_u + qrdata.get_unchecked(row * n + minor).clone() * qrdata.get_unchecked(row * n + column).clone(); }
+          x_dot_u = x_dot_u + qrdata[row * n + minor].clone() * qrdata[row * n + column].clone();
         }
-        let factor = x_dot_u / (a * unsafe { qrdata.get_unchecked(minor * n + minor).clone() });
+        let factor = x_dot_u / (a * qrdata[minor * n + minor].clone());
 
         // Hx = x + factor * u
         for row in minor..m {
-          unsafe { *qrdata.get_unchecked_mut(row * n + column) = qrdata.get_unchecked(row * n + column).clone() + factor * qrdata.get_unchecked(row * n + minor).clone(); }
+          qrdata[row * n + column] = qrdata[row * n + column].clone() + factor * qrdata[row * n + minor].clone();
         }
       }
     }
@@ -107,7 +107,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
   pub fn is_full_rank(&self) -> bool {
     for j in 0..self.qr.cols() {
-      if unsafe { self.rdiag.get_unchecked(j).clone() } == num::zero() {
+      if self.rdiag[j].clone() == num::zero() {
         return false;
       }
     }
@@ -124,7 +124,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
     for i in 0..m {
       for j in 0..n {
-        unsafe { *hdata.get_unchecked_mut(i * self.qr.cols() + j) = if i >= j { self.qr.get_data().get_unchecked(i * self.qr.cols() + j).clone() } else { num::zero() } }
+        hdata[i * self.qr.cols() + j] = if i >= j { self.qr.get_data()[i * self.qr.cols() + j].clone() } else { num::zero() }
       }
     }
 
@@ -139,9 +139,9 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
     for i in 0..m {
       for j in 0..n {
-        unsafe { *rdata.get_unchecked_mut(i * n + j) = if i < j { self.qr.get_data().get_unchecked(i * n + j).clone() }
-                           else if i == j { self.rdiag.get_unchecked(i).clone() }
-                           else { num::zero() } };
+        rdata[i * n + j] = if i < j { self.qr.get_data()[i * n + j].clone() }
+                           else if i == j { self.rdiag[i].clone() }
+                           else { num::zero() };
       }
     }
     Matrix::new(m, n, rdata)
@@ -155,7 +155,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
     // Set the diagonal elements to 1
     for minor in 0..cmp::min(m, n) {
-      unsafe { *qdata.get_unchecked_mut(minor * m + minor) = num::one(); }
+      qdata[minor * m + minor] = num::one();
     }
 
     // Successively apply the iverses of the reflections in reverse order to qdata (identity)
@@ -163,7 +163,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // the identity matrix to Q: (Note that a reflection matrix is it's own inverse).
     //   Q = Q_1_inv(Q_2_inv(...(Q_m_inv I))) = Q_1(Q_2(...(Q_m I)))
     for minor in (0..cmp::min(m, n)).rev() {
-      if unsafe { self.qr.get_data().get_unchecked(minor * n + minor).clone() } != num::zero() {
+      if self.qr.get_data()[minor * n + minor].clone() != num::zero() {
         // |u|^2 = -2a*qrdata[minor * n + minor]
         //       = -2 * rdiag[minor] * qrdata[minor * n + minor]
         //
@@ -179,12 +179,12 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
         for column in minor..m {
           let mut x_dot_u : T = num::zero();
           for row in minor..m {
-            unsafe { x_dot_u = x_dot_u + self.qr.get_data().get_unchecked(row * n + minor).clone() * qdata.get_unchecked(row * m + column).clone(); }
+            x_dot_u = x_dot_u + self.qr.get_data()[row * n + minor].clone() * qdata[row * m + column].clone();
           }
-          let factor = x_dot_u / unsafe { (self.rdiag.get_unchecked(minor).clone() * self.qr.get_data().get_unchecked(minor * n + minor).clone()) };
+          let factor = x_dot_u / (self.rdiag[minor].clone() * self.qr.get_data()[minor * n + minor].clone());
 
           for row in minor..m {
-            unsafe { *qdata.get_unchecked_mut(row * m + column) = qdata.get_unchecked(row * m + column).clone() + factor * self.qr.get_data().get_unchecked(row * n + minor).clone(); }
+            qdata[row * m + column] = qdata[row * m + column].clone() + factor * self.qr.get_data()[row * n + minor].clone();
           }
         }
       }
@@ -213,11 +213,11 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
       for j in 0..nx {
         let mut s : T = num::zero();
         for i in k..m {
-          unsafe { s = s + self.qr.get_data().get_unchecked(i * self.qr.cols() + k).clone() * xdata.get_unchecked(i * nx + j).clone(); }
+          s = s + self.qr.get_data()[i * self.qr.cols() + k].clone() * xdata[i * nx + j].clone();
         }
-        unsafe { s = - s / self.qr.get_data().get_unchecked(k * self.qr.cols() + k).clone(); }
+        s = - s / self.qr.get_data()[k * self.qr.cols() + k].clone();
         for i in k..m {
-          unsafe { *xdata.get_unchecked_mut(i * nx + j) = xdata.get_unchecked(i * nx + j).clone() + s * self.qr.get_data().get_unchecked(i * self.qr.cols() + k).clone(); }
+          xdata[i * nx + j] = xdata[i * nx + j].clone() + s * self.qr.get_data()[i * self.qr.cols() + k].clone();
         }
       }
     }
@@ -225,11 +225,11 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // Solve R*X = Y;
     for k in (0..n).rev() {
       for j in 0..nx {
-        unsafe { *xdata.get_unchecked_mut(k * nx + j) = xdata.get_unchecked(k * nx + j).clone() / self.rdiag.get_unchecked(k).clone(); }
+        xdata[k * nx + j] = xdata[k * nx + j].clone() / self.rdiag[k].clone();
       }
       for i in 0..k {
         for j in 0..nx {
-          unsafe { *xdata.get_unchecked_mut(i * nx + j) = xdata.get_unchecked(i * nx + j).clone() - xdata.get_unchecked(k * nx + j).clone() * self.qr.get_data().get_unchecked(i * self.qr.cols() + k).clone(); }
+          xdata[i * nx + j] = xdata[i * nx + j].clone() - xdata[k * nx + j].clone() * self.qr.get_data()[i * self.qr.cols() + k].clone();
         }
       }
     }

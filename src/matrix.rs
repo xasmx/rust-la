@@ -53,20 +53,20 @@ impl<T> Matrix<T> {
 
   pub fn get_ref<'lt>(&'lt self, row : usize, col : usize) -> &'lt T {
     assert!(row < self.no_rows && col < self.cols());
-    unsafe { self.data.get_unchecked(row * self.cols() + col) }
+    &self.data[row * self.cols() + col]
   }
 
   pub fn get_mref<'lt>(&'lt mut self, row : usize, col : usize) -> &'lt mut T {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
-    unsafe { self.data.get_unchecked_mut(row * no_cols + col) }
+    &mut self.data[row * no_cols + col]
   }
 
   pub fn map<S>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = f(self.data.get_unchecked(i)); }
+      d[i] = f(&self.data[i]);
     }
     Matrix {
       no_rows: self.no_rows,
@@ -76,7 +76,7 @@ impl<T> Matrix<T> {
 
   pub fn mmap(&mut self, f : &Fn(&T) -> T) {
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = f(self.data.get_unchecked(i)); }
+      self.data[i] = f(&self.data[i]);
     }
   }
 
@@ -86,7 +86,7 @@ impl<T> Matrix<T> {
     let mut data = init.clone();
     let mut data_idx = 0;
     for i in 0..self.data.len() {
-      unsafe { *data.get_unchecked_mut(data_idx) = f(data.get_unchecked(data_idx), self.data.get_unchecked(i)); }
+      data[data_idx] = f(&data[data_idx], &self.data[i]);
       data_idx += 1;
       data_idx %= data.len();
     }
@@ -113,10 +113,10 @@ impl<T : Num + Clone> Matrix<T> {
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
+      d[i] = num::zero();
     }
     for i in 0..cmp::min(m, n) {
-      unsafe { *d.get_unchecked_mut(i * n + i) = num::one(); }
+      d[i * n + i] = num::one();
     }
     Matrix { no_rows : m, data : d }
   }
@@ -125,7 +125,7 @@ impl<T : Num + Clone> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
+      d[i] = num::zero();
     }
     Matrix {
       no_rows : no_rows,
@@ -138,10 +138,10 @@ impl<T : Num + Clone> Matrix<T> {
     let elems = size * size;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
+      d[i] = num::zero();
     }
     for i in 0..size {
-      unsafe { *d.get_unchecked_mut(i * size + i) = data.get_unchecked(i).clone(); }
+      d[i * size + i] = data[i].clone();
     }
     Matrix::new(size, size, d)
   }
@@ -153,11 +153,11 @@ impl<T : Num + Clone> Matrix<T> {
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
+      d[i] = num::zero();
     }
 
     for i in 0..min_dim {
-      unsafe { *d.get_unchecked_mut(i * n + i) = data.get_unchecked(i).clone(); }
+      d[i * n + i] = data[i].clone();
     }
     Matrix::new(m, n, d)
   }
@@ -165,7 +165,7 @@ impl<T : Num + Clone> Matrix<T> {
   pub fn zero_vector(no_rows : usize) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
     for i in 0..no_rows {
-      unsafe { *d.get_unchecked_mut(i) = num::zero(); }
+      d[i] = num::zero();
     }
     Matrix { no_rows : no_rows, data : d }
   }
@@ -173,7 +173,7 @@ impl<T : Num + Clone> Matrix<T> {
   pub fn one_vector(no_rows : usize) -> Matrix<T> {
     let mut d : Vec<T> = alloc_dirty_vec(no_rows);
     for i in 0..no_rows {
-      unsafe { *d.get_unchecked_mut(i) = num::one(); }
+      d[i] = num::one();
     }
     Matrix { no_rows : no_rows, data : d }
   }
@@ -182,7 +182,7 @@ impl<T : Num + Clone> Matrix<T> {
 impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
   pub fn mneg(&mut self) {
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = - self.data.get_unchecked(i).clone(); }
+      self.data[i] = - self.data[i].clone();
     }
   }
 
@@ -190,7 +190,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = factor.clone() * self.data.get_unchecked(i).clone(); }
+      d[i] = factor.clone() * self.data[i].clone();
     }
     Matrix {
       no_rows: self.no_rows,
@@ -200,7 +200,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
 
   pub fn mscale(&mut self, factor : T) {
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = factor.clone() * self.data.get_unchecked(i).clone(); }
+      self.data[i] = factor.clone() * self.data[i].clone();
     }
   }
 
@@ -209,7 +209,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() + m.data.get_unchecked(i).clone(); }
+      self.data[i] = self.data[i].clone() + m.data[i].clone();
     }
   }
 
@@ -218,7 +218,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() - m.data.get_unchecked(i).clone() }
+      self.data[i] = self.data[i].clone() - m.data[i].clone()
     }
   }
 
@@ -229,7 +229,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() * m.data.get_unchecked(i).clone(); }
+      d[i] = self.data[i].clone() * m.data[i].clone();
     }
     Matrix {
       no_rows: self.no_rows,
@@ -242,7 +242,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() * m.data.get_unchecked(i).clone(); }
+      self.data[i] = self.data[i].clone() * m.data[i].clone();
     }
   }
 
@@ -253,7 +253,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() / m.data.get_unchecked(i).clone(); }
+      d[i] = self.data[i].clone() / m.data[i].clone();
     }
     Matrix {
       no_rows: self.no_rows,
@@ -266,7 +266,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
-      unsafe { *self.data.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() / m.data.get_unchecked(i).clone(); }
+      self.data[i] = self.data[i].clone() / m.data[i].clone();
     }
   }
 
@@ -281,7 +281,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
         for idx in 0..self.cols() {
           res = res + self.get(row, idx) * m.get(idx, col);
         }
-        unsafe { *d.get_unchecked_mut(row * m.cols() + col) = res; }
+        d[row * m.cols() + col] = res;
       }
     }
 
@@ -293,13 +293,13 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
 impl<T : Clone> Matrix<T> {
   pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
-    unsafe { self.data.get_unchecked(row * self.cols() + col).clone() }
+    self.data[row * self.cols() + col].clone()
   }
 
   pub fn set(&mut self, row : usize, col : usize, val : T) {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
-    unsafe { *self.data.get_unchecked_mut(row * no_cols + col) = val.clone() }
+    self.data[row * no_cols + col] = val.clone()
   }
 
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
@@ -311,12 +311,12 @@ impl<T : Clone> Matrix<T> {
     let mut dest_idx = 0;
     for _ in 0..self.no_rows {
       for _ in 0..self.cols() {
-        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(src_idx1).clone(); }
+        d[dest_idx] = self.data[src_idx1].clone();
         src_idx1 += 1;
         dest_idx += 1;
       }
       for _ in 0..m.cols() {
-        unsafe { *d.get_unchecked_mut(dest_idx) = m.data.get_unchecked(src_idx2).clone(); }
+        d[dest_idx] = m.data[src_idx2].clone();
         src_idx2 += 1;
         dest_idx += 1;
       }
@@ -332,11 +332,11 @@ impl<T : Clone> Matrix<T> {
     let elems = self.data.len() + m.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..self.data.len() {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone(); }
+      d[i] = self.data[i].clone();
     }
     let offset = self.data.len();
     for i in 0..m.data.len() {
-      unsafe { *d.get_unchecked_mut(offset + i) = m.data.get_unchecked(i).clone(); }
+      d[offset + i] = m.data[i].clone();
     }
     Matrix {
       no_rows : self.no_rows + m.no_rows,
@@ -349,7 +349,7 @@ impl<T : Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     let mut src_idx = 0;
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(src_idx).clone(); }
+      d[i] = self.data[src_idx].clone();
       src_idx += self.cols();
       if src_idx >= elems {
         src_idx -= elems;
@@ -366,22 +366,22 @@ impl<T : Clone> Matrix<T> {
     let mut visited = vec![false; self.data.len()];
 
     for cycle_idx in 1..(self.data.len() - 1) {
-      if unsafe { *visited.get_unchecked(cycle_idx) } {
+      if visited[cycle_idx] {
         continue;
       }
 
       let mut idx = cycle_idx;
-      let mut prev_value = unsafe { self.data.get_unchecked(idx).clone() };
+      let mut prev_value = self.data[idx].clone();
       loop {
         idx = (self.no_rows * idx) % (self.data.len() - 1);
-        let current_value = unsafe { self.data.get_unchecked(idx).clone() };
-        unsafe { *self.data.get_unchecked_mut(idx) = prev_value }
+        let current_value = self.data[idx].clone();
+        self.data[idx] = prev_value;
         if idx == cycle_idx {
           break;
         }
 
         prev_value = current_value;
-        unsafe { *visited.get_unchecked_mut(idx) = true; }
+        visited[idx] = true;
       }
     }
 
@@ -398,7 +398,7 @@ impl<T : Clone> Matrix<T> {
       if current_row != row {
         for current_col in 0..self.cols() {
           if current_col != col {
-            unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(source_row_idx + current_col).clone(); }
+            d[dest_idx] = self.data[source_row_idx + current_col].clone();
             dest_idx += 1;
           }
         }
@@ -423,7 +423,7 @@ impl<T : Clone> Matrix<T> {
     let mut dest_idx = 0;
     for _ in 0..rows {
       for col_offset in 0..cols {
-        unsafe { *d.get_unchecked_mut(dest_idx + col_offset) = self.data.get_unchecked(src_idx + col_offset).clone(); }
+        d[dest_idx + col_offset] = self.data[src_idx + col_offset].clone();
       }
       src_idx += self.cols();
       dest_idx += cols;
@@ -439,7 +439,7 @@ impl<T : Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(self.no_rows);
     let mut src_idx = column;
     for i in 0..self.no_rows {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(src_idx).clone(); }
+      d[i] = self.data[src_idx].clone();
       src_idx += self.cols();
     }
     Matrix {
@@ -455,10 +455,10 @@ impl<T : Clone> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     let mut dest_idx = 0;
     for row in 0..no_rows {
-      let row_idx = unsafe { *rows.get_unchecked(row) } * no_cols;
+      let row_idx = rows[row] * no_cols;
       assert!(rows[row] < self.no_rows);
       for col in 0..no_cols {
-        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(row_idx + col).clone(); }
+        d[dest_idx] = self.data[row_idx + col].clone();
         dest_idx += 1;
       }
     }
@@ -479,7 +479,7 @@ impl<T : Clone> Matrix<T> {
     for _ in 0..no_rows {
       for col in 0..no_cols {
         assert!(columns[col] < self.cols());
-        unsafe { *d.get_unchecked_mut(dest_idx) = self.data.get_unchecked(row_idx + *columns.get_unchecked(col)).clone(); }
+        d[dest_idx] = self.data[row_idx + columns[col]].clone();
         dest_idx += 1;
       }
       row_idx += self.cols();
@@ -572,7 +572,7 @@ impl<T : Rand> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = rand::random::<T>(); }
+      d[i] = rand::random::<T>();
     }
     Matrix { no_rows : no_rows, data : d }
   }
@@ -585,7 +585,7 @@ impl<'a, T : Neg<Output = T> + Clone> Neg for &'a Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = - self.data.get_unchecked(i).clone() }
+      d[i] = - self.data[i].clone()
     }
     Matrix {
       no_rows: self.no_rows,
@@ -611,7 +611,7 @@ impl <'a, 'b, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for &'b Matrix<
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() + m.data.get_unchecked(i).clone(); }
+      d[i] = self.data[i].clone() + m.data[i].clone();
     }
     Matrix {
       no_rows: self.no_rows,
@@ -651,7 +651,7 @@ impl <'a, 'b, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for &'b Matrix<
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      unsafe { *d.get_unchecked_mut(i) = self.data.get_unchecked(i).clone() - m.data.get_unchecked(i).clone(); }
+      d[i] = self.data[i].clone() - m.data[i].clone();
     }
     Matrix {
       no_rows: self.no_rows,
@@ -696,7 +696,7 @@ impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a
         for idx in 0..self.cols() {
           res = res + self.get_ref(row, idx).clone() * m.get_ref(idx, col).clone();
         }
-        unsafe { *d.get_unchecked_mut(row * m.cols() + col) = res; }
+        d[row * m.cols() + col] = res;
       }
     }
 
@@ -744,7 +744,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
     let mut sum : T = num::zero();
     let mut idx = 0;
     for _ in 0..cmp::min(self.no_rows, self.cols()) {
-      unsafe { sum = sum + self.data.get_unchecked(idx).clone(); }
+      sum = sum + self.data[idx].clone();
       idx += self.cols() + 1;
     }
     sum
@@ -789,7 +789,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      unsafe { s = s + self.data.get_unchecked(i).clone() * self.data.get_unchecked(i).clone(); }
+      s = s + self.data[i].clone() * self.data[i].clone();
     }
 
     s.sqrt()
@@ -805,7 +805,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + num::abs(unsafe { self.data.get_unchecked(i).clone() });
+      s = s + num::abs(self.data[i].clone());
     }
 
     s
@@ -821,7 +821,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + num::abs(unsafe { self.data.get_unchecked(i) }.powf(p.clone()));
+      s = s + num::abs(self.data[i].powf(p.clone()));
     }
 
     s.powf(num::one::<T>() / p)
@@ -830,7 +830,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
   pub fn frobenius_norm(&self) -> T {
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      unsafe { s = s + self.data.get_unchecked(i).clone() * self.data.get_unchecked(i).clone(); }
+      s = s + self.data[i].clone() * self.data[i].clone();
     }
 
     s.sqrt()
@@ -839,9 +839,9 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
   pub fn vector_inf_norm(&self) -> T {
     assert!(self.cols() == 1);
 
-    let mut current_max : T = num::abs(unsafe { self.data.get_unchecked(0).clone() });
+    let mut current_max : T = num::abs(self.data[0].clone());
     for i in 1..self.data.len() {
-      let v = num::abs(unsafe { self.data.get_unchecked(i).clone() });
+      let v = num::abs(self.data[i].clone());
       if v > current_max {
         current_max = v;
       }
@@ -869,7 +869,7 @@ impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
   pub fn approx_eq(&self, m : &Matrix<T>) -> bool {
     if self.rows() != m.rows() || self.cols() != m.cols() { return false };
     for i in 0..self.data.len() {
-      if !unsafe { self.data.get_unchecked(i).clone() }.approx_eq(unsafe { m.data.get_unchecked(i) }) { return false }
+      if !self.data[i].clone().approx_eq(&m.data[i]) { return false }
     }
     true
   }
