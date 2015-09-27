@@ -448,7 +448,7 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn permute_rows(&self, rows : &Vec<usize>) -> Matrix<T> {
+  pub fn permute_rows(&self, rows : &[usize]) -> Matrix<T> {
     let no_rows = rows.len();
     let no_cols = self.cols();
     let elems = no_rows * no_cols;
@@ -469,7 +469,7 @@ impl<T : Clone> Matrix<T> {
     }
   }
 
-  pub fn permute_columns(&self, columns : &Vec<usize>) -> Matrix<T> {
+  pub fn permute_columns(&self, columns : &[usize]) -> Matrix<T> {
     let no_rows = self.no_rows;
     let no_cols = columns.len();
     let elems = no_rows * no_cols;
@@ -1138,29 +1138,29 @@ fn test_get_column_out_of_bounds() {
 #[test]
 fn test_permute_rows() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  assert!(m.permute_rows(&vec![1, 0, 2]).data == vec![4, 5, 6, 1, 2, 3, 7, 8, 9]);
-  assert!(m.permute_rows(&vec![2, 1]).data == vec![7, 8, 9, 4, 5, 6]);
+  assert!(m.permute_rows(&[1, 0, 2]).data == vec![4, 5, 6, 1, 2, 3, 7, 8, 9]);
+  assert!(m.permute_rows(&[2, 1]).data == vec![7, 8, 9, 4, 5, 6]);
 }
 
 #[test]
 #[should_panic]
 fn test_permute_rows_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let _ = m.permute_rows(&vec![1, 0, 5]);
+  let _ = m.permute_rows(&[1, 0, 5]);
 }
 
 #[test]
 fn test_permute_columns() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  assert!(m.permute_columns(&vec![1, 0, 2]).data == vec![2, 1, 3, 5, 4, 6, 8, 7, 9]);
-  assert!(m.permute_columns(&vec![1, 2]).data == vec![2, 3, 5, 6, 8, 9]);
+  assert!(m.permute_columns(&[1, 0, 2]).data == vec![2, 1, 3, 5, 4, 6, 8, 7, 9]);
+  assert!(m.permute_columns(&[1, 2]).data == vec![2, 3, 5, 6, 8, 9]);
 }
 
 #[test]
 #[should_panic]
 fn test_permute_columns_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let _ = m.permute_columns(&vec![1, 0, 5]);
+  let _ = m.permute_columns(&[1, 0, 5]);
 }
 
 #[test]
