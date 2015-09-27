@@ -2,6 +2,11 @@
 name = "la"
 version = "0.1.0"
 authors = ["Sami Nopanen <snopanen@gmail.com>"]
+license = "Apache-2.0"
+description = "Linear algebra library for the Rust programming language."
+documentation = "http://xasmx.github.io/rust-la/doc/la/index.html"
+homepage = "https://github.com/xasmx/rust-la"
+repository = "https://github.com/xasmx/rust-la"
 
 [dependencies]
 num = "0.1.25"

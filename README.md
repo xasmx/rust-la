@@ -6,6 +6,15 @@ Linear algebra library for the Rust programming language.
 
 See [here](http://xasmx.github.io/rust-la/doc/la/index.html).
 
+## Usage
+
+To use this crate, add la as a dependency to your project's Cargo.toml:
+
+```
+[dependencies]
+la = "0.1.0"
+```
+
 ## Features
 
 * BLAS
@@ -19,10 +28,4 @@ See [here](http://xasmx.github.io/rust-la/doc/la/index.html).
   * SVD.
 
 Currently only dense matrixes.
-
-## Building
-
-~~~
-make
-~~~
 
