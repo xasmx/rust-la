@@ -1,6 +1,6 @@
 # rust-la
 
-[![Build Status](https://travis-ci.org/xasmx/rust-la?branch=master)](https://travis-ci.org/xasmx/rust-la)
+[![Build Status](https://travis-ci.org/xasmx/rust-la.svg?branch=master)](https://travis-ci.org/xasmx/rust-la)
 
 Linear algebra library for the Rust programming language.
 
