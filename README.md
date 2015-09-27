@@ -1,5 +1,7 @@
 # rust-la
 
+[![Build Status](https://travis-ci.org/xasmx/rust-la?branch=master)](https://travis-ci.org/xasmx/rust-la)
+
 Linear algebra library for the Rust programming language.
 
 ## Documentation
@@ -27,5 +29,5 @@ la = "0.1.0"
   * Eigen
   * SVD.
 
-Currently only dense matrixes.
+Only dense matrixes.
 
