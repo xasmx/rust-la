@@ -22,7 +22,7 @@ pub struct Matrix<T> {
   data : Vec<T>
 }
 
-impl<T> Matrix<T> {
+impl<T : Copy> Matrix<T> {
   pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
     assert!(no_rows * no_cols == data.len());
     assert!(no_rows > 0 && no_cols > 0);
@@ -62,7 +62,7 @@ impl<T> Matrix<T> {
     &mut self.data[row * no_cols + col]
   }
 
-  pub fn map<S>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
+  pub fn map<S : Copy>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
@@ -80,7 +80,7 @@ impl<T> Matrix<T> {
     }
   }
 
-  pub fn reduce<S : Clone>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
+  pub fn reduce<S : Copy>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
     assert!(init.len() == self.cols());
 
     let mut data = init.clone();
@@ -108,7 +108,7 @@ impl<T> Matrix<T> {
   }
 }
 
-impl<T : Num + Clone> Matrix<T> {
+impl<T : Num + Copy> Matrix<T> {
   pub fn id(m : usize, n : usize) -> Matrix<T> {
     let elems = m * n;
     let mut d : Vec<T> = alloc_dirty_vec(elems);
@@ -179,7 +179,7 @@ impl<T : Num + Clone> Matrix<T> {
   }
 }
 
-impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
+impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
   pub fn mneg(&mut self) {
     for i in 0..self.data.len() {
       self.data[i] = - self.data[i].clone();
@@ -290,7 +290,7 @@ impl<T : Num + Neg<Output = T> + Clone> Matrix<T> {
 }
 
 
-impl<T : Clone> Matrix<T> {
+impl<T : Copy> Matrix<T> {
   pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
     self.data[row * self.cols() + col].clone()
@@ -534,13 +534,13 @@ impl<T : Clone> Matrix<T> {
   }
 }
 
-impl<T : Debug> Matrix<T> {
+impl<T : Debug + Copy> Matrix<T> {
   pub fn print(&self) {
     print!("{:?}", self);
   }
 }
 
-impl<T : Debug> Debug for Matrix<T> {
+impl<T : Debug + Copy> Debug for Matrix<T> {
   // fmt implementation borrowed (with changes) from matrixrs <https://github.com/doomsplayer/matrixrs>.
   fn fmt(&self, fmt: &mut Formatter) -> Result {
     let max_width =
@@ -567,7 +567,7 @@ impl<T : Debug> Debug for Matrix<T> {
   }
 }
 
-impl<T : Rand> Matrix<T> {
+impl<T : Rand + Copy> Matrix<T> {
   pub fn random(no_rows : usize, no_cols : usize) -> Matrix<T> {
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
@@ -578,7 +578,7 @@ impl<T : Rand> Matrix<T> {
   }
 }
 
-impl<'a, T : Neg<Output = T> + Clone> Neg for &'a Matrix<T> {
+impl<'a, T : Neg<Output = T> + Copy> Neg for &'a Matrix<T> {
   type Output = Matrix<T>;
 
   fn neg(self) -> Matrix<T> {
@@ -594,14 +594,14 @@ impl<'a, T : Neg<Output = T> + Clone> Neg for &'a Matrix<T> {
   }
 }
 
-impl<T : Neg<Output = T> + Clone> Neg for Matrix<T> {
+impl<T : Neg<Output = T> + Copy> Neg for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn neg(self) -> Matrix<T> { (&self).neg() }
 }
 
-impl <'a, 'b, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for &'b Matrix<T> {
+impl <'a, 'b, T : Add<T, Output = T> + Copy> Add<&'a Matrix<T>> for &'b Matrix<T> {
   type Output = Matrix<T>;
 
   fn add(self, m: &Matrix<T>) -> Matrix<T> {
@@ -620,28 +620,28 @@ impl <'a, 'b, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for &'b Matrix<
   }
 }
 
-impl <'a, T : Add<T, Output = T> + Clone> Add<Matrix<T>> for &'a Matrix<T> {
+impl <'a, T : Add<T, Output = T> + Copy> Add<Matrix<T>> for &'a Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn add(self, m: Matrix<T>) -> Matrix<T> { self + &m }
 }
 
-impl <'a, T : Add<T, Output = T> + Clone> Add<&'a Matrix<T>> for Matrix<T> {
+impl <'a, T : Add<T, Output = T> + Copy> Add<&'a Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn add(self, m: &Matrix<T>) -> Matrix<T> { (&self) + m }
 }
 
-impl <T : Add<T, Output = T> + Clone> Add<Matrix<T>> for Matrix<T> {
+impl <T : Add<T, Output = T> + Copy> Add<Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn add(self, m: Matrix<T>) -> Matrix<T> { (&self) + &m }
 }
 
-impl <'a, 'b, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for &'b Matrix<T> {
+impl <'a, 'b, T : Sub<T, Output = T> + Copy> Sub<&'a Matrix<T>> for &'b Matrix<T> {
   type Output = Matrix<T>;
 
   fn sub(self, m: &Matrix<T>) -> Matrix<T> {
@@ -660,21 +660,21 @@ impl <'a, 'b, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for &'b Matrix<
   }
 }
 
-impl <'a, T : Sub<T, Output = T> + Clone> Sub<Matrix<T>> for &'a Matrix<T> {
+impl <'a, T : Sub<T, Output = T> + Copy> Sub<Matrix<T>> for &'a Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn sub(self, m: Matrix<T>) -> Matrix<T> { self - &m }
 }
 
-impl <'a, T : Sub<T, Output = T> + Clone> Sub<&'a Matrix<T>> for Matrix<T> {
+impl <'a, T : Sub<T, Output = T> + Copy> Sub<&'a Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn sub(self, m: &Matrix<T>) -> Matrix<T> { (&self) - m }
 }
 
-impl <T : Sub<T, Output = T> + Clone> Sub<Matrix<T>> for Matrix<T> {
+impl <T : Sub<T, Output = T> + Copy> Sub<Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
@@ -682,7 +682,7 @@ impl <T : Sub<T, Output = T> + Clone> Sub<Matrix<T>> for Matrix<T> {
 }
 
 
-impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a Matrix<T>> for &'b Matrix<T> {
+impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Copy> Mul<&'a Matrix<T>> for &'b Matrix<T> {
   type Output = Matrix<T>;
 
   fn mul(self, m: &'a Matrix<T>) -> Matrix<T> {
@@ -707,39 +707,39 @@ impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a
   }
 }
 
-impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<Matrix<T>> for &'a Matrix<T> {
+impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Copy> Mul<Matrix<T>> for &'a Matrix<T> {
   type Output = Matrix<T>;
 
   fn mul(self, m: Matrix<T>) -> Matrix<T> { self * &m }
 }
 
-impl<T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<Matrix<T>> for Matrix<T> {
+impl<T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Copy> Mul<Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   fn mul(self, m: Matrix<T>) -> Matrix<T> { (&self) * &m }
 }
 
-impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Clone> Mul<&'a Matrix<T>> for Matrix<T> {
+impl<'a, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Copy> Mul<&'a Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   fn mul(self, m: &'a Matrix<T>) -> Matrix<T> { (&self) * m }
 }
 
-impl<T : Clone> Index<(usize, usize)> for Matrix<T> {
+impl<T : Copy> Index<(usize, usize)> for Matrix<T> {
   type Output = T;
 
   #[inline]
   fn index<'a>(&'a self, (y, x): (usize, usize)) -> &'a T { self.get_ref(y, x) }
 }
 
-impl<'a, T : Clone> BitOr<&'a Matrix<T>> for Matrix<T> {
+impl<'a, T : Copy> BitOr<&'a Matrix<T>> for Matrix<T> {
   type Output = Matrix<T>;
 
   #[inline]
   fn bitor(self, rhs: &Matrix<T>) -> Matrix<T> { self.cr(rhs) }
 }
 
-impl<T : Float + ApproxEq<T> + Signed + Clone> Matrix<T> {
+impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
   pub fn trace(&self) -> T {
     let mut sum : T = num::zero();
     let mut idx = 0;

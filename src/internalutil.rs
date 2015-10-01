@@ -4,7 +4,7 @@ use num;
 use num::{Float, Signed, One, Zero};
 
 #[inline]
-pub fn alloc_dirty_vec<T>(n : usize) -> Vec<T> {
+pub fn alloc_dirty_vec<T : Copy>(n : usize) -> Vec<T> {
   let mut v : Vec<T> = vec::Vec::with_capacity(n);
   unsafe {
     v.set_len(n);

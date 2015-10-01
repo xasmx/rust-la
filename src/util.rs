@@ -6,7 +6,7 @@ use std::vec;
 
 use Matrix;
 
-pub fn read_csv<T>(buf_reader_name : &str, parser : &Fn(&str) -> T) -> Matrix<T> {
+pub fn read_csv<T : Copy>(buf_reader_name : &str, parser : &Fn(&str) -> T) -> Matrix<T> {
   let mut data = vec::Vec::with_capacity(16384);
   let mut row_count = 0;
   let mut col_count = None;
