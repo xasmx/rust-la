@@ -3,17 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="The la library documentation.">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `SVD` struct in crate `la`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, SVD">
 
     <title>la::SVD - Rust</title>
 
-    <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro:400,600'
-          rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="../main.css">
 
     
+    
 </head>
-<body>
+<body class="rustdoc">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -21,9 +22,11 @@
     </div>
     <![endif]-->
 
+    
+
     <section class="sidebar">
         
-        <p class='location'><a href='index.html'>la</a></p><div class='block mod'><h2>Modules</h2><a class='mod ' href='eig/index.html'>eig</a><a class='mod ' href='macros/index.html'>macros</a><a class='mod ' href='util/index.html'>util</a></div><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CholeskyDecomposition.html'>CholeskyDecomposition</a><a class='struct ' href='struct.EigenDecomposition.html'>EigenDecomposition</a><a class='struct ' href='struct.LUDecomposition.html'>LUDecomposition</a><a class='struct ' href='struct.Matrix.html'>Matrix</a><a class='struct ' href='struct.QRDecomposition.html'>QRDecomposition</a><a class='struct current' href='struct.SVD.html'>SVD</a></div><div class='block trait'><h2>Traits</h2><a class='trait ' href='trait.ApproxEq.html'>ApproxEq</a></div>
+        <p class='location'><a href='index.html'>la</a></p><script>window.sidebarCurrent = {name: 'SVD', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -31,14 +34,18 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Search documentation..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'>Struct <a href='index.html'>la</a>::<a class='struct' href=''>SVD</a><a class='source' id='src-21835' href='../src/la/src/decomp/svd.rs.html#21-25'>[src]</a></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>la</a>::<wbr><a class='struct' href=''>SVD</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-18352' class='srclink' href='../src/la/decomp/svd.rs.html#23-27' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct SVD&lt;T&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>Singular Value Decomposition.</p>
@@ -54,12 +61,12 @@ sigma[0] &gt;= sigma[1] &gt;= ... &gt;= sigma[n-1].</p>
 
 <p>The singular value decompostion always exists. The matrix condition number
 and the effective numerical rank can be computed from this decomposition.</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='http://doc.rust-lang.org/std/num/trait.FloatMath.html' title='std::num::FloatMath'>FloatMath</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt;&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h3><div class='methods'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='../num/traits/trait.Float.html' title='num::traits::Float'>Float</a> + <a class='trait' href='../num/traits/trait.Signed.html' title='num::traits::Signed'>Signed</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt;&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h4>
 <div class='docblock'><p>Calculates SVD.</p>
 </div><h4 id='method.get_u' class='method'><code>fn <a href='#method.get_u' class='fnname'>get_u</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_s' class='method'><code>fn <a href='#method.get_s' class='fnname'>get_s</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_v' class='method'><code>fn <a href='#method.get_v' class='fnname'>get_v</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
-<h4 id='method.rank' class='method'><code>fn <a href='#method.rank' class='fnname'>rank</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/std/primitive.uint.html'>uint</a></code></h4>
+<h4 id='method.rank' class='method'><code>fn <a href='#method.rank' class='fnname'>rank</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <h4 id='method.direct' class='method'><code>fn <a href='#method.direct' class='fnname'>direct</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h4>
 <div class='docblock'><p>Calculates SVD using the direct method. Note that calculating it this way
 is not numerically stable, so it is mostly useful for testing purposes.</p>
@@ -69,35 +76,48 @@ is not numerically stable, so it is mostly useful for testing purposes.</p>
     <section class="footer"></section>
 
     <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&uarr;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&darr;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
-        </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code> (or <code>str</code>), <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
+        <div>
+            <div class="shortcuts">
+                <h1>Keyboard Shortcuts</h1>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h1>Search Tricks</h1>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>typedef</code> (or
+                    <code>tdef</code>).
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
     </div>
+
+    
 
     <script>
         window.rootPath = "../";
