@@ -15,12 +15,12 @@ pub fn alloc_dirty_vec<T : Copy>(n : usize) -> Vec<T> {
 // Ported from JAMA.
 // sqrt(a^2 + b^2) without under/overflow.
 pub fn hypot<T : Zero + One + Signed + PartialOrd + Float + Clone>(a : T, b : T) -> T {
-  if num::abs(a.clone()) > num::abs(b.clone()) {
+  if num::abs(a) > num::abs(b) {
     let r = b / a;
-    return num::abs(a.clone()) * (num::one::<T>() + r * r).sqrt();
+    return num::abs(a) * (num::one::<T>() + r * r).sqrt();
   } else if b != Zero::zero() {
     let r = a / b;
-    return num::abs(b.clone()) * (num::one::<T>() + r * r).sqrt();
+    return num::abs(b) * (num::one::<T>() + r * r).sqrt();
   } else {
     return Zero::zero();
   }

@@ -71,40 +71,40 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
         // Compute 2-norm of k-th column without under/overflow.
         sdata[k] = num::zero();
         for i in k..m {
-          sdata[k] = hypot(sdata[k].clone(), adata[i * n + k].clone());
+          sdata[k] = hypot(sdata[k], adata[i * n + k]);
         }
-        if sdata[k].clone() != num::zero() {
-          if adata[k * n + k].clone() < num::zero() {
-            sdata[k] = - sdata[k].clone();
+        if sdata[k] != num::zero() {
+          if adata[k * n + k] < num::zero() {
+            sdata[k] = - sdata[k];
           }
           for i in k..m {
-            adata[i * n + k] = adata[i * n + k].clone() / sdata[k].clone();
+            adata[i * n + k] = adata[i * n + k] / sdata[k];
           }
-          adata[k * n + k] = adata[k * n + k].clone() + num::one();
+          adata[k * n + k] = adata[k * n + k] + num::one();
         }
-        sdata[k] = - sdata[k].clone();
+        sdata[k] = - sdata[k];
       }
       for j in (k + 1)..n {
-        if (k < nct) && (sdata[k].clone() != num::zero()) {
+        if (k < nct) && (sdata[k] != num::zero()) {
           // Apply the transformation.
           let mut t : T = num::zero();
           for i in k..m {
-            t = t + adata[i * n + k].clone() * adata[i * n + j].clone();
+            t = t + adata[i * n + k] * adata[i * n + j];
           }
-          t = - t / adata[k * n + k].clone();
+          t = - t / adata[k * n + k];
           for i in k..m {
-            adata[i * n + j] = adata[i * n + j].clone() + t * adata[i * n + k].clone();
+            adata[i * n + j] = adata[i * n + j] + t * adata[i * n + k];
           }
         }
         // Place the k-th row of A into e for the
         // subsequent calculation of the row transformation.
-        edata[j] = adata[k * n + j].clone();
+        edata[j] = adata[k * n + j];
       }
 
       if k < nct {
         // Place the transformation in U for subsequent back multiplication.
         for i in k..m {
-          udata[i * m + k] = adata[i * n + k].clone();
+          udata[i * m + k] = adata[i * n + k];
         }
       }
 
@@ -113,39 +113,39 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
         // Compute 2-norm without under/overflow.
         edata[k] = num::zero();
         for i in (k + 1)..n {
-          edata[k] = hypot(edata[k].clone(), edata[i].clone());
+          edata[k] = hypot(edata[k], edata[i]);
         }
-        if edata[k].clone() != num::zero() {
-          if edata[k + 1].clone() < num::zero() {
-            edata[k] = - edata[k].clone();
+        if edata[k] != num::zero() {
+          if edata[k + 1] < num::zero() {
+            edata[k] = - edata[k];
           }
           for i in (k + 1)..n {
-            edata[i] = edata[i].clone() / edata[k].clone();
+            edata[i] = edata[i] / edata[k];
           }
-          edata[k + 1] = edata[k + 1].clone() + num::one();
+          edata[k + 1] = edata[k + 1] + num::one();
         }
-        edata[k] = - edata[k].clone();
-        if (k + 1 < m) && (edata[k].clone() != num::zero()) {
+        edata[k] = - edata[k];
+        if (k + 1 < m) && (edata[k] != num::zero()) {
           // Apply the transformation.
           for i in (k + 1)..m {
             workdata[i] = num::zero();
           }
           for j in (k + 1)..n {
             for i in (k + 1)..m {
-              workdata[i] = workdata[i].clone() + edata[j].clone() * adata[i * n + j].clone();
+              workdata[i] = workdata[i] + edata[j] * adata[i * n + j];
             }
           }
           for j in (k + 1)..n {
-            let t = - edata[j].clone() / edata[k + 1].clone();
+            let t = - edata[j] / edata[k + 1];
             for i in (k + 1)..m {
-              adata[i * n + j] = adata[i * n + j].clone() + t * workdata[i].clone();
+              adata[i * n + j] = adata[i * n + j] + t * workdata[i];
             }
           }
         }
 
         // Place the transformation in V for subsequent back multiplication.
         for i in (k + 1)..n {
-          vdata[i * n + k] = edata[i].clone();
+          vdata[i * n + k] = edata[i];
         }
       }
     }
@@ -153,13 +153,13 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
     // Set up the final bidiagonal matrix or order p.
     let mut p = cmp::min(n, m + 1);
     if nct < n {
-      sdata[nct] = adata[nct * n + nct].clone();
+      sdata[nct] = adata[nct * n + nct];
     }
     if m < p {
       sdata[p - 1] = num::zero();
     }
     if (nrt + 1) < p {
-      edata[nrt] = adata[nrt * n + (p - 1)].clone();
+      edata[nrt] = adata[nrt * n + (p - 1)];
     }
     edata[p - 1] = num::zero();
 
@@ -171,21 +171,21 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
       udata[j * m + j] = num::one();
     }
     for k in (0..nct).rev() {
-      if sdata[k].clone() != num::zero() {
+      if sdata[k] != num::zero() {
         for j in (k + 1)..m {
           let mut t : T = num::zero();
           for i in k..m {
-            t = t + udata[i * m + k].clone() * udata[i * m + j].clone();
+            t = t + udata[i * m + k] * udata[i * m + j];
           }
-          t = - t / udata[k * m + k].clone();
+          t = - t / udata[k * m + k];
           for i in k..m {
-            udata[i * m + j] = udata[i * m + j].clone() + t * udata[i * m + k].clone();
+            udata[i * m + j] = udata[i * m + j] + t * udata[i * m + k];
           }
         }
         for i in k..m {
-          udata[i * m + k] = - udata[i * m + k].clone();
+          udata[i * m + k] = - udata[i * m + k];
         }
-        udata[k * m + k] = num::one::<T>() + udata[k * m + k].clone();
+        udata[k * m + k] = num::one::<T>() + udata[k * m + k];
         for i in 0..k {
           udata[(i as usize) * m + k] = num::zero();
         }
@@ -203,15 +203,15 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
 
     // Generate V.
     for k in (0..n).rev() {
-      if (k < nrt) && (edata[k].clone() != num::zero()) {
+      if (k < nrt) && (edata[k] != num::zero()) {
         for j in (k + 1)..n {
           let mut t : T = num::zero();
           for i in (k + 1)..n {
-            t = t + vdata[i * n + k].clone() * vdata[i * n + j].clone();
+            t = t + vdata[i * n + k] * vdata[i * n + j];
           }
-          t = - t / vdata[(k + 1) * n + k].clone();
+          t = - t / vdata[(k + 1) * n + k];
           for i in (k + 1)..n {
-            vdata[i * n + j] = vdata[i * n + j].clone() + t * vdata[i * n + k].clone();
+            vdata[i * n + j] = vdata[i * n + j] + t * vdata[i * n + k];
           }
         }
       }
@@ -240,7 +240,7 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
       let kase;
       let mut k = (p as isize) - 2;
       while k >= 0 {
-        if num::abs(edata[k as usize].clone()) <= (tiny + eps * (num::abs(sdata[k as usize].clone()) + num::abs(sdata[(k + 1) as usize].clone()))) {
+        if num::abs(edata[k as usize]) <= (tiny + eps * (num::abs(sdata[k as usize]) + num::abs(sdata[(k + 1) as usize]))) {
           edata[k as usize] = num::zero();
           break;
         }
@@ -252,9 +252,9 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
       } else {
         let mut ks = (p as isize) - 1;
         while ks > k {
-          let t = (if ks != (p as isize) { num::abs(edata[ks as usize].clone()) } else { num::zero() })
-                  + (if ks != (k + 1) { num::abs(edata[(ks - 1) as usize].clone()) } else { num::zero() });
-          if num::abs(sdata[ks as usize].clone()) <= (tiny + eps * t) {
+          let t = (if ks != (p as isize) { num::abs(edata[ks as usize]) } else { num::zero() })
+                  + (if ks != (k + 1) { num::abs(edata[(ks - 1) as usize]) } else { num::zero() });
+          if num::abs(sdata[ks as usize]) <= (tiny + eps * t) {
             sdata[ks as usize] = num::zero();
             break;
           }
@@ -274,41 +274,41 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
       // Perform the task indicated by kase.
       if kase == 1 {
         // Deflate negligible s(p).
-        let mut f = edata[p - 2].clone();
+        let mut f = edata[p - 2];
         edata[p - 2] = num::zero();
         let mut j = (p as isize) - 2;
         while j >= k {
-          let mut t = hypot(sdata[j as usize].clone(), f.clone());
-          let cs = sdata[j as usize].clone() / t;
+          let mut t = hypot(sdata[j as usize], f);
+          let cs = sdata[j as usize] / t;
           let sn = f / t;
           sdata[j as usize] = t;
           if j != k {
-            f = - sn * edata[(j - 1) as usize].clone();
-            edata[(j - 1) as usize] = cs * edata[(j - 1) as usize].clone();
+            f = - sn * edata[(j - 1) as usize];
+            edata[(j - 1) as usize] = cs * edata[(j - 1) as usize];
           }
 
           for i in 0..n {
-            t = cs * vdata[i * n + (j as usize)].clone() + sn * vdata[i * n + (p - 1)].clone();
-            vdata[i * n + (p - 1)] = - sn * vdata[i * n + (j as usize)].clone() + cs * vdata[i * n + (p - 1)].clone();
+            t = cs * vdata[i * n + (j as usize)] + sn * vdata[i * n + (p - 1)];
+            vdata[i * n + (p - 1)] = - sn * vdata[i * n + (j as usize)] + cs * vdata[i * n + (p - 1)];
             vdata[i * n + (j as usize)] = t;
           }
           j -= 1;
         }
       } else if kase == 2 {
         // Split at negligible s(k).
-        let mut f = edata[(k - 1) as usize].clone();
+        let mut f = edata[(k - 1) as usize];
         edata[(k - 1) as usize] = num::zero();
         for j in k..(p as isize) {
-          let mut t = hypot(sdata[j as usize].clone(), f.clone());
-          let cs = sdata[j as usize].clone() / t;
+          let mut t = hypot(sdata[j as usize], f);
+          let cs = sdata[j as usize] / t;
           let sn = f / t;
           sdata[j as usize] = t;
-          f = - sn * edata[j as usize].clone();
-          edata[j as usize] = cs * edata[j as usize].clone();
+          f = - sn * edata[j as usize];
+          edata[j as usize] = cs * edata[j as usize];
 
           for i in 0..m {
-            t = cs * udata[i * m + (j as usize)].clone() + sn * udata[i * m + ((k as usize) - 1)].clone();
-            udata[i * m + ((k as usize) - 1)] = - sn * udata[i * m + (j as usize)].clone() + cs * udata[i * m + ((k as usize) - 1)].clone();
+            t = cs * udata[i * m + (j as usize)] + sn * udata[i * m + ((k as usize) - 1)];
+            udata[i * m + ((k as usize) - 1)] = - sn * udata[i * m + (j as usize)] + cs * udata[i * m + ((k as usize) - 1)];
             udata[i * m + (j as usize)] = t;
           }
         }
@@ -316,16 +316,16 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
         // Perform one qr step.
 
         // Calculate the shift.
-        let scale = num::abs(sdata[p - 1].clone())
-                      .max(num::abs(sdata[p - 2].clone()))
-                      .max(num::abs(edata[p - 2].clone()))
-                      .max(num::abs(sdata[k as usize].clone()))
-                      .max(num::abs(edata[k as usize].clone()));
-        let sp = sdata[p - 1].clone() / scale;
-        let spm1 = sdata[p - 2].clone() / scale;
-        let epm1 = edata[p - 2].clone() / scale;
-        let sk = sdata[k as usize].clone() / scale;
-        let ek = edata[k as usize].clone() / scale;
+        let scale = num::abs(sdata[p - 1])
+                      .max(num::abs(sdata[p - 2]))
+                      .max(num::abs(edata[p - 2]))
+                      .max(num::abs(sdata[k as usize]))
+                      .max(num::abs(edata[k as usize]));
+        let sp = sdata[p - 1] / scale;
+        let spm1 = sdata[p - 2] / scale;
+        let epm1 = edata[p - 2] / scale;
+        let sk = sdata[k as usize] / scale;
+        let ek = edata[k as usize] / scale;
         let b = ((spm1 + sp) * (spm1 - sp) + epm1 * epm1) / num::cast(2.0).unwrap();
         let c = (sp * epm1) * (sp * epm1);
         let mut shift = num::zero();
@@ -342,35 +342,35 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
 
         // Chase zeros.
         for j in k..((p as isize) - 1) {
-          let mut t = hypot(f.clone(), g.clone());
+          let mut t = hypot(f, g);
           let mut cs = f / t;
           let mut sn = g / t;
           if j != k {
             edata[(j - 1) as usize] = t;
           }
-          f = cs * sdata[j as usize].clone() + sn * edata[j as usize].clone();
-          edata[j as usize] = cs * edata[j as usize].clone() - sn * sdata[j as usize].clone();
-          g = sn * sdata[(j + 1) as usize].clone();
-          sdata[(j + 1) as usize] = cs * sdata[(j + 1) as usize].clone();
+          f = cs * sdata[j as usize] + sn * edata[j as usize];
+          edata[j as usize] = cs * edata[j as usize] - sn * sdata[j as usize];
+          g = sn * sdata[(j + 1) as usize];
+          sdata[(j + 1) as usize] = cs * sdata[(j + 1) as usize];
 
           for i in 0..n {
-            t = cs * vdata[i * n + (j as usize)].clone() + sn * vdata[i * n + ((j as usize) + 1)].clone();
-            vdata[i * n + ((j as usize) + 1)] = - sn * vdata[i * n + (j as usize)].clone() + cs * vdata[i * n + ((j as usize) + 1)].clone();
+            t = cs * vdata[i * n + (j as usize)] + sn * vdata[i * n + ((j as usize) + 1)];
+            vdata[i * n + ((j as usize) + 1)] = - sn * vdata[i * n + (j as usize)] + cs * vdata[i * n + ((j as usize) + 1)];
             vdata[i * n + (j as usize)] = t;
           }
 
-          t = hypot(f.clone(), g.clone());
+          t = hypot(f, g);
           cs = f / t;
           sn = g / t;
           sdata[j as usize] = t;
-          f = cs * edata[j as usize].clone() + sn * sdata[(j + 1) as usize].clone();
-          sdata[(j + 1) as usize] = - sn * edata[j as usize].clone() + cs * sdata[(j + 1) as usize].clone();
-          g = sn * edata[(j + 1) as usize].clone();
-          edata[(j + 1) as usize] = cs * edata[(j + 1) as usize].clone();
+          f = cs * edata[j as usize] + sn * sdata[(j + 1) as usize];
+          sdata[(j + 1) as usize] = - sn * edata[j as usize] + cs * sdata[(j + 1) as usize];
+          g = sn * edata[(j + 1) as usize];
+          edata[(j + 1) as usize] = cs * edata[(j + 1) as usize];
           if j < ((m as isize) - 1) {
             for i in 0..m {
-              t = cs * udata[i * m + (j as usize)].clone() + sn * udata[i * m + ((j as usize) + 1)].clone();
-              udata[i * m + ((j as usize) + 1)] = - sn * udata[i * m + (j as usize)].clone() + cs * udata[i * m + ((j as usize) + 1)].clone();
+              t = cs * udata[i * m + (j as usize)] + sn * udata[i * m + ((j as usize) + 1)];
+              udata[i * m + ((j as usize) + 1)] = - sn * udata[i * m + (j as usize)] + cs * udata[i * m + ((j as usize) + 1)];
               udata[i * m + (j as usize)] = t;
             }
           }
@@ -381,32 +381,32 @@ impl<T : Float + Signed + ApproxEq<T>> SVD<T> {
         // Convergence.
 
         // Make the singular values positive.
-        if sdata[k as usize].clone() <= num::zero() {
-          sdata[k as usize] = if sdata[k as usize].clone() < num::zero() { - sdata[k as usize].clone() } else { num::zero() };
+        if sdata[k as usize] <= num::zero() {
+          sdata[k as usize] = if sdata[k as usize] < num::zero() { - sdata[k as usize] } else { num::zero() };
           for i in 0..(pp + 1) {
-            vdata[i * n + (k as usize)] = - vdata[i * n + (k as usize)].clone();
+            vdata[i * n + (k as usize)] = - vdata[i * n + (k as usize)];
           }
         }
 
         // Order the singular values.
         while k < (pp as isize) {
-          if sdata[k as usize].clone() >= sdata[(k + 1) as usize].clone() {
+          if sdata[k as usize] >= sdata[(k + 1) as usize] {
             break;
           }
-          let mut t = sdata[k as usize].clone();
-          sdata[k as usize] = sdata[(k + 1) as usize].clone();
+          let mut t = sdata[k as usize];
+          sdata[k as usize] = sdata[(k + 1) as usize];
           sdata[(k + 1) as usize] = t;
           if k < ((n as isize) - 1) {
             for i in 0..n {
-              t = vdata[i * n + ((k as usize) + 1)].clone();
-              vdata[i * n + ((k as usize) + 1)] = vdata[i * n + (k as usize)].clone();
+              t = vdata[i * n + ((k as usize) + 1)];
+              vdata[i * n + ((k as usize) + 1)] = vdata[i * n + (k as usize)];
               vdata[i * n + (k as usize)] = t;
             }
           }
           if k < ((m as isize) - 1) {
             for i in 0..m {
-              t = udata[i * m + ((k as usize) + 1)].clone();
-              udata[i * m + ((k as usize) + 1)] = udata[i * m + (k as usize)].clone();
+              t = udata[i * m + ((k as usize) + 1)];
+              udata[i * m + ((k as usize) + 1)] = udata[i * m + (k as usize)];
               udata[i * m + (k as usize)] = t;
             }
           }

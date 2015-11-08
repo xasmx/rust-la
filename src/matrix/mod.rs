@@ -1,9 +1,12 @@
+mod mmatrix;
+
 use std::cmp;
 #[cfg(test)]
 use std::f32;
 use std::fmt::{Formatter, Result};
 use std::fmt::Debug;
-use std::ops::{Add, BitOr, Index, Mul, Neg, Sub};
+use std::ops::{Add, BitOr, Index, Mul, Neg, Sub, Range, RangeFrom, RangeFull, RangeTo};
+use std::option::Option;
 use std::vec::Vec;
 use num;
 use num::traits::{Float, Num, Signed};
@@ -16,11 +19,141 @@ use decomp::lu;
 use decomp::qr;
 use internalutil::{alloc_dirty_vec};
 
+//----------------------
+
 #[derive(PartialEq, Clone)]
 pub struct Matrix<T> {
   no_rows : usize,
   data : Vec<T>
 }
+
+pub trait MatrixRange<IterT : MatrixRangeIterator> {
+  fn size(&self, matrix_size : usize) -> usize;
+  fn iter(&self) -> IterT;
+}
+
+pub trait MatrixRangeIterator {
+  fn next(&mut self) -> usize;
+}
+
+//----------------------
+
+pub struct ConstantIterator {
+  index : usize
+}
+
+impl MatrixRangeIterator for ConstantIterator {
+  fn next(&mut self) -> usize { self.index }
+}
+
+impl MatrixRange<ConstantIterator> for usize {
+  fn size(&self, _matrix_size : usize) -> usize {
+    1
+  }
+
+  fn iter(&self) -> ConstantIterator {
+    ConstantIterator { index : *self }
+  }
+}
+
+//----------------------
+
+pub struct SliceRangeIterator<'a> {
+  indexes : &'a [usize],
+  slice_index : usize,
+  increment : usize
+}
+
+impl <'a> MatrixRangeIterator for SliceRangeIterator<'a> {
+  fn next(&mut self) -> usize {
+    let next_val = self.indexes[self.slice_index];
+    self.slice_index += self.increment;
+    next_val
+  }
+}
+
+impl <'a> MatrixRange<SliceRangeIterator<'a>> for &'a [usize] {
+  fn size(&self, _matrix_size : usize) -> usize {
+    self.len()
+  }
+
+  fn iter(&self) -> SliceRangeIterator<'a> {
+    SliceRangeIterator {
+      indexes : self,
+      slice_index : 0,
+      increment : 1
+    }
+  }
+}
+
+//----------------------
+
+pub struct RangeIterator {
+  index : isize,
+  increment : isize
+}
+
+impl MatrixRangeIterator for RangeIterator {
+  fn next(&mut self) -> usize {
+    let next_val = self.index;
+    self.index += self.increment;
+    next_val as usize
+  }
+}
+
+impl MatrixRange<RangeIterator> for RangeFull {
+  fn size(&self, matrix_size : usize) -> usize {
+    matrix_size
+  }
+
+  fn iter(&self) -> RangeIterator {
+    RangeIterator {
+      index : 0,
+      increment : 1
+    }
+  }
+}
+
+impl MatrixRange<RangeIterator> for Range<isize> {
+  fn size(&self, _matrix_size : usize) -> usize {
+    (self.end - self.start) as usize
+  }
+
+  fn iter(&self) -> RangeIterator {
+    RangeIterator {
+      index : self.start,
+      increment : if self.start <= self.end { 1 } else { -1 }
+    }
+  }
+}
+
+impl MatrixRange<RangeIterator> for RangeFrom<isize> {
+  fn size(&self, matrix_size : usize) -> usize {
+    matrix_size - self.start as usize
+  }
+
+  fn iter(&self) -> RangeIterator {
+    RangeIterator {
+      index : self.start,
+      increment : 1
+    }
+  }
+}
+
+impl MatrixRange<RangeIterator> for RangeTo<isize> {
+  fn size(&self, _matrix_size : usize) -> usize {
+    self.end as usize
+  }
+
+  fn iter(&self) -> RangeIterator {
+    RangeIterator {
+      index : 0,
+      increment : 1
+    }
+  }
+}
+
+//----------------------
 
 impl<T : Copy> Matrix<T> {
   pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
@@ -48,18 +181,9 @@ impl<T : Copy> Matrix<T> {
   #[inline]
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
-  #[inline]
-  pub fn get_mut_data<'a>(&'a mut self) -> &'a mut Vec<T> { &mut self.data }
-
   pub fn get_ref<'lt>(&'lt self, row : usize, col : usize) -> &'lt T {
     assert!(row < self.no_rows && col < self.cols());
     &self.data[row * self.cols() + col]
-  }
-
-  pub fn get_mref<'lt>(&'lt mut self, row : usize, col : usize) -> &'lt mut T {
-    assert!(row < self.no_rows && col < self.cols());
-    let no_cols = self.cols();
-    &mut self.data[row * no_cols + col]
   }
 
   pub fn map<S : Copy>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
@@ -71,12 +195,6 @@ impl<T : Copy> Matrix<T> {
     Matrix {
       no_rows: self.no_rows,
       data : d
-    }
-  }
-
-  pub fn mmap(&mut self, f : &Fn(&T) -> T) {
-    for i in 0..self.data.len() {
-      self.data[i] = f(&self.data[i]);
     }
   }
 
@@ -141,7 +259,7 @@ impl<T : Num + Copy> Matrix<T> {
       d[i] = num::zero();
     }
     for i in 0..size {
-      d[i * size + i] = data[i].clone();
+      d[i * size + i] = data[i];
     }
     Matrix::new(size, size, d)
   }
@@ -157,7 +275,7 @@ impl<T : Num + Copy> Matrix<T> {
     }
 
     for i in 0..min_dim {
-      d[i * n + i] = data[i].clone();
+      d[i * n + i] = data[i];
     }
     Matrix::new(m, n, d)
   }
@@ -180,45 +298,15 @@ impl<T : Num + Copy> Matrix<T> {
 }
 
 impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
-  pub fn mneg(&mut self) {
-    for i in 0..self.data.len() {
-      self.data[i] = - self.data[i].clone();
-    }
-  }
-
   pub fn scale(&self, factor : T) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = factor.clone() * self.data[i].clone();
+      d[i] = factor * self.data[i];
     }
     Matrix {
       no_rows: self.no_rows,
       data : d
-    }
-  }
-
-  pub fn mscale(&mut self, factor : T) {
-    for i in 0..self.data.len() {
-      self.data[i] = factor.clone() * self.data[i].clone();
-    }
-  }
-
-  pub fn madd(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in 0..self.data.len() {
-      self.data[i] = self.data[i].clone() + m.data[i].clone();
-    }
-  }
-
-  pub fn msub(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in 0..self.data.len() {
-      self.data[i] = self.data[i].clone() - m.data[i].clone()
     }
   }
 
@@ -229,20 +317,11 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = self.data[i].clone() * m.data[i].clone();
+      d[i] = self.data[i] * m.data[i];
     }
     Matrix {
       no_rows: self.no_rows,
       data : d
-    }
-  }
-
-  pub fn melem_mul(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in 0..self.data.len() {
-      self.data[i] = self.data[i].clone() * m.data[i].clone();
     }
   }
 
@@ -253,39 +332,12 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = self.data[i].clone() / m.data[i].clone();
+      d[i] = self.data[i] / m.data[i];
     }
     Matrix {
       no_rows: self.no_rows,
       data : d
     }
-  }
-
-  pub fn melem_div(&mut self, m : &Matrix<T>) {
-    assert!(self.no_rows == m.no_rows);
-    assert!(self.cols() == m.cols());
-
-    for i in 0..self.data.len() {
-      self.data[i] = self.data[i].clone() / m.data[i].clone();
-    }
-  }
-
-  pub fn mmul(&mut self, m : &Matrix<T>) {
-    assert!(self.cols() == m.no_rows);
-
-    let elems = self.no_rows * m.cols();
-    let mut d = alloc_dirty_vec(elems);
-    for row in 0..self.no_rows {
-      for col in 0..m.cols() {
-        let mut res : T = num::zero();
-        for idx in 0..self.cols() {
-          res = res + self.get(row, idx) * m.get(idx, col);
-        }
-        d[row * m.cols() + col] = res;
-      }
-    }
-
-    self.data = d
   }
 }
 
@@ -293,13 +345,7 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
 impl<T : Copy> Matrix<T> {
   pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
-    self.data[row * self.cols() + col].clone()
-  }
-
-  pub fn set(&mut self, row : usize, col : usize, val : T) {
-    assert!(row < self.no_rows && col < self.cols());
-    let no_cols = self.cols();
-    self.data[row * no_cols + col] = val.clone()
+    self.data[row * self.cols() + col]
   }
 
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
@@ -311,12 +357,12 @@ impl<T : Copy> Matrix<T> {
     let mut dest_idx = 0;
     for _ in 0..self.no_rows {
       for _ in 0..self.cols() {
-        d[dest_idx] = self.data[src_idx1].clone();
+        d[dest_idx] = self.data[src_idx1];
         src_idx1 += 1;
         dest_idx += 1;
       }
       for _ in 0..m.cols() {
-        d[dest_idx] = m.data[src_idx2].clone();
+        d[dest_idx] = m.data[src_idx2];
         src_idx2 += 1;
         dest_idx += 1;
       }
@@ -332,11 +378,11 @@ impl<T : Copy> Matrix<T> {
     let elems = self.data.len() + m.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..self.data.len() {
-      d[i] = self.data[i].clone();
+      d[i] = self.data[i];
     }
     let offset = self.data.len();
     for i in 0..m.data.len() {
-      d[offset + i] = m.data[i].clone();
+      d[offset + i] = m.data[i];
     }
     Matrix {
       no_rows : self.no_rows + m.no_rows,
@@ -349,7 +395,7 @@ impl<T : Copy> Matrix<T> {
     let mut d = alloc_dirty_vec(elems);
     let mut src_idx = 0;
     for i in 0..elems {
-      d[i] = self.data[src_idx].clone();
+      d[i] = self.data[src_idx];
       src_idx += self.cols();
       if src_idx >= elems {
         src_idx -= elems;
@@ -362,32 +408,6 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
-  pub fn mt(&mut self) {
-    let mut visited = vec![false; self.data.len()];
-
-    for cycle_idx in 1..(self.data.len() - 1) {
-      if visited[cycle_idx] {
-        continue;
-      }
-
-      let mut idx = cycle_idx;
-      let mut prev_value = self.data[idx].clone();
-      loop {
-        idx = (self.no_rows * idx) % (self.data.len() - 1);
-        let current_value = self.data[idx].clone();
-        self.data[idx] = prev_value;
-        if idx == cycle_idx {
-          break;
-        }
-
-        prev_value = current_value;
-        visited[idx] = true;
-      }
-    }
-
-    self.no_rows = self.cols();
-  }
-
   pub fn minor(&self, row : usize, col : usize) -> Matrix<T> {
     assert!(row < self.no_rows && col < self.cols() && self.no_rows > 1 && self.cols() > 1);
     let elems = (self.cols() - 1) * (self.no_rows - 1);
@@ -398,7 +418,7 @@ impl<T : Copy> Matrix<T> {
       if current_row != row {
         for current_col in 0..self.cols() {
           if current_col != col {
-            d[dest_idx] = self.data[source_row_idx + current_col].clone();
+            d[dest_idx] = self.data[source_row_idx + current_col];
             dest_idx += 1;
           }
         }
@@ -411,84 +431,51 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
-  pub fn sub_matrix(&self, start_row : usize, start_col : usize, end_row : usize, end_col : usize) -> Matrix<T> {
-    assert!(start_row < end_row);
-    assert!(start_col < end_col);
-    assert!((end_row - start_row) < self.no_rows && (end_col - start_col) < self.cols() && start_row != end_row && start_col != end_col);
-    let rows = end_row - start_row;
-    let cols = end_col - start_col;
-    let elems = rows * cols;
-    let mut d = alloc_dirty_vec(elems);
-    let mut src_idx = start_row * self.cols() + start_col;
-    let mut dest_idx = 0;
-    for _ in 0..rows {
-      for col_offset in 0..cols {
-        d[dest_idx + col_offset] = self.data[src_idx + col_offset].clone();
-      }
-      src_idx += self.cols();
-      dest_idx += cols;
-    }
-    Matrix {
-      no_rows : rows,
-      data : d
-    }
-  }
-
-  pub fn get_column(&self, column : usize) -> Matrix<T> {
-    assert!(column < self.cols());
-    let mut d = alloc_dirty_vec(self.no_rows);
-    let mut src_idx = column;
-    for i in 0..self.no_rows {
-      d[i] = self.data[src_idx].clone();
-      src_idx += self.cols();
-    }
-    Matrix {
-      no_rows : self.no_rows,
-      data : d
-    }
-  }
-
-  pub fn permute_rows(&self, rows : &[usize]) -> Matrix<T> {
-    let no_rows = rows.len();
-    let no_cols = self.cols();
+  pub fn sub_matrix<'a, RRI, RCI, RR, RC>(&'a self, rows : RR, cols : RC) -> Matrix<T>
+      where RRI : MatrixRangeIterator,
+            RCI : MatrixRangeIterator,
+            RR : MatrixRange<RRI>,
+            RC : MatrixRange<RCI> {
+    let no_rows = rows.size(self.rows());
+    let no_cols = cols.size(self.cols());
     let elems = no_rows * no_cols;
     let mut d = alloc_dirty_vec(elems);
     let mut dest_idx = 0;
-    for row in 0..no_rows {
-      let row_idx = rows[row] * no_cols;
-      assert!(rows[row] < self.no_rows);
-      for col in 0..no_cols {
-        d[dest_idx] = self.data[row_idx + col].clone();
-        dest_idx += 1;
-      }
-    }
-
-    Matrix {
-      no_rows : no_rows,
-      data : d
-    }
-  }
-
-  pub fn permute_columns(&self, columns : &[usize]) -> Matrix<T> {
-    let no_rows = self.no_rows;
-    let no_cols = columns.len();
-    let elems = no_rows * no_cols;
-    let mut d = alloc_dirty_vec(elems);
-    let mut dest_idx = 0;
-    let mut row_idx = 0;
+    let mut row_iter = rows.iter();
     for _ in 0..no_rows {
-      for col in 0..no_cols {
-        assert!(columns[col] < self.cols());
-        d[dest_idx] = self.data[row_idx + columns[col]].clone();
+      let row_idx = row_iter.next();
+      let src_row_start_idx = row_idx * self.cols();
+      let mut col_iter = cols.iter();
+      for _ in 0..no_cols {
+        let col_idx = col_iter.next();
+        d[dest_idx] = self.data[src_row_start_idx + col_idx];
         dest_idx += 1;
       }
-      row_idx += self.cols();
     }
-
     Matrix {
       no_rows : no_rows,
       data : d
     }
+  }
+
+  #[inline]
+  pub fn get_column(&self, column : usize) -> Matrix<T> {
+    self.sub_matrix(.., column)
+  }
+
+  #[inline]
+  pub fn get_row(&self, row : usize) -> Matrix<T> {
+    self.sub_matrix(row, ..)
+  }
+
+  #[inline]
+  pub fn permute_rows(&self, rows : &[usize]) -> Matrix<T> {
+    self.sub_matrix(rows, ..)
+  }
+
+  #[inline]
+  pub fn permute_columns(&self, columns : &[usize]) -> Matrix<T> {
+    self.sub_matrix(.., columns)
   }
 
   pub fn filter_rows(&self, f : &Fn(&Matrix<T>, usize) -> bool) -> Matrix<T> {
@@ -553,7 +540,7 @@ impl<T : Debug + Copy> Debug for Matrix<T> {
     for row in 0..self.rows() {
       try!(write!(fmt, "|"));
       for col in 0..self.cols() {
-        let v = self.get_ref(row, col).clone();
+        let v = self.get(row, col);
         let slen = format!("{:?}", v).len();
         let mut padding = " ".to_owned();
         for _ in 0..(max_width-slen) {
@@ -585,7 +572,7 @@ impl<'a, T : Neg<Output = T> + Copy> Neg for &'a Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = - self.data[i].clone()
+      d[i] = - self.data[i]
     }
     Matrix {
       no_rows: self.no_rows,
@@ -611,7 +598,7 @@ impl <'a, 'b, T : Add<T, Output = T> + Copy> Add<&'a Matrix<T>> for &'b Matrix<T
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = self.data[i].clone() + m.data[i].clone();
+      d[i] = self.data[i] + m.data[i];
     }
     Matrix {
       no_rows: self.no_rows,
@@ -651,7 +638,7 @@ impl <'a, 'b, T : Sub<T, Output = T> + Copy> Sub<&'a Matrix<T>> for &'b Matrix<T
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
     for i in 0..elems {
-      d[i] = self.data[i].clone() - m.data[i].clone();
+      d[i] = self.data[i] - m.data[i];
     }
     Matrix {
       no_rows: self.no_rows,
@@ -694,7 +681,7 @@ impl<'a, 'b, T : Add<T, Output = T> + Mul<T, Output = T> + Zero + Copy> Mul<&'a 
       for col in 0..m.cols() {
         let mut res : T = num::zero();
         for idx in 0..self.cols() {
-          res = res + self.get_ref(row, idx).clone() * m.get_ref(idx, col).clone();
+          res = res + self.get(row, idx) * m.get(idx, col);
         }
         d[row * m.cols() + col] = res;
       }
@@ -744,7 +731,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
     let mut sum : T = num::zero();
     let mut idx = 0;
     for _ in 0..cmp::min(self.no_rows, self.cols()) {
-      sum = sum + self.data[idx].clone();
+      sum = sum + self.data[idx];
       idx += self.cols() + 1;
     }
     sum
@@ -789,7 +776,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + self.data[i].clone() * self.data[i].clone();
+      s = s + self.data[i] * self.data[i];
     }
 
     s.sqrt()
@@ -805,7 +792,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + num::abs(self.data[i].clone());
+      s = s + num::abs(self.data[i]);
     }
 
     s
@@ -821,7 +808,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
 
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + num::abs(self.data[i].powf(p.clone()));
+      s = s + num::abs(self.data[i].powf(p));
     }
 
     s.powf(num::one::<T>() / p)
@@ -830,7 +817,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
   pub fn frobenius_norm(&self) -> T {
     let mut s : T = num::zero();
     for i in 0..self.data.len() {
-      s = s + self.data[i].clone() * self.data[i].clone();
+      s = s + self.data[i] * self.data[i];
     }
 
     s.sqrt()
@@ -839,9 +826,9 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
   pub fn vector_inf_norm(&self) -> T {
     assert!(self.cols() == 1);
 
-    let mut current_max : T = num::abs(self.data[0].clone());
+    let mut current_max : T = num::abs(self.data[0]);
     for i in 1..self.data.len() {
-      let v = num::abs(self.data[i].clone());
+      let v = num::abs(self.data[i]);
       if v > current_max {
         current_max = v;
       }
@@ -869,7 +856,7 @@ impl<T : Float + ApproxEq<T> + Signed + Copy> Matrix<T> {
   pub fn approx_eq(&self, m : &Matrix<T>) -> bool {
     if self.rows() != m.rows() || self.cols() != m.cols() { return false };
     for i in 0..self.data.len() {
-      if !self.data[i].clone().approx_eq(&m.data[i]) { return false }
+      if !self.data[i].approx_eq(&m.data[i]) { return false }
     }
     true
   }
@@ -989,18 +976,12 @@ fn test_row_vector() {
 }
 
 #[test]
-fn test_get_set() {
-  let mut m = m!(1, 2; 3, 4);
+fn test_get() {
+  let m = m!(1, 2; 3, 4);
   assert!(m.get(1, 0) == 3);
   assert!(m.get(0, 1) == 2);
 
   assert!(*m.get_ref(1, 1) == 4);
-
-  *m.get_mref(0, 0) = 10;
-  assert!(m.get(0, 0) == 10);
-
-  m.set(1, 1, 5);
-  assert!(m.get(1, 1) == 5);
 }
 
 #[test]
@@ -1032,40 +1013,9 @@ fn test_get_ref_out_of_bounds_y() {
 }
 
 #[test]
-#[should_panic]
-fn test_get_mref_out_of_bounds_x() {
-  let mut m = m!(1, 2; 3, 4);
-  let _ = m.get_mref(2, 0);
-}
-
-#[test]
-#[should_panic]
-fn test_get_mref_out_of_bounds_y() {
-  let mut m = m!(1, 2; 3, 4);
-  let _ = m.get_mref(0, 2);
-}
-
-#[test]
-#[should_panic]
-fn test_set_out_of_bounds_x() {
-  let mut m = m!(1, 2; 3, 4);
-  m.set(2, 0, 0);
-}
-
-#[test]
-#[should_panic]
-fn test_set_out_of_bounds_y() {
-  let mut m = m!(1, 2; 3, 4);
-  m.set(0, 2, 0);
-}
-
-#[test]
 fn test_map() {
-  let mut m = m!(1, 2; 3, 4);
+  let m = m!(1, 2; 3, 4);
   assert!(m.map(&|x : &usize| -> usize { *x + 1 }).data == vec![2, 3, 4, 5]);
-
-  m.mmap(&|x : &usize| { *x + 2 });
-  assert!(m.data == vec![3, 4, 5, 6]);
 }
 
 #[test]
@@ -1088,30 +1038,33 @@ fn test_cb() {
 
 #[test]
 fn test_t() {
-  let mut m = m!(1, 2; 3, 4);
+  let m = m!(1, 2; 3, 4);
   assert!(m.t().data == vec![1, 3, 2, 4]);
 
-  m.mt();
-  assert!(m.data == vec![1, 3, 2, 4]);
-
-  let mut m = m!(1, 2, 3; 4, 5, 6);
+  let m = m!(1, 2, 3; 4, 5, 6);
   let r = m.t();
   assert!(r.rows() == 3);
   assert!(r.cols() == 2);
   assert!(r.data == vec![1, 4, 2, 5, 3, 6]);
-
-  m.mt();
-  assert!(m.rows() == 3);
-  assert!(m.cols() == 2);
-  assert!(m.data == vec![1, 4, 2, 5, 3, 6]);
 }
 
 #[test]
 fn test_sub() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
+  assert!(m.sub_matrix(1..3, 1..3).data == vec![5, 6, 8, 9]);
+}
+
+#[test]
+#[should_panic]
+fn test_sub_out_of_bounds() {
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
+  let _ = m.sub_matrix(1..3, 1..4);
+}
+
+#[test]
+fn test_minor() {
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   assert!(m.minor(1, 1).data == vec![1, 3, 7, 9]);
-  assert!(m.sub_matrix(1, 1, 3, 3).data == vec![5, 6, 8, 9]);
-  assert!(m.get_column(1).data == vec![2, 5, 8]);
 }
 
 #[test]
@@ -1122,10 +1075,9 @@ fn test_minor_out_of_bounds() {
 }
 
 #[test]
-#[should_panic]
-fn test_sub_out_of_bounds() {
+fn test_get_column() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let _ = m.sub_matrix(1, 1, 3, 4);
+  assert!(m.get_column(1).data == vec![2, 5, 8]);
 }
 
 #[test]
@@ -1133,6 +1085,19 @@ fn test_sub_out_of_bounds() {
 fn test_get_column_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
   let _ = m.get_column(3);
+}
+
+#[test]
+fn test_get_row() {
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
+  assert!(m.get_row(1).data == vec![4, 5, 6]);
+}
+
+#[test]
+#[should_panic]
+fn test_get_row_out_of_bounds() {
+  let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
+  let _ = m.get_row(3);
 }
 
 #[test]
@@ -1210,42 +1175,13 @@ fn test_algebra() {
   assert!((&b).sub(&a).data == vec![2, 2, 2, 2]);
   assert!((&a).elem_mul(&b).data == vec![3, 8, 15, 24]);
   assert!((&b).elem_div(&a).data == vec![3, 2, 1, 1]);
-
-  let mut a = m!(1, 2; 3, 4);
-  a.mneg();
-  assert!(a.data == vec![-1, -2, -3, -4]);
-
-  let mut a = m!(1, 2; 3, 4);
-  a.mscale(2);
-  assert!(a.data == vec![2, 4, 6, 8]);
-
-  let mut a = m!(1, 2; 3, 4);
-  a.madd(&b);
-  assert!(a.data == vec![4, 6, 8, 10]);
-
-  let a = m!(1, 2; 3, 4);
-  let mut b = m!(3, 4; 5, 6);
-  b.msub(&a);
-  assert!(b.data == vec![2, 2, 2, 2]);
-
-  let mut a = m!(1, 2; 3, 4);
-  let b = m!(3, 4; 5, 6);
-  a.melem_mul(&b);
-  assert!(a.data == vec![3, 8, 15, 24]);
-
-  let a = m!(1, 2; 3, 4);
-  let mut b = m!(3, 4; 5, 6);
-  b.melem_div(&a);
-  assert!(b.data == vec![3, 2, 1, 1]);
 }
 
 #[test]
 fn test_mul() {
-  let mut a = m!(1, 2; 3, 4);
+  let a = m!(1, 2; 3, 4);
   let b = m!(3, 4; 5, 6);
   assert!((&a).mul(&b).data == vec![13, 16, 29, 36]);
-  a.mmul(&b);
-  assert!(a.data == vec![13, 16, 29, 36]);
 }
 
 #[test]
@@ -1254,14 +1190,6 @@ fn test_mul_incompatible() {
   let a = m!(1, 2; 3, 4);
   let b = m!(1, 2; 3, 4; 5, 6);
   let _ = (&a).mul(&b);
-}
-
-#[test]
-#[should_panic]
-fn test_mmul_incompatible() {
-  let mut a = m!(1, 2; 3, 4);
-  let b = m!(1, 2; 3, 4; 5, 6);
-  a.mmul(&b);
 }
 
 #[test]

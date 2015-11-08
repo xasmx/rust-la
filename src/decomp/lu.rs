@@ -122,16 +122,16 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
       for i in 0..m {
         let mut s : T = num::zero();
         for k in 0..cmp::min(i, j) {
-          s = s + ludata[i * n + k].clone() * ludata[k * n + j].clone();
+          s = s + ludata[i * n + k] * ludata[k * n + j];
         }
 
-        ludata[i * n + j] = ludata[i * n + j].clone() - s;
+        ludata[i * n + j] = ludata[i * n + j] - s;
       }
 
       // Find row with maximum pivot element at or below the diagonal.
       let mut p = j;
       for i in (j + 1)..m {
-        if num::abs(ludata[i * n + j].clone()) > num::abs(ludata[p * n + j].clone()) {
+        if num::abs(ludata[i * n + j]) > num::abs(ludata[p * n + j]) {
           p = i;
         }
       }
@@ -139,13 +139,13 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
       // Swap pivot row with the maximum row (unless pivot row is the maximum row already).
       if p != j {
         for k in 0..n {
-          let t = ludata[p * n + k].clone();
-          ludata[p * n + k] = ludata[j * n + k].clone();
+          let t = ludata[p * n + k];
+          ludata[p * n + k] = ludata[j * n + k];
           ludata[j * n + k] = t;
         }
 
-        let k = pivdata[p as usize].clone();
-        pivdata[p as usize] = pivdata[j].clone();
+        let k = pivdata[p as usize];
+        pivdata[p as usize] = pivdata[j];
         pivdata[j as usize] = k;
 
         pospivsign = !pospivsign;
@@ -153,9 +153,9 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
 
       // Complete calculating the elements of the column of L:
       //  l[i][j] := 1 / u[j][j] * l[i][j]
-      if (j < m) && (ludata[j * n + j].clone() != num::zero()) {
+      if (j < m) && (ludata[j * n + j] != num::zero()) {
         for i in (j + 1)..m {
-          ludata[i * n + j] = ludata[i * n + j].clone() / ludata[j * n + j].clone();
+          ludata[i * n + j] = ludata[i * n + j] / ludata[j * n + j];
         }
       }
     }
@@ -174,7 +174,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
   pub fn is_non_singular(&self) -> bool {
     let n = self.lu.cols();
     for j in 0..n {
-      if self.lu.get_data()[j * n + j].clone() == num::zero() {
+      if self.lu.get_data()[j * n + j] == num::zero() {
         return false;
       }
     }
@@ -190,7 +190,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
       for j in 0..n {
         ldata[i * n + j] =
             if i > j {
-              self.lu.get_data()[i * self.lu.cols() + j].clone()
+              self.lu.get_data()[i * self.lu.cols() + j]
             } else if i == j {
               num::one()
             } else {
@@ -208,7 +208,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
     let mut udata = alloc_dirty_vec(m * n);
     for i in 0..m {
       for j in 0..n {
-        udata[i * n + j] = if i <= j { self.lu.get_data()[i * n + j].clone() } else { num::zero() };
+        udata[i * n + j] = if i <= j { self.lu.get_data()[i * n + j] } else { num::zero() };
       }
     }
     Matrix::new(m as usize, n as usize, udata)
@@ -226,7 +226,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
     let n = self.lu.cols();
     let mut d = if self.pospivsign { num::one::<T>() } else { - num::one::<T>() };
     for j in 0..n {
-      d = d * self.lu.get_data()[j * n + j].clone();
+      d = d * self.lu.get_data()[j * n + j];
     }
     d
   }
@@ -248,7 +248,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
     let mut dest_idx = 0;
     for i in 0..self.piv.len() {
       for j in 0..nx {
-        xdata[dest_idx] = b.get_data()[self.piv[i].clone() * b.cols() + j].clone();
+        xdata[dest_idx] = b.get_data()[self.piv[i] * b.cols() + j];
         dest_idx += 1;
       }
     }
@@ -257,7 +257,7 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
     for k in 0..n {
       for i in (k + 1)..n {
         for j in 0..nx {
-          xdata[i * nx + j] = xdata[i * nx + j].clone() - xdata[k * nx + j].clone() * self.lu.get_data()[i * self.lu.cols() + k].clone();
+          xdata[i * nx + j] = xdata[i * nx + j] - xdata[k * nx + j] * self.lu.get_data()[i * self.lu.cols() + k];
         }
       }
     }
@@ -265,11 +265,11 @@ impl<T : Float + ApproxEq<T> + Signed> LUDecomposition<T> {
     // Solve U*X = Y;
     for k in (0..n).rev() {
       for j in 0..nx {
-        xdata[k * nx + j] = xdata[k * nx + j].clone() / self.lu.get_data()[k * self.lu.cols() + k].clone();
+        xdata[k * nx + j] = xdata[k * nx + j] / self.lu.get_data()[k * self.lu.cols() + k];
       }
       for i in 0..k {
         for j in 0..nx {
-          xdata[i * nx + j] = xdata[i * nx + j].clone() - xdata[k * nx + j].clone() * self.lu.get_data()[i * self.lu.cols() + k].clone();
+          xdata[i * nx + j] = xdata[i * nx + j] - xdata[k * nx + j] * self.lu.get_data()[i * self.lu.cols() + k];
         }
       }
     }

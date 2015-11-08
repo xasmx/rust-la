@@ -83,11 +83,11 @@ pub fn power_method<T : Float + ApproxEq<T>>(m : &Matrix<T>, q : &Matrix<T>, eps
   assert!(q.cols() == 1);
 
   fn max_elem<T : Float>(v : &Matrix<T>) -> T {
-    let mut current_max = num::abs(v.get_data().get(0).clone());
+    let mut current_max = num::abs(v.get_data().get(0));
     for _ in range(1, v.rows()) {
-      let v = num::abs(v.get_data().get(1).clone());
+      let v = num::abs(v.get_data().get(1));
       if v > current_max {
-        current_max = v.clone();
+        current_max = v;
       }
     }
     current_max

@@ -48,15 +48,15 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // the column vector corresponds to the row range minor .. (m - 1).
     let mut x_norm_sqr : T = num::zero();
     for i in minor..m {
-      let c = qrdata[i * n + minor].clone();
+      let c = qrdata[i * n + minor];
       x_norm_sqr = x_norm_sqr + c * c;
     }
 
     // We know the size of the reflected coordinate (the lenght of the column vector), but not the sign yet.
     // Reflection will flip the sign of the corresponding coordinate element, so sign of the reflected
     // coordinate will be the opposite of the current coordinate element.
-    let a = if qrdata[minor * n + minor].clone() > num::zero() { - x_norm_sqr.sqrt() } else { x_norm_sqr.sqrt() };
-    rdiag[minor] = a.clone();
+    let a = if qrdata[minor * n + minor] > num::zero() { - x_norm_sqr.sqrt() } else { x_norm_sqr.sqrt() };
+    rdiag[minor] = a;
 
     // If the length of the column vector is zero, the column is already zero and there's nothing to do.
     if a != num::zero() {
@@ -73,7 +73,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
       //       = 2a^2 - 2a<x, e>
       //       = 2a^2 - 2a*qrdata[k * n + k]	// As <x, e> is the projection of x to the axis aligned unit vector e.
       //       = 2a(a - qrdata[k * n + k])
-      qrdata[minor * n + minor] = qrdata[minor * n + minor].clone() - a;
+      qrdata[minor * n + minor] = qrdata[minor * n + minor] - a;
 
       // Note that now:
       // |u|^2 = 2a(a - (qrdata[k * n + k] + a))
@@ -93,13 +93,13 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
         // factor = <x, u>/(a * qrdata[k * n + k])
         let mut x_dot_u : T = num::zero();
         for row in minor..m {
-          x_dot_u = x_dot_u + qrdata[row * n + minor].clone() * qrdata[row * n + column].clone();
+          x_dot_u = x_dot_u + qrdata[row * n + minor] * qrdata[row * n + column];
         }
-        let factor = x_dot_u / (a * qrdata[minor * n + minor].clone());
+        let factor = x_dot_u / (a * qrdata[minor * n + minor]);
 
         // Hx = x + factor * u
         for row in minor..m {
-          qrdata[row * n + column] = qrdata[row * n + column].clone() + factor * qrdata[row * n + minor].clone();
+          qrdata[row * n + column] = qrdata[row * n + column] + factor * qrdata[row * n + minor];
         }
       }
     }
@@ -107,7 +107,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
   pub fn is_full_rank(&self) -> bool {
     for j in 0..self.qr.cols() {
-      if self.rdiag[j].clone() == num::zero() {
+      if self.rdiag[j] == num::zero() {
         return false;
       }
     }
@@ -124,7 +124,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
     for i in 0..m {
       for j in 0..n {
-        hdata[i * self.qr.cols() + j] = if i >= j { self.qr.get_data()[i * self.qr.cols() + j].clone() } else { num::zero() }
+        hdata[i * self.qr.cols() + j] = if i >= j { self.qr.get_data()[i * self.qr.cols() + j] } else { num::zero() }
       }
     }
 
@@ -139,8 +139,8 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
 
     for i in 0..m {
       for j in 0..n {
-        rdata[i * n + j] = if i < j { self.qr.get_data()[i * n + j].clone() }
-                           else if i == j { self.rdiag[i].clone() }
+        rdata[i * n + j] = if i < j { self.qr.get_data()[i * n + j] }
+                           else if i == j { self.rdiag[i] }
                            else { num::zero() };
       }
     }
@@ -163,7 +163,7 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // the identity matrix to Q: (Note that a reflection matrix is it's own inverse).
     //   Q = Q_1_inv(Q_2_inv(...(Q_m_inv I))) = Q_1(Q_2(...(Q_m I)))
     for minor in (0..cmp::min(m, n)).rev() {
-      if self.qr.get_data()[minor * n + minor].clone() != num::zero() {
+      if self.qr.get_data()[minor * n + minor] != num::zero() {
         // |u|^2 = -2a*qrdata[minor * n + minor]
         //       = -2 * rdiag[minor] * qrdata[minor * n + minor]
         //
@@ -179,12 +179,12 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
         for column in minor..m {
           let mut x_dot_u : T = num::zero();
           for row in minor..m {
-            x_dot_u = x_dot_u + self.qr.get_data()[row * n + minor].clone() * qdata[row * m + column].clone();
+            x_dot_u = x_dot_u + self.qr.get_data()[row * n + minor] * qdata[row * m + column];
           }
-          let factor = x_dot_u / (self.rdiag[minor].clone() * self.qr.get_data()[minor * n + minor].clone());
+          let factor = x_dot_u / (self.rdiag[minor] * self.qr.get_data()[minor * n + minor]);
 
           for row in minor..m {
-            qdata[row * m + column] = qdata[row * m + column].clone() + factor * self.qr.get_data()[row * n + minor].clone();
+            qdata[row * m + column] = qdata[row * m + column] + factor * self.qr.get_data()[row * n + minor];
           }
         }
       }
@@ -213,11 +213,11 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
       for j in 0..nx {
         let mut s : T = num::zero();
         for i in k..m {
-          s = s + self.qr.get_data()[i * self.qr.cols() + k].clone() * xdata[i * nx + j].clone();
+          s = s + self.qr.get_data()[i * self.qr.cols() + k] * xdata[i * nx + j];
         }
-        s = - s / self.qr.get_data()[k * self.qr.cols() + k].clone();
+        s = - s / self.qr.get_data()[k * self.qr.cols() + k];
         for i in k..m {
-          xdata[i * nx + j] = xdata[i * nx + j].clone() + s * self.qr.get_data()[i * self.qr.cols() + k].clone();
+          xdata[i * nx + j] = xdata[i * nx + j] + s * self.qr.get_data()[i * self.qr.cols() + k];
         }
       }
     }
@@ -225,11 +225,11 @@ impl<T : Float + ApproxEq<T>> QRDecomposition<T> {
     // Solve R*X = Y;
     for k in (0..n).rev() {
       for j in 0..nx {
-        xdata[k * nx + j] = xdata[k * nx + j].clone() / self.rdiag[k].clone();
+        xdata[k * nx + j] = xdata[k * nx + j] / self.rdiag[k];
       }
       for i in 0..k {
         for j in 0..nx {
-          xdata[i * nx + j] = xdata[i * nx + j].clone() - xdata[k * nx + j].clone() * self.qr.get_data()[i * self.qr.cols() + k].clone();
+          xdata[i * nx + j] = xdata[i * nx + j] - xdata[k * nx + j] * self.qr.get_data()[i * self.qr.cols() + k];
         }
       }
     }

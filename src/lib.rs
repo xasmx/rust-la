@@ -12,6 +12,7 @@ pub use matrix::Matrix;
 pub mod macros;
 mod approxeq;
 mod matrix;
+
 mod internalutil;
 pub mod util;
 

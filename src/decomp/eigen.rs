@@ -34,7 +34,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     //  This is derived from the Algol procedures tred2 by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.    
     for j in 0..n {
-      ddata[j] = vdata[(n - 1) * n + j].clone();
+      ddata[j] = vdata[(n - 1) * n + j];
     }
 
     // Householder reduction to tridiagonal form.
@@ -43,22 +43,22 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       let mut scale : T = num::zero();
       let mut h : T = num::zero();
       for k in 0..i {
-        scale = scale + num::abs(ddata[k].clone());
+        scale = scale + num::abs(ddata[k]);
       }
       if scale == num::zero() {
-        edata[i] = ddata[i - 1].clone();
+        edata[i] = ddata[i - 1];
         for j in 0..i {
-          ddata[j] = vdata[(i - 1) * n + j].clone();
+          ddata[j] = vdata[(i - 1) * n + j];
           vdata[i * n + j] = num::zero();
           vdata[j * n + i] = num::zero();
         }
       } else {
         // Generate Householder vector.
         for k in 0..i {
-          ddata[k] = ddata[k].clone() / scale;
-          h = h + ddata[k].clone() * ddata[k].clone();
+          ddata[k] = ddata[k] / scale;
+          h = h + ddata[k] * ddata[k];
         }
-        let mut f = ddata[i - 1].clone();
+        let mut f = ddata[i - 1];
         let mut g = h.sqrt();
         if f > num::zero() {
           g = - g;
@@ -72,32 +72,32 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
 
         // Apply similarity transformation to remaining columns.
         for j in 0..i {
-          f = ddata[j].clone();
-          vdata[j * n + i] = f.clone();
-          g = edata[j].clone() + vdata[j * n + j].clone() * f;
+          f = ddata[j];
+          vdata[j * n + i] = f;
+          g = edata[j] + vdata[j * n + j] * f;
           for k in (j + 1)..i {
-            g = g + vdata[k * n + j].clone() * ddata[k].clone();
-            edata[k] = edata[k].clone() + vdata[k * n + j].clone() * f;
+            g = g + vdata[k * n + j] * ddata[k];
+            edata[k] = edata[k] + vdata[k * n + j] * f;
           }
           edata[j] = g;
         }
         f = num::zero();
         for j in 0..i {
-          edata[j] = edata[j].clone() / h;
-          f = f + edata[j].clone() * ddata[j].clone();
+          edata[j] = edata[j] / h;
+          f = f + edata[j] * ddata[j];
         }
         let hh = f / (h + h);
         for j in 0..i {
-          edata[j] = edata[j].clone() - hh * ddata[j].clone();
+          edata[j] = edata[j] - hh * ddata[j];
         }
         for j in 0..i {
-          f = ddata[j].clone();
-          g = edata[j].clone();
+          f = ddata[j];
+          g = edata[j];
           for k in j..i {
-            let orig_val = vdata[k * n + j].clone();
-            vdata[k * n + j] = orig_val - (f * edata[k].clone() + g * ddata[k].clone());
+            let orig_val = vdata[k * n + j];
+            vdata[k * n + j] = orig_val - (f * edata[k] + g * ddata[k]);
           }
-          ddata[j] = vdata[(i - 1) * n + j].clone();
+          ddata[j] = vdata[(i - 1) * n + j];
           vdata[i * n + j] = num::zero();
         }
       }
@@ -106,10 +106,10 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
 
     // Accumulate transformations.
     for i in 0..(n - 1) {
-      let orig_val = vdata[i * n + i].clone();
+      let orig_val = vdata[i * n + i];
       vdata[(n - 1) * n + i] = orig_val;
       vdata[i * n + i] = num::one();
-      let h = ddata[i + 1].clone();
+      let h = ddata[i + 1];
       if h != num::zero() {
         for k in 0..(i + 1) {
           ddata[k] = vdata[k * n + (i + 1)] / h;
@@ -117,11 +117,11 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
         for j in 0..(i + 1) {
           let mut g : T = num::zero();
           for k in 0..(i + 1) {
-            g = g + vdata[k * n + (i + 1)].clone() * vdata[k * n + j].clone();
+            g = g + vdata[k * n + (i + 1)] * vdata[k * n + j];
           }
           for k in 0..(i + 1) {
-            let orig_val = vdata[k * n + j].clone();
-            vdata[k * n + j] = orig_val - g * ddata[k].clone();
+            let orig_val = vdata[k * n + j];
+            vdata[k * n + j] = orig_val - g * ddata[k];
           }
         }
       }
@@ -130,7 +130,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       }
     }
     for j in 0..n {
-      ddata[j] = vdata[(n - 1) * n + j].clone();
+      ddata[j] = vdata[(n - 1) * n + j];
       vdata[(n - 1) * n + j] = num::zero();
     }
     vdata[(n - 1) * n + (n - 1)] = num::one();
@@ -142,7 +142,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     // This is derived from the Algol procedures tql2, by Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
     // Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran subroutine in EISPACK.
     for i in 1..n {
-      edata[i - 1] = edata[i].clone();
+      edata[i - 1] = edata[i];
     }
     edata[n - 1] = num::zero();
 
@@ -151,10 +151,10 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     let eps : T = num::cast(2.0f64.powf(-52.0)).unwrap();
     for l in 0..n {
       // Find small subdiagonal element
-      tst1 = tst1.max(num::abs(ddata[l].clone()) + num::abs(edata[l].clone()));
+      tst1 = tst1.max(num::abs(ddata[l]) + num::abs(edata[l]));
       let mut m = l;
       while m < n {
-        if num::abs(edata[m].clone()) <= (eps * tst1) {
+        if num::abs(edata[m]) <= (eps * tst1) {
           break;
         }
         m += 1;
@@ -164,81 +164,81 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       if m > l {
         loop {
           // Compute implicit shift
-          let mut g = ddata[l].clone();
+          let mut g = ddata[l];
           let tmp : T = num::cast(2.0).unwrap();
-          let mut p = (ddata[l + 1].clone() - g) / (tmp * edata[l].clone());
-          let mut r = hypot::<T>(p.clone(), num::one());
+          let mut p = (ddata[l + 1] - g) / (tmp * edata[l]);
+          let mut r = hypot::<T>(p, num::one());
           if p < num::zero() {
             r = -r;
           }
-          ddata[l] = edata[l].clone() / (p + r);
-          ddata[l + 1] = edata[l].clone() * (p + r);
-          let dl1 = ddata[l + 1].clone();
-          let mut h = g - ddata[l].clone();
+          ddata[l] = edata[l] / (p + r);
+          ddata[l + 1] = edata[l] * (p + r);
+          let dl1 = ddata[l + 1];
+          let mut h = g - ddata[l];
           for i in (l + 2)..n {
-            ddata[i] = ddata[i].clone() - h;
+            ddata[i] = ddata[i] - h;
           }
           f = f + h;
 
           // Implicit QL transformation.
-          p = ddata[m].clone();
+          p = ddata[m];
           let mut c : T = num::one();
-          let mut c2 = c.clone();
-          let mut c3 = c.clone();
-          let el1 = edata[l + 1].clone();
+          let mut c2 = c;
+          let mut c3 = c;
+          let el1 = edata[l + 1];
           let mut s : T = num::zero();
           let mut s2 = num::zero();
           for i in (l..m).rev() {
-            c3 = c2.clone();
-            c2 = c.clone();
-            s2 = s.clone();
-            g = c * edata[i].clone();
+            c3 = c2;
+            c2 = c;
+            s2 = s;
+            g = c * edata[i];
             h = c * p;
-            r = hypot::<T>(p.clone(), edata[i].clone());
+            r = hypot::<T>(p, edata[i]);
             edata[i + 1] = s * r;
-            s = edata[i].clone() / r;
+            s = edata[i] / r;
             c = p / r;
-            p = c * ddata[i].clone() - s * g;
-            ddata[i + 1] = h + s * (c * g + s * ddata[i].clone());
+            p = c * ddata[i] - s * g;
+            ddata[i + 1] = h + s * (c * g + s * ddata[i]);
 
             // Accumulate transformation.
             for k in 0..n {
-              h = vdata[k * n + (i + 1)].clone();
-              vdata[k * n + (i + 1)] = s * vdata[k * n + i].clone() + c * h;
-              vdata[k * n + i] = c * vdata[k * n + i].clone() - s * h;
+              h = vdata[k * n + (i + 1)];
+              vdata[k * n + (i + 1)] = s * vdata[k * n + i] + c * h;
+              vdata[k * n + i] = c * vdata[k * n + i] - s * h;
             }
           }
-          p = - s * s2 * c3 * el1 * edata[l].clone() / dl1;
+          p = - s * s2 * c3 * el1 * edata[l] / dl1;
           edata[l] = s * p;
           ddata[l] = c * p;
 
           // Check for convergence.
-          if num::abs(edata[l].clone()) <= (eps * tst1) {
+          if num::abs(edata[l]) <= (eps * tst1) {
             break;
           }
         }
       }
-      ddata[l] = ddata[l].clone() + f;
+      ddata[l] = ddata[l] + f;
       edata[l] = num::zero();
     }
 
     // Bubble sort eigenvalues and corresponding vectors.
     for i in 0..(n - 1) {
       let mut k = i;
-      let mut p = ddata[i].clone();
+      let mut p = ddata[i];
       for j in (i + 1)..n {
-        if ddata[j].clone() > p {
+        if ddata[j] > p {
           k = j;
-          p = ddata[j].clone();
+          p = ddata[j];
         }
       }
       if k != i {
         // Swap columns k and i of the diagonal and v.
-        ddata[k] = ddata[i].clone();
-        ddata[i] = p.clone();
+        ddata[k] = ddata[i];
+        ddata[i] = p;
         for j in 0..n {
-          p = vdata[j * n + i].clone();
-          vdata[j * n + i] = vdata[j * n + k].clone();
+          p = vdata[j * n + i];
+          vdata[j * n + i] = vdata[j * n + k];
           vdata[j * n + k] = p;
         }
       }
@@ -259,46 +259,46 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       // Scale column.
       let mut scale : T = num::zero();
       for i in m..(high + 1) {
-        scale = scale + num::abs(hdata[i * n + (m - 1)].clone());
+        scale = scale + num::abs(hdata[i * n + (m - 1)]);
       }
       if scale != num::zero() {
         // Compute Householder transformation.
         let mut h : T = num::zero();
         for i in (m..(high + 1)).rev() {
-          ort[i] = hdata[i * n + (m - 1)].clone() / scale;
-          h = h + ort[i].clone() * ort[i].clone();
+          ort[i] = hdata[i * n + (m - 1)] / scale;
+          h = h + ort[i] * ort[i];
         }
         let mut g = h.sqrt();
-        if ort[m].clone() > num::zero() {
+        if ort[m] > num::zero() {
           g = -g;
         }
-        h = h - ort[m].clone() * g;
-        ort[m] = ort[m].clone() - g;
+        h = h - ort[m] * g;
+        ort[m] = ort[m] - g;
 
         // Apply Householder similarity transformation
         // H = (I-u*u'/h)*H*(I-u*u')/h)
         for j in m..n {
           let mut f : T = num::zero();
           for i in (m..(high + 1)).rev() {
-            f = f + ort[i].clone() * hdata[i * n + j].clone();
+            f = f + ort[i] * hdata[i * n + j];
           }
           f = f / h;
           for i in m..(high + 1) {
-            hdata[i * n + j] = hdata[i * n + j].clone() - f * ort[i].clone();
+            hdata[i * n + j] = hdata[i * n + j] - f * ort[i];
           }
         }
 
         for i in 0..(high + 1) {
           let mut f : T = num::zero();
           for j in (m..(high + 1)).rev() {
-            f = f + ort[j].clone() * hdata[i * n + j].clone();
+            f = f + ort[j] * hdata[i * n + j];
           }
           f = f / h;
           for j in m..(high + 1) {
-            hdata[i * n + j] = hdata[i * n + j].clone() - f * ort[j].clone();
+            hdata[i * n + j] = hdata[i * n + j] - f * ort[j];
           }
         }
-        ort[m] = scale * ort[m].clone();
+        ort[m] = scale * ort[m];
         hdata[m * n + (m - 1)] = scale * g;
       }
     }
@@ -311,19 +311,19 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     }
 
     for m in ((low + 1)..high).rev() {
-      if hdata[m * n + (m - 1)].clone() != num::zero() {
+      if hdata[m * n + (m - 1)] != num::zero() {
         for i in (m + 1)..(high + 1) {
-          ort[i] = hdata[i * n + (m - 1)].clone();
+          ort[i] = hdata[i * n + (m - 1)];
         }
         for j in m..(high + 1) {
           let mut g : T = num::zero();
           for i in m..(high + 1) {
-            g = g + ort[i].clone() * vdata[i * n + j].clone();
+            g = g + ort[i] * vdata[i * n + j];
           }
           // Double division avoids possible underflow
-          g = (g / ort[m].clone()) / hdata[m * n + (m - 1)].clone();
+          g = (g / ort[m]) / hdata[m * n + (m - 1)];
           for i in m..(high + 1) {
-            vdata[i * n + j] = vdata[i * n + j].clone() + g * ort[i].clone();
+            vdata[i * n + j] = vdata[i * n + j] + g * ort[i];
           }
         }
       }
@@ -332,7 +332,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
 
   // Complex scalar division.
   fn cdiv(xr : T, xi : T, yr : T, yi : T) -> (T, T) {
-    if num::abs(yr.clone()) > num::abs(yi.clone()) {
+    if num::abs(yr) > num::abs(yi) {
       let r = yi / yr;
       let d = yr + r * yi;
       ((xr + r * xi) / d, (xi - r * xr) / d)
@@ -369,11 +369,11 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     let mut norm : T = num::zero();
     for i in 0..nn {
       if (i < low) || (i > high) {
-        ddata[i as usize] = hdata[(i * nn + i) as usize].clone();
+        ddata[i as usize] = hdata[(i * nn + i) as usize];
         edata[i as usize] = num::zero();
       }
       for j in cmp::max(i - 1, 0)..nn {
-        norm = norm + num::abs(hdata[(i * nn + j) as usize].clone());
+        norm = norm + num::abs(hdata[(i * nn + j) as usize]);
       }
     }
 
@@ -384,11 +384,11 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       // Look for single small sub-diagonal element
       let mut l = n;
       while l > low {
-        s = num::abs(hdata[((l - 1) * nn + (l - 1)) as usize].clone()) + num::abs(hdata[(l * nn + l) as usize].clone());
+        s = num::abs(hdata[((l - 1) * nn + (l - 1)) as usize]) + num::abs(hdata[(l * nn + l) as usize]);
         if s == num::zero() {
-          s = norm.clone();
+          s = norm;
         }
-        if num::abs(hdata[(l * nn + (l - 1)) as usize].clone()) < (eps * s) {
+        if num::abs(hdata[(l * nn + (l - 1)) as usize]) < (eps * s) {
           break;
         }
         l -= 1;
@@ -397,33 +397,33 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       // Check for convergence.
       if l == n {
         //One root found.
-        hdata[(n * nn + n) as usize] = hdata[(n * nn + n) as usize].clone() + exshift;
-        ddata[n as usize] = hdata[(n * nn + n) as usize].clone();
+        hdata[(n * nn + n) as usize] = hdata[(n * nn + n) as usize] + exshift;
+        ddata[n as usize] = hdata[(n * nn + n) as usize];
         edata[n as usize] = num::zero();
         n -= 1;
         iter = 0;
       } else if l == (n - 1) {
         // Two roots found
-        w = hdata[(n * nn + (n - 1)) as usize].clone() * hdata[((n - 1) * nn + n) as usize].clone();
-        p = (hdata[((n - 1) * nn + (n - 1)) as usize].clone() - hdata[(n * nn + n) as usize].clone()) / num::cast(2.0).unwrap();
+        w = hdata[(n * nn + (n - 1)) as usize] * hdata[((n - 1) * nn + n) as usize];
+        p = (hdata[((n - 1) * nn + (n - 1)) as usize] - hdata[(n * nn + n) as usize]) / num::cast(2.0).unwrap();
         q = p * p + w;
-        z = num::abs(q.clone()).sqrt();
-        hdata[(n * nn + n) as usize] = hdata[(n * nn + n) as usize].clone() + exshift;
-        hdata[((n - 1) * nn + (n - 1)) as usize] = hdata[((n - 1) * nn + (n - 1)) as usize].clone() + exshift;
-        x = hdata[(n * nn + n) as usize].clone();
+        z = num::abs(q).sqrt();
+        hdata[(n * nn + n) as usize] = hdata[(n * nn + n) as usize] + exshift;
+        hdata[((n - 1) * nn + (n - 1)) as usize] = hdata[((n - 1) * nn + (n - 1)) as usize] + exshift;
+        x = hdata[(n * nn + n) as usize];
 
         // Real pair
         if q >= num::zero() {
           z = if p >= num::zero() { p + z } else { p - z };
           ddata[(n - 1) as usize] = x + z;
-          ddata[n as usize] = ddata[(n - 1) as usize].clone();
+          ddata[n as usize] = ddata[(n - 1) as usize];
           if z != num::zero() {
             ddata[n as usize] = x - w / z;
           }
           edata[(n - 1) as usize] = num::zero();
           edata[n as usize] = num::zero();
-          x = hdata[(n * nn + (n - 1)) as usize].clone();
-          s = num::abs(x.clone()) + num::abs(z.clone());
+          x = hdata[(n * nn + (n - 1)) as usize];
+          s = num::abs(x) + num::abs(z);
           p = x / s;
           q = z / s;
           r = (p * p + q * q).sqrt();
@@ -432,29 +432,29 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
 
           // Row modification
           for j in (n - 1)..nn {
-            z = hdata[((n - 1) * nn + j) as usize].clone();
-            hdata[((n - 1) * nn + j) as usize] = q * z + p * hdata[(n * nn + j) as usize].clone();
-            hdata[(n * nn + j) as usize] = q * hdata[(n * nn + j) as usize].clone() - p * z;
+            z = hdata[((n - 1) * nn + j) as usize];
+            hdata[((n - 1) * nn + j) as usize] = q * z + p * hdata[(n * nn + j) as usize];
+            hdata[(n * nn + j) as usize] = q * hdata[(n * nn + j) as usize] - p * z;
           }
 
           // Column modification
           for i in 0..(n + 1) {
-            z = hdata[(i * nn + (n - 1)) as usize].clone();
-            hdata[(i * nn + (n - 1)) as usize] = q * z + p * hdata[(i * nn + n) as usize].clone();
-            hdata[(i * nn + n) as usize] = q * hdata[(i * nn + n) as usize].clone() - p * z;
+            z = hdata[(i * nn + (n - 1)) as usize];
+            hdata[(i * nn + (n - 1)) as usize] = q * z + p * hdata[(i * nn + n) as usize];
+            hdata[(i * nn + n) as usize] = q * hdata[(i * nn + n) as usize] - p * z;
           }
 
           // Accumulate transformations
           for i in low..(high + 1) {
-            z = vdata[(i * nn + (n - 1)) as usize].clone();
-            vdata[(i * nn + (n - 1)) as usize] = q * z + p * vdata[(i * nn + n) as usize].clone();
-            vdata[(i * nn + n) as usize] = q * vdata[(i * nn + n) as usize].clone() - p * z;
+            z = vdata[(i * nn + (n - 1)) as usize];
+            vdata[(i * nn + (n - 1)) as usize] = q * z + p * vdata[(i * nn + n) as usize];
+            vdata[(i * nn + n) as usize] = q * vdata[(i * nn + n) as usize] - p * z;
           }
         } else {
           // Complex pair
           ddata[(n - 1) as usize] = x + p;
           ddata[n as usize] = x + p;
-          edata[(n - 1) as usize] = z.clone();
+          edata[(n - 1) as usize] = z;
           edata[n as usize] = - z;
         }
         n = n - 2;
@@ -463,24 +463,24 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
         // No convergence yet
 
         // Form shift
-        x = hdata[(n * nn + n) as usize].clone();
+        x = hdata[(n * nn + n) as usize];
         y = num::zero();
         w = num::zero();
         if l < n {
-          y = hdata[((n - 1) * nn + (n - 1)) as usize].clone();
-          w = hdata[(n * nn + (n - 1)) as usize].clone() * hdata[((n - 1) * nn + n) as usize].clone();
+          y = hdata[((n - 1) * nn + (n - 1)) as usize];
+          w = hdata[(n * nn + (n - 1)) as usize] * hdata[((n - 1) * nn + n) as usize];
         }
 
         // Wilkinson's original ad hoc shift
         if iter == 10 {
           exshift = exshift + x;
           for i in low..(n + 1) {
-            hdata[(i * nn + i) as usize] = hdata[(i * nn + i) as usize].clone() - x;
+            hdata[(i * nn + i) as usize] = hdata[(i * nn + i) as usize] - x;
           }
-          s = num::abs(hdata[(n * nn + (n - 1)) as usize].clone()) + num::abs(hdata[((n - 1) * nn + (n - 2)) as usize].clone());
+          s = num::abs(hdata[(n * nn + (n - 1)) as usize]) + num::abs(hdata[((n - 1) * nn + (n - 2)) as usize]);
           let tmp : T = num::cast(0.75).unwrap();
           y = tmp * s;
-          x = y.clone();
+          x = y;
           let tmp : T = num::cast(-0.4375).unwrap();
           w = tmp * s * s;
         }
@@ -496,12 +496,12 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
             }
             s = x - w / ((y - x) / num::cast(2.0).unwrap() + s);
             for i in low..(n + 1) {
-              hdata[(i * nn + i) as usize] = hdata[(i * nn + i) as usize].clone() - s;
+              hdata[(i * nn + i) as usize] = hdata[(i * nn + i) as usize] - s;
             }
             exshift = exshift + s;
             w = num::cast(0.964).unwrap();
-            y = w.clone();
-            x = y.clone();
+            y = w;
+            x = y;
           }
         }
 
@@ -510,21 +510,21 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
         // Look for two consecutive small sub-diagonal elements
         let mut m = n - 2;
         while m >= l {
-          z = hdata[(m * nn + m) as usize].clone();
+          z = hdata[(m * nn + m) as usize];
           r = x - z;
           s = y - z;
-          p = (r * s - w) / hdata[((m + 1) * nn + m) as usize].clone() + hdata[(m * nn + (m + 1)) as usize].clone();
-          q = hdata[((m + 1) * nn + (m + 1)) as usize].clone() - z - r - s;
-          r = hdata[((m + 2) * nn + (m + 1)) as usize].clone();
-          s = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
+          p = (r * s - w) / hdata[((m + 1) * nn + m) as usize] + hdata[(m * nn + (m + 1)) as usize];
+          q = hdata[((m + 1) * nn + (m + 1)) as usize] - z - r - s;
+          r = hdata[((m + 2) * nn + (m + 1)) as usize];
+          s = num::abs(p) + num::abs(q) + num::abs(r);
           p = p / s;
           q = q / s;
           r = r / s;
           if m == l {
             break;
           }
-          if (num::abs(hdata[(m * nn + (m - 1)) as usize].clone()) * (num::abs(q.clone()) + num::abs(r.clone()))) <
-             eps * (num::abs(p.clone()) * (num::abs(hdata[((m - 1) * nn + (m - 1)) as usize].clone()) + num::abs(z.clone()) + num::abs(hdata[((m + 1) * nn + (m + 1)) as usize].clone()))) {
+          if (num::abs(hdata[(m * nn + (m - 1)) as usize]) * (num::abs(q) + num::abs(r))) <
+             eps * (num::abs(p) * (num::abs(hdata[((m - 1) * nn + (m - 1)) as usize]) + num::abs(z) + num::abs(hdata[((m + 1) * nn + (m + 1)) as usize]))) {
             break;
           }
           m -= 1;
@@ -541,10 +541,10 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
         for k in m..n {
           let notlast = k != (n - 1);
           if k != m {
-            p = hdata[(k * nn + (k - 1)) as usize].clone();
-            q = hdata[((k + 1) * nn + (k - 1)) as usize].clone();
-            r = if notlast { hdata[((k + 2) * nn + (k - 1)) as usize].clone() } else { num::zero() };
-            x = num::abs(p.clone()) + num::abs(q.clone()) + num::abs(r.clone());
+            p = hdata[(k * nn + (k - 1)) as usize];
+            q = hdata[((k + 1) * nn + (k - 1)) as usize];
+            r = if notlast { hdata[((k + 2) * nn + (k - 1)) as usize] } else { num::zero() };
+            x = num::abs(p) + num::abs(q) + num::abs(r);
             if x == num::zero() {
               continue;
             }
@@ -561,7 +561,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
             if k != m {
               hdata[(k * nn + (k - 1)) as usize] = - s * x;
             } else if l != m {
-              hdata[(k * nn + (k - 1)) as usize] = - hdata[(k * nn + (k - 1)) as usize].clone();
+              hdata[(k * nn + (k - 1)) as usize] = - hdata[(k * nn + (k - 1)) as usize];
             }
             p = p + s;
             x = p / s;
@@ -572,35 +572,35 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
 
             // Row modification
             for j in k..nn {
-              p = hdata[(k * nn + j) as usize].clone() + q * hdata[((k + 1) * nn + j) as usize].clone();
+              p = hdata[(k * nn + j) as usize] + q * hdata[((k + 1) * nn + j) as usize];
               if notlast {
-                p = p + r * hdata[((k + 2) * nn + j) as usize].clone();
-                hdata[((k + 2) * nn + j) as usize] = hdata[((k + 2) * nn + j) as usize].clone() - p * z;
+                p = p + r * hdata[((k + 2) * nn + j) as usize];
+                hdata[((k + 2) * nn + j) as usize] = hdata[((k + 2) * nn + j) as usize] - p * z;
               }
-              hdata[(k * nn + j) as usize] = hdata[(k * nn + j) as usize].clone() - p * x;
-              hdata[((k + 1) * nn + j) as usize] = hdata[((k + 1) * nn + j) as usize].clone() - p * y;
+              hdata[(k * nn + j) as usize] = hdata[(k * nn + j) as usize] - p * x;
+              hdata[((k + 1) * nn + j) as usize] = hdata[((k + 1) * nn + j) as usize] - p * y;
             }
 
             // Column modification
             for i in 0..(cmp::min(n, k + 3) + 1) {
-              p = x * hdata[(i * nn + k) as usize].clone() + y * hdata[(i * nn + (k + 1)) as usize].clone();
+              p = x * hdata[(i * nn + k) as usize] + y * hdata[(i * nn + (k + 1)) as usize];
               if notlast {
-                p = p + z * hdata[(i * nn + (k + 2)) as usize].clone();
-                hdata[(i * nn + (k + 2)) as usize] = hdata[(i * nn + (k + 2)) as usize].clone() - p * r;
+                p = p + z * hdata[(i * nn + (k + 2)) as usize];
+                hdata[(i * nn + (k + 2)) as usize] = hdata[(i * nn + (k + 2)) as usize] - p * r;
               }
-              hdata[(i * nn + k) as usize] = hdata[(i * nn + k) as usize].clone() - p;
-              hdata[(i * nn + (k + 1)) as usize] = hdata[(i * nn + (k + 1)) as usize].clone() - p * q;
+              hdata[(i * nn + k) as usize] = hdata[(i * nn + k) as usize] - p;
+              hdata[(i * nn + (k + 1)) as usize] = hdata[(i * nn + (k + 1)) as usize] - p * q;
             }
 
             // Accumulate transformations
             for i in low..(high + 1) {
-              p = x * vdata[(i * nn + k) as usize].clone() + y * vdata[(i * nn + (k + 1)) as usize].clone();
+              p = x * vdata[(i * nn + k) as usize] + y * vdata[(i * nn + (k + 1)) as usize];
               if notlast {
-                p = p + z * vdata[(i * nn + (k + 2)) as usize].clone();
-                vdata[(i * nn + (k + 2)) as usize] = vdata[(i * nn + (k + 2)) as usize].clone() - p * r;
+                p = p + z * vdata[(i * nn + (k + 2)) as usize];
+                vdata[(i * nn + (k + 2)) as usize] = vdata[(i * nn + (k + 2)) as usize] - p * r;
               }
-              vdata[(i * nn + k) as usize] = vdata[(i * nn + k) as usize].clone() - p;
-              vdata[(i * nn + (k + 1)) as usize] = vdata[(i * nn + (k + 1)) as usize].clone() - p * q;
+              vdata[(i * nn + k) as usize] = vdata[(i * nn + k) as usize] - p;
+              vdata[(i * nn + (k + 1)) as usize] = vdata[(i * nn + (k + 1)) as usize] - p * q;
             }
           }
         }
@@ -613,25 +613,25 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     }
 
     for n in (0..nn).rev() {
-      p = ddata[n as usize].clone();
-      q = edata[n as usize].clone();
+      p = ddata[n as usize];
+      q = edata[n as usize];
 
       // Real vector
       if q == num::zero() {
         let mut l = n;
         hdata[(n * nn + n) as usize] = num::one();
         for i in (0..n).rev() {
-          w = hdata[(i * nn + i) as usize].clone() - p;
+          w = hdata[(i * nn + i) as usize] - p;
           r = num::zero();
           for j in l..(n + 1) {
-            r = r + hdata[(i * nn + j) as usize].clone() * hdata[(j * nn + n) as usize].clone();
+            r = r + hdata[(i * nn + j) as usize] * hdata[(j * nn + n) as usize];
           }
-          if edata[i as usize].clone() < num::zero() {
-            z = w.clone();
-            s = r.clone();
+          if edata[i as usize] < num::zero() {
+            z = w;
+            s = r;
           } else {
             l = i;
-            if edata[i as usize].clone() == num::zero() {
+            if edata[i as usize] == num::zero() {
               if w != num::zero() {
                 hdata[(i * nn + n) as usize] = - r / w;
               } else {
@@ -639,12 +639,12 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
               }
             } else {
               // Solve real equations
-              x = hdata[(i * nn + (i + 1)) as usize].clone();
-              y = hdata[((i + 1) * nn + i) as usize].clone();
-              q = (ddata[i as usize].clone() - p) * (ddata[i as usize].clone() - p) + edata[i as usize].clone() * edata[i as usize].clone();
+              x = hdata[(i * nn + (i + 1)) as usize];
+              y = hdata[((i + 1) * nn + i) as usize];
+              q = (ddata[i as usize] - p) * (ddata[i as usize] - p) + edata[i as usize] * edata[i as usize];
               t = (x * s - z * r) / q;
-              hdata[(i * nn + n) as usize] = t.clone();
-              if num::abs(x.clone()) > num::abs(z.clone()) {
+              hdata[(i * nn + n) as usize] = t;
+              if num::abs(x) > num::abs(z) {
                 hdata[((i + 1) * nn + n) as usize] = (-r - w * t) / x;
               } else {
                 hdata[((i + 1) * nn + n) as usize] = (-s - y * t) / z;
@@ -652,10 +652,10 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
             }
 
             // Overflow control
-            t = num::abs(hdata[(i * nn + n) as usize].clone());
+            t = num::abs(hdata[(i * nn + n) as usize]);
             if (eps * t) * t > num::one() {
               for j in i..(n + 1) {
-                hdata[(j * nn + n) as usize] = hdata[(j * nn + n) as usize].clone() / t;
+                hdata[(j * nn + n) as usize] = hdata[(j * nn + n) as usize] / t;
               }
             }
           }
@@ -665,11 +665,11 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
         let mut l = n - 1;
 
         // Last vector component imaginary so matrix is triangular
-        if num::abs(hdata[(n * nn + (n - 1)) as usize].clone()) > num::abs(hdata[((n - 1) * nn + n) as usize].clone()) {
-          hdata[((n - 1) * nn + (n - 1)) as usize] = q / hdata[(n * nn + (n - 1)) as usize].clone();
-          hdata[((n - 1) * nn + n) as usize] = - (hdata[(n * nn + n) as usize].clone() - p) / hdata[(n * nn + (n - 1)) as usize].clone();
+        if num::abs(hdata[(n * nn + (n - 1)) as usize]) > num::abs(hdata[((n - 1) * nn + n) as usize]) {
+          hdata[((n - 1) * nn + (n - 1)) as usize] = q / hdata[(n * nn + (n - 1)) as usize];
+          hdata[((n - 1) * nn + n) as usize] = - (hdata[(n * nn + n) as usize] - p) / hdata[(n * nn + (n - 1)) as usize];
         } else {
-          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - hdata[((n - 1) * nn + n) as usize].clone(), hdata[((n - 1) * nn + (n - 1)) as usize].clone() - p, q.clone());
+          let (cdivr, cdivi) = EigenDecomposition::<T>::cdiv(num::zero(), - hdata[((n - 1) * nn + n) as usize], hdata[((n - 1) * nn + (n - 1)) as usize] - p, q);
           hdata[((n - 1) * nn + (n - 1)) as usize] = cdivr;
           hdata[((n - 1) * nn + n) as usize] = cdivi;
         }
@@ -681,49 +681,49 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
           let mut vr;
           let vi;
           for j in l..(n + 1) {
-            ra = ra + hdata[(i * nn + j) as usize].clone() * hdata[(j * nn + (n - 1)) as usize].clone();
-            sa = sa + hdata[(i * nn + j) as usize].clone() * hdata[(j * nn + n) as usize].clone();
+            ra = ra + hdata[(i * nn + j) as usize] * hdata[(j * nn + (n - 1)) as usize];
+            sa = sa + hdata[(i * nn + j) as usize] * hdata[(j * nn + n) as usize];
           }
-          w = hdata[(i * nn + i) as usize].clone() - p;
+          w = hdata[(i * nn + i) as usize] - p;
 
-          if edata[i as usize].clone() < num::zero() {
+          if edata[i as usize] < num::zero() {
             z = w;
             r = ra;
             s = sa;
           } else {
             l = i;
-            if edata[i as usize].clone() == num::zero() {
-              let (cdivr, cdivi) = EigenDecomposition::cdiv(- ra, - sa, w.clone(), q.clone());
+            if edata[i as usize] == num::zero() {
+              let (cdivr, cdivi) = EigenDecomposition::cdiv(- ra, - sa, w, q);
               hdata[(i * nn + (n - 1)) as usize] = cdivr;
               hdata[(i * nn + n) as usize] = cdivi;
             } else {
               // Solve complex equations
-              x = hdata[(i * nn + (i + 1)) as usize].clone();
-              y = hdata[((i + 1) * nn + i) as usize].clone();
-              vr = (ddata[i as usize].clone() - p) * (ddata[i as usize].clone() - p) + edata[i as usize].clone() * edata[i as usize].clone() - q * q;
-              vi = (ddata[i as usize].clone() - p) * num::cast(2.0).unwrap() * q;
+              x = hdata[(i * nn + (i + 1)) as usize];
+              y = hdata[((i + 1) * nn + i) as usize];
+              vr = (ddata[i as usize] - p) * (ddata[i as usize] - p) + edata[i as usize] * edata[i as usize] - q * q;
+              vi = (ddata[i as usize] - p) * num::cast(2.0).unwrap() * q;
               if (vr == num::zero()) && (vi == num::zero()) {
-                vr = eps * norm * (num::abs(w.clone()) + num::abs(q.clone()) + num::abs(x.clone()) + num::abs(y.clone()) + num::abs(z.clone()));
+                vr = eps * norm * (num::abs(w) + num::abs(q) + num::abs(x) + num::abs(y) + num::abs(z));
               }
               let (cdivr, cdivi) = EigenDecomposition::cdiv(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
               hdata[(i * nn + (n - 1)) as usize] = cdivr;
               hdata[(i * nn + n) as usize] = cdivi;
-              if num::abs(x.clone()) > (num::abs(z.clone()) + num::abs(q.clone())) {
-                hdata[((i + 1) * nn + (n - 1)) as usize] = (- ra - w * hdata[(i * nn + (n - 1)) as usize].clone() + q * hdata[(i * nn + n) as usize].clone()) / x;
-                hdata[((i + 1) * nn + n) as usize] = (- sa - w * hdata[(i * nn + n) as usize].clone() - q * hdata[(i * nn + (n - 1)) as usize].clone()) / x;
+              if num::abs(x) > (num::abs(z) + num::abs(q)) {
+                hdata[((i + 1) * nn + (n - 1)) as usize] = (- ra - w * hdata[(i * nn + (n - 1)) as usize] + q * hdata[(i * nn + n) as usize]) / x;
+                hdata[((i + 1) * nn + n) as usize] = (- sa - w * hdata[(i * nn + n) as usize] - q * hdata[(i * nn + (n - 1)) as usize]) / x;
               } else {
-                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * hdata[(i * nn + (n - 1)) as usize].clone(), - s - y * hdata[(i * nn + n) as usize].clone(), z.clone(), q.clone());
+                let (cdivr, cdivi) = EigenDecomposition::cdiv(- r - y * hdata[(i * nn + (n - 1)) as usize], - s - y * hdata[(i * nn + n) as usize], z, q);
                 hdata[((i + 1) * nn + (n - 1)) as usize] = cdivr;
                 hdata[((i + 1) * nn + n) as usize] = cdivi;
               }
             }
 
             // Overflow control
-            t = num::abs(hdata[(i * nn + (n - 1)) as usize].clone()).max(num::abs(hdata[(i * nn + n) as usize].clone()));
+            t = num::abs(hdata[(i * nn + (n - 1)) as usize]).max(num::abs(hdata[(i * nn + n) as usize]));
             if (eps * t) * t > num::one() {
               for j in i..(n + 1) {
-                hdata[(j * nn + (n - 1)) as usize] = hdata[(j * nn + (n - 1)) as usize].clone() / t;
-                hdata[(j * nn + n) as usize] = hdata[(j * nn + n) as usize].clone() / t;
+                hdata[(j * nn + (n - 1)) as usize] = hdata[(j * nn + (n - 1)) as usize] / t;
+                hdata[(j * nn + n) as usize] = hdata[(j * nn + n) as usize] / t;
               }
             }
           }
@@ -735,7 +735,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     for i in 0..nn {
       if (i < low) || (i > high) {
         for j in i..nn {
-          vdata[(i * nn + j) as usize] = hdata[(i * nn + j) as usize].clone();
+          vdata[(i * nn + j) as usize] = hdata[(i * nn + j) as usize];
         }
       }
     }
@@ -745,7 +745,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       for i in low..(high + 1) {
         z = num::zero();
         for k in low..(cmp::min(j, high) + 1) {
-          z = z + vdata[(i * nn + k) as usize].clone() * hdata[(k * nn + j) as usize].clone();
+          z = z + vdata[(i * nn + k) as usize] * hdata[(k * nn + j) as usize];
         }
         vdata[(i * nn + j) as usize] = z;
       }
@@ -773,7 +773,7 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
     if issymmetric {
       for i in 0..n {
         for j in 0..n {
-          vdata[i * n + j] = a.get(i, j).clone();
+          vdata[i * n + j] = a.get(i, j);
         }
       }
 
@@ -826,11 +826,11 @@ impl<T : Float + ApproxEq<T> + Signed> EigenDecomposition<T> {
       for j in 0..self.n {
         ddata[i * self.n + j] = num::zero();
       }
-      ddata[i * self.n + i] = self.d[i].clone();
-      if self.e[i].clone() > num::zero() {
-        ddata[i * self.n + (i + 1)] = self.e[i].clone();
-      } else if self.e[i].clone() < num::zero() {
-        ddata[i * self.n + (i - 1)] = self.e[i].clone();
+      ddata[i * self.n + i] = self.d[i];
+      if self.e[i] > num::zero() {
+        ddata[i * self.n + (i + 1)] = self.e[i];
+      } else if self.e[i] < num::zero() {
+        ddata[i * self.n + (i - 1)] = self.e[i];
       }
     }
 

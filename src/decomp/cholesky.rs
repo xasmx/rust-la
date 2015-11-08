@@ -75,12 +75,12 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
         //   = SUM { L[k][0 .. (k - 1)] * L[j][0 .. (k - 1) }
         let mut s : T = num::zero();
         for i in 0..k {
-          s = s + data[k * n + i].clone() * data[j * n + i].clone();
+          s = s + data[k * n + i] * data[j * n + i];
         }
 
         // L[j][k] = (A[j][k] - SUM { L[k][0 .. (k - 1)] * L'[0 .. (k - 1)][j] }) / L[k][k].
-        s = (m.get(j, k) - s) / data[k * n + k].clone();
-        data[j * n + k] = s.clone();
+        s = (m.get(j, k) - s) / data[k * n + k];
+        data[j * n + k] = s;
 
         // Gather a sum of squres of L[j][0 .. (j - 1)] to d. Note: s = L[j][k].
         d = d + s * s;
@@ -124,9 +124,9 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     for k in 0..n {
       for j in 0..nx {
         for i in 0..k {
-          xdata[k * nx + j] = xdata[k * nx + j].clone() - xdata[i * nx + j].clone() * l.get_data()[k * n + i].clone();
+          xdata[k * nx + j] = xdata[k * nx + j] - xdata[i * nx + j] * l.get_data()[k * n + i];
         }
-        xdata[k * nx + j] = xdata[k * nx + j].clone() / l.get_data()[k * n + k].clone();
+        xdata[k * nx + j] = xdata[k * nx + j] / l.get_data()[k * n + k];
       }
     }
 
@@ -134,9 +134,9 @@ impl<T : Float + ApproxEq<T>> CholeskyDecomposition<T> {
     for k in (0..n).rev() {
       for j in 0..nx {
         for i in (k + 1)..n {
-          xdata[k * nx + j] = xdata[k * nx + j].clone() - xdata[i * nx + j].clone() * l.get_data()[i * n + k].clone();
+          xdata[k * nx + j] = xdata[k * nx + j] - xdata[i * nx + j] * l.get_data()[i * n + k];
         }
-        xdata[k * nx + j] = xdata[k * nx + j].clone() / l.get_data()[k * n + k].clone();
+        xdata[k * nx + j] = xdata[k * nx + j] / l.get_data()[k * n + k];
       }
     }
 
