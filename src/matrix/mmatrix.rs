@@ -18,63 +18,70 @@ impl<T : Copy> Matrix<T> {
     &mut self.data[row * no_cols + col]
   }
 
-  pub fn mmap(&mut self, f : &Fn(&T) -> T) {
+  pub fn mmap<'a>(&'a mut self, f : &Fn(&T) -> T) -> &'a mut Matrix<T> {
     for i in 0..self.data.len() {
       self.data[i] = f(&self.data[i]);
     }
+    self
   }
 }
 
 impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
-  pub fn mneg(&mut self) {
+  pub fn mneg<'a>(&'a mut self) -> &'a mut Matrix<T> {
     for i in 0..self.data.len() {
       self.data[i] = - self.data[i];
     }
+    self
   }
 
-  pub fn mscale(&mut self, factor : T) {
+  pub fn mscale<'a> (&'a mut self, factor : T) -> &'a mut Matrix<T> {
     for i in 0..self.data.len() {
       self.data[i] = factor * self.data[i];
     }
+    self
   }
 
-  pub fn madd(&mut self, m : &Matrix<T>) {
+  pub fn madd<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
       self.data[i] = self.data[i] + m.data[i];
     }
+    self
   }
 
-  pub fn msub(&mut self, m : &Matrix<T>) {
+  pub fn msub<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
       self.data[i] = self.data[i] - m.data[i]
     }
+    self
   }
 
-  pub fn melem_mul(&mut self, m : &Matrix<T>) {
+  pub fn melem_mul<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
       self.data[i] = self.data[i] * m.data[i];
     }
+    self
   }
 
-  pub fn melem_div(&mut self, m : &Matrix<T>) {
+  pub fn melem_div<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
     for i in 0..self.data.len() {
       self.data[i] = self.data[i] / m.data[i];
     }
+    self
   }
 
-  pub fn mmul(&mut self, m : &Matrix<T>) {
+  pub fn mmul<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.cols() == m.no_rows);
 
     let elems = self.no_rows * m.cols();
@@ -89,19 +96,21 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
       }
     }
 
-    self.data = d
+    self.data = d;
+    self
   }
 }
 
 
 impl<T : Copy> Matrix<T> {
-  pub fn set(&mut self, row : usize, col : usize, val : T) {
+  pub fn set<'a>(&'a mut self, row : usize, col : usize, val : T) -> &'a mut Matrix<T> {
     assert!(row < self.no_rows && col < self.cols());
     let no_cols = self.cols();
-    self.data[row * no_cols + col] = val
+    self.data[row * no_cols + col] = val;
+    self
   }
 
-  pub fn mt(&mut self) {
+  pub fn mt<'a>(&'a mut self) -> &'a mut Matrix<T> {
     let mut visited = vec![false; self.data.len()];
 
     for cycle_idx in 1..(self.data.len() - 1) {
@@ -125,6 +134,7 @@ impl<T : Copy> Matrix<T> {
     }
 
     self.no_rows = self.cols();
+    self
   }
 }
 
@@ -215,6 +225,13 @@ fn test_algebra() {
   let mut b = m!(3, 4; 5, 6);
   b.melem_div(&a);
   assert!(b.data == vec![3, 2, 1, 1]);
+
+  let mut a = m!(1, 2; 3, 4);
+  let b = m!(3, 4; 5, 6);
+  a.mneg()
+   .mscale(2)
+   .madd(&b);
+  assert!(a.data == vec![1, 0, -1, -2]);
 }
 
 #[test]
