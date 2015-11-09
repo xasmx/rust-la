@@ -427,7 +427,7 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
-  pub fn sub_matrix<'a, RRI, RCI, RR, RC>(&'a self, rows : RR, cols : RC) -> Matrix<T>
+  pub fn sub_matrix<RRI, RCI, RR, RC>(&self, rows : RR, cols : RC) -> Matrix<T>
       where RRI : MatrixRangeIterator,
             RCI : MatrixRangeIterator,
             RR : MatrixRange<RRI>,
@@ -455,13 +455,18 @@ impl<T : Copy> Matrix<T> {
   }
 
   #[inline]
-  pub fn get_column(&self, column : usize) -> Matrix<T> {
-    self.sub_matrix(.., column)
+  pub fn get_columns<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, columns : RC) -> Matrix<T> {
+    self.sub_matrix(.., columns)
   }
 
   #[inline]
-  pub fn get_row(&self, row : usize) -> Matrix<T> {
+  pub fn get_rows<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, row : RC) -> Matrix<T> {
     self.sub_matrix(row, ..)
+  }
+
+  #[inline]
+  pub fn permute(&self, rows : &[usize], columns : &[usize]) -> Matrix<T> {
+    self.sub_matrix(rows, columns)
   }
 
   #[inline]
@@ -1071,29 +1076,29 @@ fn test_minor_out_of_bounds() {
 }
 
 #[test]
-fn test_get_column() {
+fn test_get_columns() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  assert!(m.get_column(1).data == vec![2, 5, 8]);
+  assert!(m.get_columns(1).data == vec![2, 5, 8]);
 }
 
 #[test]
 #[should_panic]
-fn test_get_column_out_of_bounds() {
+fn test_get_columns_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let _ = m.get_column(3);
+  let _ = m.get_columns(3);
 }
 
 #[test]
-fn test_get_row() {
+fn test_get_rows() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  assert!(m.get_row(1).data == vec![4, 5, 6]);
+  assert!(m.get_rows(1).data == vec![4, 5, 6]);
 }
 
 #[test]
 #[should_panic]
-fn test_get_row_out_of_bounds() {
+fn test_get_rows_out_of_bounds() {
   let m = m!(1, 2, 3; 4, 5, 6; 7, 8, 9);
-  let _ = m.get_row(3);
+  let _ = m.get_rows(3);
 }
 
 #[test]
