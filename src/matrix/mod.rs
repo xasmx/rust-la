@@ -158,6 +158,12 @@ impl<T : Copy> Matrix<T> {
     Matrix { no_rows : no_rows, data : data }
   }
 
+  pub fn dirty(no_rows : usize, no_cols : usize) -> Matrix<T> {
+    assert!(no_rows > 0 && no_cols > 0);
+    let elems = no_rows * no_cols;
+    Matrix { no_rows : no_rows, data : alloc_dirty_vec(elems) }
+  }
+
   pub fn vector(data : Vec<T>) -> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : data.len(), data : data }
@@ -888,6 +894,13 @@ fn test_new_invalid_row_count() {
 #[should_panic]
 fn test_new_invalid_col_count() {
   Matrix::<usize>::new(2, 0, vec![]);
+}
+
+#[test]
+fn test_dirty() {
+  let m : Matrix<usize> = Matrix::dirty(3, 2);
+  assert!(m.rows() == 3);
+  assert!(m.cols() == 2);
 }
 
 #[test]

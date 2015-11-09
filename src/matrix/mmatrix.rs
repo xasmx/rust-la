@@ -3,8 +3,6 @@ use std::vec::Vec;
 use num;
 use num::traits::{Num};
 
-use internalutil::{alloc_dirty_vec};
-
 use matrix::Matrix;
 
 
@@ -81,23 +79,22 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
     self
   }
 
-  pub fn mmul<'a>(&'a mut self, m : &Matrix<T>) -> &'a mut Matrix<T> {
+  pub fn mmul<'a>(&self, m : &Matrix<T>, dst : &'a mut Matrix<T>) -> &'a mut Matrix<T> {
     assert!(self.cols() == m.no_rows);
+    assert!(dst.rows() == self.no_rows);
+    assert!(dst.cols() == m.cols());
 
-    let elems = self.no_rows * m.cols();
-    let mut d = alloc_dirty_vec(elems);
     for row in 0..self.no_rows {
       for col in 0..m.cols() {
         let mut res : T = num::zero();
         for idx in 0..self.cols() {
           res = res + self.get(row, idx) * m.get(idx, col);
         }
-        d[row * m.cols() + col] = res;
+        dst.data[row * m.cols() + col] = res;
       }
     }
 
-    self.data = d;
-    self
+    dst
   }
 }
 
@@ -236,17 +233,28 @@ fn test_algebra() {
 
 #[test]
 fn test_mmul() {
-  let mut a = m!(1, 2; 3, 4);
+  let a = m!(1, 2; 3, 4);
   let b = m!(3, 4; 5, 6);
-  a.mmul(&b);
-  assert!(a.data == vec![13, 16, 29, 36]);
+  let mut dst = Matrix::dirty(2, 2);
+  a.mmul(&b, &mut dst);
+  assert!(dst.data == vec![13, 16, 29, 36]);
 }
 
 #[test]
 #[should_panic]
-fn test_mmul_incompatible() {
-  let mut a = m!(1, 2; 3, 4);
+fn test_mmul_incompatible_src() {
+  let a = m!(1, 2; 3, 4);
   let b = m!(1, 2; 3, 4; 5, 6);
-  a.mmul(&b);
+  let mut dst = Matrix::dirty(2, 2);
+  a.mmul(&b, &mut dst);
+}
+
+#[test]
+#[should_panic]
+fn test_mmul_incompatible_dst() {
+  let a = m!(1, 2; 3, 4);
+  let b = m!(1, 2; 3, 4);
+  let mut dst = Matrix::dirty(3, 3);
+  a.mmul(&b, &mut dst);
 }
 
