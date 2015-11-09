@@ -38,21 +38,17 @@ pub trait MatrixRangeIterator {
 
 //----------------------
 
-pub struct ConstantIterator {
-  index : usize
+impl MatrixRangeIterator for usize {
+  fn next(&mut self) -> usize { *self }
 }
 
-impl MatrixRangeIterator for ConstantIterator {
-  fn next(&mut self) -> usize { self.index }
-}
-
-impl MatrixRange<ConstantIterator> for usize {
+impl MatrixRange<usize> for usize {
   fn size(&self, _matrix_size : usize) -> usize {
     1
   }
 
-  fn iter(&self) -> ConstantIterator {
-    ConstantIterator { index : *self }
+  fn iter(&self) -> usize {
+    *self
   }
 }
 
