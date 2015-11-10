@@ -85,15 +85,14 @@ impl <'a> MatrixRange<SliceRangeIterator<'a>> for &'a [usize] {
 //----------------------
 
 pub struct RangeIterator {
-  index : isize,
-  increment : isize
+  index : usize
 }
 
 impl MatrixRangeIterator for RangeIterator {
   fn next(&mut self) -> usize {
     let next_val = self.index;
-    self.index += self.increment;
-    next_val as usize
+    self.index += 1;
+    next_val
   }
 }
 
@@ -104,47 +103,43 @@ impl MatrixRange<RangeIterator> for RangeFull {
 
   fn iter(&self) -> RangeIterator {
     RangeIterator {
-      index : 0,
-      increment : 1
+      index : 0
     }
   }
 }
 
-impl MatrixRange<RangeIterator> for Range<isize> {
+impl MatrixRange<RangeIterator> for Range<usize> {
   fn size(&self, _matrix_size : usize) -> usize {
     (self.end - self.start) as usize
   }
 
   fn iter(&self) -> RangeIterator {
     RangeIterator {
-      index : self.start,
-      increment : if self.start <= self.end { 1 } else { -1 }
+      index : self.start
     }
   }
 }
 
-impl MatrixRange<RangeIterator> for RangeFrom<isize> {
+impl MatrixRange<RangeIterator> for RangeFrom<usize> {
   fn size(&self, matrix_size : usize) -> usize {
     matrix_size - self.start as usize
   }
 
   fn iter(&self) -> RangeIterator {
     RangeIterator {
-      index : self.start,
-      increment : 1
+      index : self.start
     }
   }
 }
 
-impl MatrixRange<RangeIterator> for RangeTo<isize> {
+impl MatrixRange<RangeIterator> for RangeTo<usize> {
   fn size(&self, _matrix_size : usize) -> usize {
     self.end as usize
   }
 
   fn iter(&self) -> RangeIterator {
     RangeIterator {
-      index : 0,
-      increment : 1
+      index : 0
     }
   }
 }
