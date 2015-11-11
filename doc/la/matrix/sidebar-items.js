@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Matrix",""]]});
+initSidebarItems({"struct":[["Matrix",""]],"trait":[["MatrixRange",""],["MatrixRangeIterator",""]]});

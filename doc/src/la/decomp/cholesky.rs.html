@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -300,12 +300,12 @@
         <span class='comment'>//   = SUM { L[k][0 .. (k - 1)] * L[j][0 .. (k - 1) }</span>
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>s</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>k</span> {
-          <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>s</span> <span class='op'>+</span> <span class='ident'>data</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>data</span>[<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>].<span class='ident'>clone</span>();
+          <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>s</span> <span class='op'>+</span> <span class='ident'>data</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>] <span class='op'>*</span> <span class='ident'>data</span>[<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>];
         }
 
         <span class='comment'>// L[j][k] = (A[j][k] - SUM { L[k][0 .. (k - 1)] * L&#39;[0 .. (k - 1)][j] }) / L[k][k].</span>
-        <span class='ident'>s</span> <span class='op'>=</span> (<span class='ident'>m</span>.<span class='ident'>get</span>(<span class='ident'>j</span>, <span class='ident'>k</span>) <span class='op'>-</span> <span class='ident'>s</span>) <span class='op'>/</span> <span class='ident'>data</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
-        <span class='ident'>data</span>[<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>] <span class='op'>=</span> <span class='ident'>s</span>.<span class='ident'>clone</span>();
+        <span class='ident'>s</span> <span class='op'>=</span> (<span class='ident'>m</span>.<span class='ident'>get</span>(<span class='ident'>j</span>, <span class='ident'>k</span>) <span class='op'>-</span> <span class='ident'>s</span>) <span class='op'>/</span> <span class='ident'>data</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>];
+        <span class='ident'>data</span>[<span class='ident'>j</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>] <span class='op'>=</span> <span class='ident'>s</span>;
 
         <span class='comment'>// Gather a sum of squres of L[j][0 .. (j - 1)] to d. Note: s = L[j][k].</span>
         <span class='ident'>d</span> <span class='op'>=</span> <span class='ident'>d</span> <span class='op'>+</span> <span class='ident'>s</span> <span class='op'>*</span> <span class='ident'>s</span>;
@@ -349,9 +349,9 @@
     <span class='kw'>for</span> <span class='ident'>k</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>n</span> {
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>nx</span> {
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>k</span> {
-          <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>].<span class='ident'>clone</span>();
+          <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>*</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>i</span>];
         }
-        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>/</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>/</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>];
       }
     }
 
@@ -359,9 +359,9 @@
     <span class='kw'>for</span> <span class='ident'>k</span> <span class='kw'>in</span> (<span class='number'>0</span>..<span class='ident'>n</span>).<span class='ident'>rev</span>() {
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>nx</span> {
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> (<span class='ident'>k</span> <span class='op'>+</span> <span class='number'>1</span>)..<span class='ident'>n</span> {
-          <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+          <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>*</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>];
         }
-        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>/</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>/</span> <span class='ident'>l</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>k</span>];
       }
     }
 
@@ -411,10 +411,12 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -431,7 +433,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -441,8 +443,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -451,7 +453,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

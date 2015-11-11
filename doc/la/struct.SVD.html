@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='index.html'>la</a></p><script>window.sidebarCurrent = {name: 'SVD', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-18352' class='srclink' href='../src/la/decomp/svd.rs.html#23-27' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-18217' class='srclink' href='../src/la/decomp/svd.rs.html#23-27' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct SVD&lt;T&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>Singular Value Decomposition.</p>
@@ -66,7 +66,7 @@ and the effective numerical rank can be computed from this decomposition.</p>
 </div><h4 id='method.get_u' class='method'><code>fn <a href='#method.get_u' class='fnname'>get_u</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_s' class='method'><code>fn <a href='#method.get_s' class='fnname'>get_s</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_v' class='method'><code>fn <a href='#method.get_v' class='fnname'>get_v</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
-<h4 id='method.rank' class='method'><code>fn <a href='#method.rank' class='fnname'>rank</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.rank' class='method'><code>fn <a href='#method.rank' class='fnname'>rank</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <h4 id='method.direct' class='method'><code>fn <a href='#method.direct' class='fnname'>direct</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.SVD.html' title='la::SVD'>SVD</a>&lt;T&gt;</code></h4>
 <div class='docblock'><p>Calculates SVD using the direct method. Note that calculating it this way
 is not numerically stable, so it is mostly useful for testing purposes.</p>
@@ -75,10 +75,12 @@ is not numerically stable, so it is mostly useful for testing purposes.</p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -95,7 +97,7 @@ is not numerically stable, so it is mostly useful for testing purposes.</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -105,8 +107,8 @@ is not numerically stable, so it is mostly useful for testing purposes.</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -115,7 +117,7 @@ is not numerically stable, so it is mostly useful for testing purposes.</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

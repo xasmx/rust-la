@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -351,15 +351,15 @@
     <span class='comment'>// the column vector corresponds to the row range minor .. (m - 1).</span>
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>x_norm_sqr</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
     <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
-      <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>();
+      <span class='kw'>let</span> <span class='ident'>c</span> <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>];
       <span class='ident'>x_norm_sqr</span> <span class='op'>=</span> <span class='ident'>x_norm_sqr</span> <span class='op'>+</span> <span class='ident'>c</span> <span class='op'>*</span> <span class='ident'>c</span>;
     }
 
     <span class='comment'>// We know the size of the reflected coordinate (the lenght of the column vector), but not the sign yet.</span>
     <span class='comment'>// Reflection will flip the sign of the corresponding coordinate element, so sign of the reflected</span>
     <span class='comment'>// coordinate will be the opposite of the current coordinate element.</span>
-    <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>&gt;</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() { <span class='op'>-</span> <span class='ident'>x_norm_sqr</span>.<span class='ident'>sqrt</span>() } <span class='kw'>else</span> { <span class='ident'>x_norm_sqr</span>.<span class='ident'>sqrt</span>() };
-    <span class='ident'>rdiag</span>[<span class='ident'>minor</span>] <span class='op'>=</span> <span class='ident'>a</span>.<span class='ident'>clone</span>();
+    <span class='kw'>let</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>&gt;</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() { <span class='op'>-</span> <span class='ident'>x_norm_sqr</span>.<span class='ident'>sqrt</span>() } <span class='kw'>else</span> { <span class='ident'>x_norm_sqr</span>.<span class='ident'>sqrt</span>() };
+    <span class='ident'>rdiag</span>[<span class='ident'>minor</span>] <span class='op'>=</span> <span class='ident'>a</span>;
 
     <span class='comment'>// If the length of the column vector is zero, the column is already zero and there&#39;s nothing to do.</span>
     <span class='kw'>if</span> <span class='ident'>a</span> <span class='op'>!=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
@@ -376,7 +376,7 @@
       <span class='comment'>//       = 2a^2 - 2a&lt;x, e&gt;</span>
       <span class='comment'>//       = 2a^2 - 2a*qrdata[k * n + k]	// As &lt;x, e&gt; is the projection of x to the axis aligned unit vector e.</span>
       <span class='comment'>//       = 2a(a - qrdata[k * n + k])</span>
-      <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>-</span> <span class='ident'>a</span>;
+      <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>-</span> <span class='ident'>a</span>;
 
       <span class='comment'>// Note that now:</span>
       <span class='comment'>// |u|^2 = 2a(a - (qrdata[k * n + k] + a))</span>
@@ -396,13 +396,13 @@
         <span class='comment'>// factor = &lt;x, u&gt;/(a * qrdata[k * n + k])</span>
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>x_dot_u</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
         <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
-          <span class='ident'>x_dot_u</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>+</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>].<span class='ident'>clone</span>();
+          <span class='ident'>x_dot_u</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>+</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>];
         }
-        <span class='kw'>let</span> <span class='ident'>factor</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>/</span> (<span class='ident'>a</span> <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>());
+        <span class='kw'>let</span> <span class='ident'>factor</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>/</span> (<span class='ident'>a</span> <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>]);
 
         <span class='comment'>// Hx = x + factor * u</span>
         <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
-          <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>].<span class='ident'>clone</span>() <span class='op'>+</span> <span class='ident'>factor</span> <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>();
+          <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>=</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>+</span> <span class='ident'>factor</span> <span class='op'>*</span> <span class='ident'>qrdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>];
         }
       }
     }
@@ -410,7 +410,7 @@
 
   <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_full_rank</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
     <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() {
-      <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>==</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
+      <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>j</span>] <span class='op'>==</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
         <span class='kw'>return</span> <span class='boolval'>false</span>;
       }
     }
@@ -427,7 +427,7 @@
 
     <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>m</span> {
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>n</span> {
-        <span class='ident'>hdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>&gt;=</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() } <span class='kw'>else</span> { <span class='ident'>num</span>::<span class='ident'>zero</span>() }
+        <span class='ident'>hdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>&gt;=</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>j</span>] } <span class='kw'>else</span> { <span class='ident'>num</span>::<span class='ident'>zero</span>() }
       }
     }
 
@@ -442,8 +442,8 @@
 
     <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>m</span> {
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>n</span> {
-        <span class='ident'>rdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>&lt;</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() }
-                           <span class='kw'>else</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>==</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>i</span>].<span class='ident'>clone</span>() }
+        <span class='ident'>rdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>&lt;</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>j</span>] }
+                           <span class='kw'>else</span> <span class='kw'>if</span> <span class='ident'>i</span> <span class='op'>==</span> <span class='ident'>j</span> { <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>i</span>] }
                            <span class='kw'>else</span> { <span class='ident'>num</span>::<span class='ident'>zero</span>() };
       }
     }
@@ -466,7 +466,7 @@
     <span class='comment'>// the identity matrix to Q: (Note that a reflection matrix is it&#39;s own inverse).</span>
     <span class='comment'>//   Q = Q_1_inv(Q_2_inv(...(Q_m_inv I))) = Q_1(Q_2(...(Q_m I)))</span>
     <span class='kw'>for</span> <span class='ident'>minor</span> <span class='kw'>in</span> (<span class='number'>0</span>..<span class='ident'>cmp</span>::<span class='ident'>min</span>(<span class='ident'>m</span>, <span class='ident'>n</span>)).<span class='ident'>rev</span>() {
-      <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>!=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
+      <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>!=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>() {
         <span class='comment'>// |u|^2 = -2a*qrdata[minor * n + minor]</span>
         <span class='comment'>//       = -2 * rdiag[minor] * qrdata[minor * n + minor]</span>
         <span class='comment'>//</span>
@@ -482,12 +482,12 @@
         <span class='kw'>for</span> <span class='ident'>column</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
           <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>x_dot_u</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
           <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
-            <span class='ident'>x_dot_u</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>].<span class='ident'>clone</span>();
+            <span class='ident'>x_dot_u</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>] <span class='op'>*</span> <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>];
           }
-          <span class='kw'>let</span> <span class='ident'>factor</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>/</span> (<span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>minor</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>());
+          <span class='kw'>let</span> <span class='ident'>factor</span> <span class='op'>=</span> <span class='ident'>x_dot_u</span> <span class='op'>/</span> (<span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>minor</span>] <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>minor</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>]);
 
           <span class='kw'>for</span> <span class='ident'>row</span> <span class='kw'>in</span> <span class='ident'>minor</span>..<span class='ident'>m</span> {
-            <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>=</span> <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>].<span class='ident'>clone</span>() <span class='op'>+</span> <span class='ident'>factor</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>].<span class='ident'>clone</span>();
+            <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>=</span> <span class='ident'>qdata</span>[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>m</span> <span class='op'>+</span> <span class='ident'>column</span>] <span class='op'>+</span> <span class='ident'>factor</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>row</span> <span class='op'>*</span> <span class='ident'>n</span> <span class='op'>+</span> <span class='ident'>minor</span>];
           }
         }
       }
@@ -516,11 +516,11 @@
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>nx</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>s</span> : <span class='ident'>T</span> <span class='op'>=</span> <span class='ident'>num</span>::<span class='ident'>zero</span>();
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>k</span>..<span class='ident'>m</span> {
-          <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>s</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>();
+          <span class='ident'>s</span> <span class='op'>=</span> <span class='ident'>s</span> <span class='op'>+</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>] <span class='op'>*</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>];
         }
-        <span class='ident'>s</span> <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>s</span> <span class='op'>/</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+        <span class='ident'>s</span> <span class='op'>=</span> <span class='op'>-</span> <span class='ident'>s</span> <span class='op'>/</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>k</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>];
         <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='ident'>k</span>..<span class='ident'>m</span> {
-          <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>+</span> <span class='ident'>s</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+          <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>+</span> <span class='ident'>s</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>];
         }
       }
     }
@@ -528,11 +528,11 @@
     <span class='comment'>// Solve R*X = Y;</span>
     <span class='kw'>for</span> <span class='ident'>k</span> <span class='kw'>in</span> (<span class='number'>0</span>..<span class='ident'>n</span>).<span class='ident'>rev</span>() {
       <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>nx</span> {
-        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>/</span> <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>k</span>].<span class='ident'>clone</span>();
+        <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>/</span> <span class='self'>self</span>.<span class='ident'>rdiag</span>[<span class='ident'>k</span>];
       }
       <span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>k</span> {
         <span class='kw'>for</span> <span class='ident'>j</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>nx</span> {
-          <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>].<span class='ident'>clone</span>() <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>].<span class='ident'>clone</span>();
+          <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>=</span> <span class='ident'>xdata</span>[<span class='ident'>i</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>-</span> <span class='ident'>xdata</span>[<span class='ident'>k</span> <span class='op'>*</span> <span class='ident'>nx</span> <span class='op'>+</span> <span class='ident'>j</span>] <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>get_data</span>()[<span class='ident'>i</span> <span class='op'>*</span> <span class='self'>self</span>.<span class='ident'>qr</span>.<span class='ident'>cols</span>() <span class='op'>+</span> <span class='ident'>k</span>];
         }
       }
     }
@@ -567,10 +567,12 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -587,7 +589,7 @@
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -597,8 +599,8 @@
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -607,7 +609,7 @@
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

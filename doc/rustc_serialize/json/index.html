@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         <a href='../../rustc_serialize/index.html'><img src='http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png' alt='' width='100'></a>
         <p class='location'><a href='../index.html'>rustc_serialize</a></p><script>window.sidebarCurrent = {name: 'json', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-13795' class='srclink' href='../../src/rustc_serialize/json.rs.html#14-3958' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-34122' class='srclink' href='../../src/rustc_serialize/json.rs.html#14-3931' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>JSON parsing and serialization</p>
 
 <h1 id="what-is-json?" class='section-header'><a
@@ -255,6 +255,14 @@ which is required for custom mappings.</p>
     <span class='comment'>// bar: baz (string)</span>
     <span class='comment'>// foo: 13 (u64)</span>
 }</pre>
+
+<h1 id="the-status-of-this-library" class='section-header'><a
+                           href="#the-status-of-this-library">The status of this library</a></h1>
+<p>While this library is the standard way of working with JSON in Rust,
+there is a next-generation library called Serde that&#39;s in the works (it&#39;s
+faster, overcomes some design limitations of rustc-serialize and has more
+features). You might consider using it when starting new project or
+evaluating Rust JSON performance.</p>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                     <tr class=' module-item'>
@@ -495,10 +503,12 @@ on-the-fly via <code>write!</code></p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -515,7 +525,7 @@ on-the-fly via <code>write!</code></p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -525,8 +535,8 @@ on-the-fly via <code>write!</code></p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -535,7 +545,7 @@ on-the-fly via <code>write!</code></p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

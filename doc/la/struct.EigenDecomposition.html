@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='index.html'>la</a></p><script>window.sidebarCurrent = {name: 'EigenDecomposition', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-7662' class='srclink' href='../src/la/decomp/eigen.rs.html#23-28' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-7836' class='srclink' href='../src/la/decomp/eigen.rs.html#23-28' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct EigenDecomposition&lt;T&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>Eigenvalues and eigenvectors of a real matrix.</p>
@@ -64,18 +64,20 @@ The matrix V may be badly conditioned, or even singular, so the validity
 of the equation A = V * D * V<sup>-1</sup> depends upon V.cond().</p>
 </div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='../num/traits/trait.Float.html' title='num::traits::Float'>Float</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt; + <a class='trait' href='../num/traits/trait.Signed.html' title='num::traits::Signed'>Signed</a>&gt; <a class='struct' href='../la/struct.EigenDecomposition.html' title='la::EigenDecomposition'>EigenDecomposition</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.EigenDecomposition.html' title='la::EigenDecomposition'>EigenDecomposition</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_v' class='method'><code>fn <a href='#method.get_v' class='fnname'>get_v</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
-<h4 id='method.get_real_eigenvalues' class='method'><code>fn <a href='#method.get_real_eigenvalues' class='fnname'>get_real_eigenvalues</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='http://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></h4>
-<h4 id='method.get_imag_eigenvalues' class='method'><code>fn <a href='#method.get_imag_eigenvalues' class='fnname'>get_imag_eigenvalues</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='http://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></h4>
+<h4 id='method.get_real_eigenvalues' class='method'><code>fn <a href='#method.get_real_eigenvalues' class='fnname'>get_real_eigenvalues</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></h4>
+<h4 id='method.get_imag_eigenvalues' class='method'><code>fn <a href='#method.get_imag_eigenvalues' class='fnname'>get_imag_eigenvalues</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_d' class='method'><code>fn <a href='#method.get_d' class='fnname'>get_d</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -92,7 +94,7 @@ of the equation A = V * D * V<sup>-1</sup> depends upon V.cond().</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -102,8 +104,8 @@ of the equation A = V * D * V<sup>-1</sup> depends upon V.cond().</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -112,7 +114,7 @@ of the equation A = V * D * V<sup>-1</sup> depends upon V.cond().</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 

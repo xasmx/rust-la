@@ -24,10 +24,10 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='index.html'>la</a></p><script>window.sidebarCurrent = {name: 'LUDecomposition', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
@@ -45,7 +45,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-15502' class='srclink' href='../src/la/decomp/lu.rs.html#95-101' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-15423' class='srclink' href='../src/la/decomp/lu.rs.html#95-101' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct LUDecomposition&lt;T&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>LU Decomposition.</p>
@@ -62,23 +62,25 @@ singular. The primary use of the LU decomposition is in the solution of
 square systems of simultaneous linear equations. This will fail if the
 matrix is singular.</p>
 </div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='../num/traits/trait.Float.html' title='num::traits::Float'>Float</a> + <a class='trait' href='../la/trait.ApproxEq.html' title='la::ApproxEq'>ApproxEq</a>&lt;T&gt; + <a class='trait' href='../num/traits/trait.Signed.html' title='num::traits::Signed'>Signed</a>&gt; <a class='struct' href='../la/struct.LUDecomposition.html' title='la::LUDecomposition'>LUDecomposition</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(a: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='struct' href='../la/struct.LUDecomposition.html' title='la::LUDecomposition'>LUDecomposition</a>&lt;T&gt;</code></h4>
-<h4 id='method.is_singular' class='method'><code>fn <a href='#method.is_singular' class='fnname'>is_singular</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<h4 id='method.is_non_singular' class='method'><code>fn <a href='#method.is_non_singular' class='fnname'>is_non_singular</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.is_singular' class='method'><code>fn <a href='#method.is_singular' class='fnname'>is_singular</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.is_non_singular' class='method'><code>fn <a href='#method.is_non_singular' class='fnname'>is_non_singular</a>(&amp;self) -&gt; <a href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <h4 id='method.get_l' class='method'><code>fn <a href='#method.get_l' class='fnname'>get_l</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_u' class='method'><code>fn <a href='#method.get_u' class='fnname'>get_u</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
 <h4 id='method.get_p' class='method'><code>fn <a href='#method.get_p' class='fnname'>get_p</a>(&amp;self) -&gt; <a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;</code></h4>
-<h4 id='method.get_piv' class='method'><code>fn <a href='#method.get_piv' class='fnname'>get_piv</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='http://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
+<h4 id='method.get_piv' class='method'><code>fn <a href='#method.get_piv' class='fnname'>get_piv</a>&lt;'lt&gt;(&amp;'lt self) -&gt; &amp;'lt <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>&gt;</code></h4>
 <h4 id='method.det' class='method'><code>fn <a href='#method.det' class='fnname'>det</a>(&amp;self) -&gt; T</code></h4>
-<h4 id='method.solve' class='method'><code>fn <a href='#method.solve' class='fnname'>solve</a>(&amp;self, b: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;&gt;</code></h4>
+<h4 id='method.solve' class='method'><code>fn <a href='#method.solve' class='fnname'>solve</a>(&amp;self, b: &amp;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../la/struct.Matrix.html' title='la::Matrix'>Matrix</a>&lt;T&gt;&gt;</code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
+    <aside id="help" class="hidden">
         <div>
+            <h1 class="hidden">Help</h1>
+
             <div class="shortcuts">
-                <h1>Keyboard Shortcuts</h1>
+                <h2>Keyboard Shortcuts</h2>
 
                 <dl>
                     <dt>?</dt>
@@ -95,7 +97,7 @@ matrix is singular.</p>
             </div>
 
             <div class="infos">
-                <h1>Search Tricks</h1>
+                <h2>Search Tricks</h2>
 
                 <p>
                     Prefix searches with a type followed by a colon (e.g.
@@ -105,8 +107,8 @@ matrix is singular.</p>
                 <p>
                     Accepted types are: <code>fn</code>, <code>mod</code>,
                     <code>struct</code>, <code>enum</code>,
-                    <code>trait</code>, <code>typedef</code> (or
-                    <code>tdef</code>).
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
                 </p>
 
                 <p>
@@ -115,7 +117,7 @@ matrix is singular.</p>
                 </p>
             </div>
         </div>
-    </div>
+    </aside>
 
     
 
