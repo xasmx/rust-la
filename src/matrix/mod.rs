@@ -336,6 +336,17 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
       data : d
     }
   }
+
+  pub fn dot(&self, m : &Matrix<T>) -> T {
+    assert!(self.no_rows == m.no_rows);
+    assert!(self.cols() == m.cols() && self.cols() == 1);
+
+    let mut sum = num::zero::<T>();
+    for i in 0..self.data.len() {
+      sum = sum + self.data[i] * m.data[i];
+    }
+    sum
+  }
 }
 
 
@@ -1184,6 +1195,13 @@ fn test_algebra() {
   assert!((&b).sub(&a).data == vec![2, 2, 2, 2]);
   assert!((&a).elem_mul(&b).data == vec![3, 8, 15, 24]);
   assert!((&b).elem_div(&a).data == vec![3, 2, 1, 1]);
+}
+
+#[test]
+fn test_dot() {
+  let a = m!(1; 2; 3; 4);
+  let b = m!(3; 4; 5; 6);
+  assert!((&a).dot(&b) == 50);
 }
 
 #[test]
