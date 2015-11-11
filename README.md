@@ -14,7 +14,7 @@ To use this crate, add la as a dependency to your project's Cargo.toml:
 
 ```
 [dependencies]
-la = "0.1.0"
+la = "0.2.0"
 ```
 
 ## Features
