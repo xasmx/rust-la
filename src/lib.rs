@@ -1,5 +1,6 @@
 extern crate rand;
 extern crate num;
+extern crate simd;
 
 pub use approxeq::ApproxEq;
 pub use decomp::cholesky::CholeskyDecomposition;

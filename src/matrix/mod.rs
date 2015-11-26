@@ -1,4 +1,5 @@
 mod mmatrix;
+mod simd;
 
 use std::cmp;
 #[cfg(test)]

@@ -10,11 +10,18 @@ See [here](http://xasmx.github.io/rust-la/doc/la/index.html).
 
 ## Usage
 
-To use this crate, add la as a dependency to your project's Cargo.toml:
+To use this crate for stable Rust channel, add la as a dependency to your project's Cargo.toml:
 
 ```
 [dependencies]
 la = "0.2.0"
+```
+
+For nightly-build:
+
+```
+[dependencies]
+la = { git = "https://github.com/xasmx/rust-la" }
 ```
 
 ## Features
