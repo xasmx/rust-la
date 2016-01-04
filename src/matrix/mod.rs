@@ -147,6 +147,48 @@ impl MatrixRange<RangeIterator> for RangeTo<usize> {
 
 //----------------------
 
+pub struct MatrixRowIterator<'a, T: 'a> {
+  index : usize,
+  matrix : &'a Matrix<T>
+}
+
+impl<'a, T: Copy> Iterator for MatrixRowIterator<'a, T> {
+  type Item = Matrix<T>;
+
+  fn next(&mut self) -> Option<Matrix<T>> {
+    if self.index < self.matrix.rows() {
+      let row = self.matrix.get_rows(self.index);
+      self.index += 1;
+      Some(row)
+    } else {
+      None
+    }
+  }
+}
+
+//----------------------
+
+pub struct MatrixColIterator<'a, T: 'a> {
+  index: usize,
+  matrix: &'a Matrix<T>
+}
+
+impl<'a, T: Copy> Iterator for MatrixColIterator<'a, T> {
+  type Item = Matrix<T>;
+
+  fn next(&mut self) -> Option<Matrix<T>> {
+    if self.index < self.matrix.cols() {
+      let col = self.matrix.get_columns(self.index);
+      self.index += 1;
+      Some(col)
+    } else {
+      None
+    }
+  }
+}
+
+//----------------------
+
 impl<T : Copy> Matrix<T> {
   pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
     assert!(no_rows * no_cols == data.len());
@@ -221,6 +263,20 @@ impl<T : Copy> Matrix<T> {
   #[inline]
   pub fn is_not_square(&self) -> bool {
     !self.is_square()
+  }
+
+  pub fn row_iter(&self) -> MatrixRowIterator<T> {
+    MatrixRowIterator::<T> {
+      index: 0,
+      matrix: self
+    }
+  }
+
+  pub fn col_iter(&self) -> MatrixColIterator<T> {
+    MatrixColIterator::<T> {
+      index: 0,
+      matrix: self
+    }
   }
 }
 
@@ -1312,6 +1368,36 @@ fn test_is_square() {
   let v = m!(1; 2; 3);
   assert!(!v.is_square());
   assert!(v.is_not_square());
+}
+
+#[test]
+fn test_row_iter() {
+  let mat = m!(1, 2; 3, 4; 5, 6);
+
+  let mut iter = mat.row_iter();
+
+  let row1 = iter.next();
+  assert_eq!(row1, Some(m![1, 2]));
+  let row2 = iter.next();
+  assert_eq!(row2, Some(m![3, 4]));
+  let row3 = iter.next();
+  assert_eq!(row3, Some(m![5, 6]));
+
+  assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn test_col_iter() {
+  let mat = m!(1, 2; 3, 4; 5, 6);
+
+  let mut iter = mat.col_iter();
+
+  let col1 = iter.next();
+  assert_eq!(col1, Some(m![1; 3; 5])); // column format
+  let col2 = iter.next();
+  assert_eq!(col2, Some(m![2; 4; 6]));
+
+  assert_eq!(iter.next(), None);
 }
 
 #[test]
