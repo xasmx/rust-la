@@ -189,6 +189,18 @@ impl<'a, T: Copy> Iterator for MatrixColIterator<'a, T> {
 //----------------------
 
 impl<T : Copy> Matrix<T> {
+
+  /// Constructor for a Matrix. The length of `data` must equal `no_rows *
+  /// no_cols`, and `no_rows` and `no_cols` must both be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// let a = Matrix::new(2, 3, vec![1, 2, 3, 4, 5, 6]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 2 3 |
+  /// // | 4 5 6 |
+  /// ```
   pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
     assert!(no_rows * no_cols == data.len());
     assert!(no_rows > 0 && no_cols > 0);

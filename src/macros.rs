@@ -1,11 +1,5 @@
 #![macro_use]
 
-/// Macro for building matrices.
-///
-/// # Example
-///
-/// let _m = m!(1.0, 2.0, 3.0; 4.0, 5.0, 6.0);
-
 /// Helper macro for m!
 #[macro_export]
 macro_rules! m_one {
@@ -26,7 +20,18 @@ macro_rules! m_rec(
   })
 );
 
-/// Macro for building matrices.
+/// Macro for building matrices. Use commas to separate columns, and semicolons
+/// to separate rows.
+///
+/// # Example
+///
+/// ```
+/// let a = m!(1, 2, 3; 4, 5, 6);
+/// println!("{:?}", a);
+/// // ->
+/// // | 1 2 3 |
+/// // | 4 5 6 |
+/// ```
 #[macro_export]
 macro_rules! m {
   ( $( $( $i:expr ),* );* ) => ( m_rec!([$([$($i),*]),*] [$($($i),*),*]) )
