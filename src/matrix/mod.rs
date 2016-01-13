@@ -213,30 +213,73 @@ impl<T : Copy> Matrix<T> {
     Matrix { no_rows : no_rows, data : alloc_dirty_vec(elems) }
   }
 
+  /// Constructor for a column vector Matrix. The number of rows is determined
+  /// by the length of `data`, which must be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// let a = Matrix::vector(vec![1, 2, 3, 4]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 |
+  /// // | 2 |
+  /// // | 3 |
+  /// // | 4 |
+  /// ```
   pub fn vector(data : Vec<T>) -> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : data.len(), data : data }
   }
 
+  /// Constructor for a row vector Matrix. The number of columns is determined
+  /// by the length of `data`, which must be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// let a = Matrix::row_vector(vec![1, 2, 3, 4]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 2 3 4 |
+  /// ```
   pub fn row_vector(data : Vec<T>) -> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : 1, data : data }
   }
 
+  /// Returns the number of rows in the Matrix.
   #[inline]
   pub fn rows(&self) -> usize { self.no_rows }
 
+  /// Returns the number of columns in the Matrix.
   #[inline]
   pub fn cols(&self) -> usize { self.data.len() / self.no_rows }
 
+  /// Returns the data in the Matrix as a Vector.
   #[inline]
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
+  /// Returns a reference to the value in the Matrix located at position
+  /// (`row`,`col`).
   pub fn get_ref<'lt>(&'lt self, row : usize, col : usize) -> &'lt T {
     assert!(row < self.no_rows && col < self.cols());
     &self.data[row * self.cols() + col]
   }
 
+  /// Map over the Matrix applying function `f` to each element in turn.
+  /// The ordering is to iterate through all values in row 0 (in column
+  /// order), then all values in row 1, and so on until the end. Returns a
+  /// new Matrix of the same dimensions as the original.
+  ///
+  /// # Example
+  /// ```
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = a.map(&|x| x * 2);
+  /// println!("{:?}", b);
+  /// // ->
+  /// // |  2  4 |
+  /// // |  6  8 |
+  /// // | 10 12 |
+  /// ```
   pub fn map<S : Copy>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
@@ -249,6 +292,23 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Performs a reduce (fold) on each column of the Matrix. Takes a
+  /// reference to an initial Vector `init`, and a reference to function
+  /// `f`. The length of `init` must be equal to the number of columns in
+  /// the Matrix, as it provides the initial values for each column fold.
+  /// Returns a new Matrix with a single row, where the data values are
+  /// the results of folding `f` over every element in each column of
+  /// `self` in turn. 
+  ///
+  /// # Example
+  /// ```
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = a.reduce(&vec![0; a.cols()], &|sum, x| sum + x );
+  /// println!("{:?}", b);
+  /// // ->
+  /// // |  9 12 |
+  /// // i.e. 0 + 1 + 3 + 5 = 9 and 0 + 2 + 4 + 6 = 12
+  /// ```
   pub fn reduce<S : Copy>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
     assert!(init.len() == self.cols());
 
