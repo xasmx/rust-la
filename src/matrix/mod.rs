@@ -195,6 +195,7 @@ impl<T : Copy> Matrix<T> {
   ///
   /// # Example
   /// ```
+  /// # use la::Matrix;
   /// let a = Matrix::new(2, 3, vec![1, 2, 3, 4, 5, 6]);
   /// println!("{:?}", a);
   /// // ->
@@ -218,6 +219,7 @@ impl<T : Copy> Matrix<T> {
   ///
   /// # Example
   /// ```
+  /// # use la::Matrix;
   /// let a = Matrix::vector(vec![1, 2, 3, 4]);
   /// println!("{:?}", a);
   /// // ->
@@ -236,6 +238,7 @@ impl<T : Copy> Matrix<T> {
   ///
   /// # Example
   /// ```
+  /// # use la::Matrix;
   /// let a = Matrix::row_vector(vec![1, 2, 3, 4]);
   /// println!("{:?}", a);
   /// // ->
@@ -272,6 +275,9 @@ impl<T : Copy> Matrix<T> {
   ///
   /// # Example
   /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
   /// let a = m!(1, 2; 3, 4; 5, 6);
   /// let b = a.map(&|x| x * 2);
   /// println!("{:?}", b);
@@ -279,6 +285,7 @@ impl<T : Copy> Matrix<T> {
   /// // |  2  4 |
   /// // |  6  8 |
   /// // | 10 12 |
+  /// # }
   /// ```
   pub fn map<S : Copy>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
@@ -302,12 +309,16 @@ impl<T : Copy> Matrix<T> {
   ///
   /// # Example
   /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
   /// let a = m!(1, 2; 3, 4; 5, 6);
   /// let b = a.reduce(&vec![0; a.cols()], &|sum, x| sum + x );
   /// println!("{:?}", b);
   /// // ->
   /// // |  9 12 |
   /// // i.e. 0 + 1 + 3 + 5 = 9 and 0 + 2 + 4 + 6 = 12
+  /// # }
   /// ```
   pub fn reduce<S : Copy>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
     assert!(init.len() == self.cols());
@@ -326,16 +337,41 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Returns true if the number of rows equals the number of columns.
   #[inline]
   pub fn is_square(&self) -> bool {
     self.no_rows == self.cols()
   }
 
+  /// Returns true if the number of rows does not equal the number of
+  /// columns.
   #[inline]
   pub fn is_not_square(&self) -> bool {
     !self.is_square()
   }
 
+  /// Returns a `MatrixRowIterator`, which iterates through each row as a
+  /// new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// for row in a.row_iter() {
+  ///     println!("{:?}", row);
+  /// }
+  /// // ->
+  /// // | 1 2 |
+  /// //
+  /// //
+  /// // | 3 4 |
+  /// //
+  /// //
+  /// // | 5 6 |
+  /// # }
+  /// ```
   pub fn row_iter(&self) -> MatrixRowIterator<T> {
     MatrixRowIterator::<T> {
       index: 0,
@@ -343,6 +379,29 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Returns a `MatrixColIterator`, which iterates through each column as a
+  /// new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// for col in a.col_iter() {
+  ///     println!("{:?}", col);
+  /// }
+  /// // ->
+  /// // | 1 |
+  /// // | 3 |
+  /// // | 5 |
+  /// //
+  /// //
+  /// // | 2 |
+  /// // | 4 |
+  /// // | 6 |
+  /// # }
+  /// ```
   pub fn col_iter(&self) -> MatrixColIterator<T> {
     MatrixColIterator::<T> {
       index: 0,

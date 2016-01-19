@@ -26,11 +26,15 @@ macro_rules! m_rec(
 /// # Example
 ///
 /// ```
+/// # #[macro_use] extern crate la;
+/// # use la::Matrix;
+/// # fn main() {
 /// let a = m!(1, 2, 3; 4, 5, 6);
 /// println!("{:?}", a);
 /// // ->
 /// // | 1 2 3 |
 /// // | 4 5 6 |
+/// # }
 /// ```
 #[macro_export]
 macro_rules! m {
