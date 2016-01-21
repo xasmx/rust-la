@@ -538,11 +538,42 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
 
 
 impl<T : Copy> Matrix<T> {
+  /// Return one value from the matrix at position (`row`, `col`).
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.get(2, 0));
+  /// // -> 5
+  /// println!("{:?}", a.get(1, 1));
+  /// // -> 4
+  /// # }
+  /// ```
   pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
     self.data[row * self.cols() + col]
   }
 
+  /// Concatenate Matrix `m` to the right of `self` and return the resulting
+  /// new Matrix. The number of rows in `m` and `self` must be equal.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = m!(7; 8; 9);
+  /// println!("{:?}", a.cr(&b));
+  /// // ->
+  /// // | 1 2 7 |
+  /// // | 3 4 8 |
+  /// // | 5 6 9 |
+  /// # }
+  /// ```
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     let elems = self.data.len() + m.data.len();
@@ -568,6 +599,24 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Concatenate Matrix `m` below `self` and return the resulting new
+  /// Matrix. The number of columns in `m` and `self` must be equal.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = m!(7, 8);
+  /// println!("{:?}", a.cb(&b));
+  /// // ->
+  /// // | 1 2 |
+  /// // | 3 4 |
+  /// // | 5 6 |
+  /// // | 7 8 |
+  /// # }
+  /// ```
   pub fn cb(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.cols() == m.cols());
     let elems = self.data.len() + m.data.len();
@@ -585,6 +634,20 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Return the transpose as a new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.t());
+  /// // ->
+  /// // | 1 3 5 |
+  /// // | 2 4 6 |
+  /// # }
+  /// ```
   pub fn t(&self) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
@@ -653,11 +716,31 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Return a Matrix containing the referenced columns. See `get_rows()`
+  /// for examples of the syntax.
   #[inline]
   pub fn get_columns<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, columns : RC) -> Matrix<T> {
     self.sub_matrix(.., columns)
   }
 
+  /// Return a Matrix containing the referenced rows.
+  ///
+  /// # Examples
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.get_rows(0));
+  /// // ->
+  /// // | 1 2 |
+  /// let indices = [1, 2];
+  /// println!("{:?}", a.get_rows(&indices[..]));
+  /// // ->
+  /// // | 3 4 |
+  /// // | 5 6 |
+  /// # }
+  /// ```
   #[inline]
   pub fn get_rows<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, row : RC) -> Matrix<T> {
     self.sub_matrix(row, ..)
