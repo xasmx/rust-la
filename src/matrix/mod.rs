@@ -148,7 +148,62 @@ impl MatrixRange<RangeIterator> for RangeTo<usize> {
 
 //----------------------
 
+pub struct MatrixRowIterator<'a, T: 'a> {
+  index : usize,
+  matrix : &'a Matrix<T>
+}
+
+impl<'a, T: Copy> Iterator for MatrixRowIterator<'a, T> {
+  type Item = Matrix<T>;
+
+  fn next(&mut self) -> Option<Matrix<T>> {
+    if self.index < self.matrix.rows() {
+      let row = self.matrix.get_rows(self.index);
+      self.index += 1;
+      Some(row)
+    } else {
+      None
+    }
+  }
+}
+
+//----------------------
+
+pub struct MatrixColIterator<'a, T: 'a> {
+  index: usize,
+  matrix: &'a Matrix<T>
+}
+
+impl<'a, T: Copy> Iterator for MatrixColIterator<'a, T> {
+  type Item = Matrix<T>;
+
+  fn next(&mut self) -> Option<Matrix<T>> {
+    if self.index < self.matrix.cols() {
+      let col = self.matrix.get_columns(self.index);
+      self.index += 1;
+      Some(col)
+    } else {
+      None
+    }
+  }
+}
+
+//----------------------
+
 impl<T : Copy> Matrix<T> {
+
+  /// Constructor for a Matrix. The length of `data` must equal `no_rows *
+  /// no_cols`, and `no_rows` and `no_cols` must both be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// # use la::Matrix;
+  /// let a = Matrix::new(2, 3, vec![1, 2, 3, 4, 5, 6]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 2 3 |
+  /// // | 4 5 6 |
+  /// ```
   pub fn new(no_rows : usize, no_cols : usize, data : Vec<T>) -> Matrix<T> {
     assert!(no_rows * no_cols == data.len());
     assert!(no_rows > 0 && no_cols > 0);
@@ -161,30 +216,79 @@ impl<T : Copy> Matrix<T> {
     Matrix { no_rows : no_rows, data : alloc_dirty_vec(elems) }
   }
 
+  /// Constructor for a column vector Matrix. The number of rows is determined
+  /// by the length of `data`, which must be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// # use la::Matrix;
+  /// let a = Matrix::vector(vec![1, 2, 3, 4]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 |
+  /// // | 2 |
+  /// // | 3 |
+  /// // | 4 |
+  /// ```
   pub fn vector(data : Vec<T>) -> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : data.len(), data : data }
   }
 
+  /// Constructor for a row vector Matrix. The number of columns is determined
+  /// by the length of `data`, which must be greater than zero.
+  ///
+  /// # Example
+  /// ```
+  /// # use la::Matrix;
+  /// let a = Matrix::row_vector(vec![1, 2, 3, 4]);
+  /// println!("{:?}", a);
+  /// // ->
+  /// // | 1 2 3 4 |
+  /// ```
   pub fn row_vector(data : Vec<T>) -> Matrix<T> {
     assert!(data.len() > 0);
     Matrix { no_rows : 1, data : data }
   }
 
+  /// Returns the number of rows in the Matrix.
   #[inline]
   pub fn rows(&self) -> usize { self.no_rows }
 
+  /// Returns the number of columns in the Matrix.
   #[inline]
   pub fn cols(&self) -> usize { self.data.len() / self.no_rows }
 
+  /// Returns the data in the Matrix as a Vector.
   #[inline]
   pub fn get_data<'a>(&'a self) -> &'a Vec<T> { &self.data }
 
+  /// Returns a reference to the value in the Matrix located at position
+  /// (`row`,`col`).
   pub fn get_ref<'lt>(&'lt self, row : usize, col : usize) -> &'lt T {
     assert!(row < self.no_rows && col < self.cols());
     &self.data[row * self.cols() + col]
   }
 
+  /// Map over the Matrix applying function `f` to each element in turn.
+  /// The ordering is to iterate through all values in row 0 (in column
+  /// order), then all values in row 1, and so on until the end. Returns a
+  /// new Matrix of the same dimensions as the original.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = a.map(&|x| x * 2);
+  /// println!("{:?}", b);
+  /// // ->
+  /// // |  2  4 |
+  /// // |  6  8 |
+  /// // | 10 12 |
+  /// # }
+  /// ```
   pub fn map<S : Copy>(&self, f : &Fn(&T) -> S) -> Matrix<S> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
@@ -197,6 +301,27 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Performs a reduce (fold) on each column of the Matrix. Takes a
+  /// reference to an initial Vector `init`, and a reference to function
+  /// `f`. The length of `init` must be equal to the number of columns in
+  /// the Matrix, as it provides the initial values for each column fold.
+  /// Returns a new Matrix with a single row, where the data values are
+  /// the results of folding `f` over every element in each column of
+  /// `self` in turn. 
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = a.reduce(&vec![0; a.cols()], &|sum, x| sum + x );
+  /// println!("{:?}", b);
+  /// // ->
+  /// // |  9 12 |
+  /// // i.e. 0 + 1 + 3 + 5 = 9 and 0 + 2 + 4 + 6 = 12
+  /// # }
+  /// ```
   pub fn reduce<S : Copy>(&self, init: &Vec<S>, f: &Fn(&S, &T) -> S) -> Matrix<S> {
     assert!(init.len() == self.cols());
 
@@ -214,14 +339,76 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Returns true if the number of rows equals the number of columns.
   #[inline]
   pub fn is_square(&self) -> bool {
     self.no_rows == self.cols()
   }
 
+  /// Returns true if the number of rows does not equal the number of
+  /// columns.
   #[inline]
   pub fn is_not_square(&self) -> bool {
     !self.is_square()
+  }
+
+  /// Returns a `MatrixRowIterator`, which iterates through each row as a
+  /// new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// for row in a.row_iter() {
+  ///     println!("{:?}", row);
+  /// }
+  /// // ->
+  /// // | 1 2 |
+  /// //
+  /// //
+  /// // | 3 4 |
+  /// //
+  /// //
+  /// // | 5 6 |
+  /// # }
+  /// ```
+  pub fn row_iter(&self) -> MatrixRowIterator<T> {
+    MatrixRowIterator::<T> {
+      index: 0,
+      matrix: self
+    }
+  }
+
+  /// Returns a `MatrixColIterator`, which iterates through each column as a
+  /// new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// for col in a.col_iter() {
+  ///     println!("{:?}", col);
+  /// }
+  /// // ->
+  /// // | 1 |
+  /// // | 3 |
+  /// // | 5 |
+  /// //
+  /// //
+  /// // | 2 |
+  /// // | 4 |
+  /// // | 6 |
+  /// # }
+  /// ```
+  pub fn col_iter(&self) -> MatrixColIterator<T> {
+    MatrixColIterator::<T> {
+      index: 0,
+      matrix: self
+    }
   }
 }
 
@@ -353,11 +540,42 @@ impl<T : Num + Neg<Output = T> + Copy> Matrix<T> {
 
 
 impl<T : Copy> Matrix<T> {
+  /// Return one value from the matrix at position (`row`, `col`).
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.get(2, 0));
+  /// // -> 5
+  /// println!("{:?}", a.get(1, 1));
+  /// // -> 4
+  /// # }
+  /// ```
   pub fn get(&self, row : usize, col : usize) -> T {
     assert!(row < self.no_rows && col < self.cols());
     self.data[row * self.cols() + col]
   }
 
+  /// Concatenate Matrix `m` to the right of `self` and return the resulting
+  /// new Matrix. The number of rows in `m` and `self` must be equal.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = m!(7; 8; 9);
+  /// println!("{:?}", a.cr(&b));
+  /// // ->
+  /// // | 1 2 7 |
+  /// // | 3 4 8 |
+  /// // | 5 6 9 |
+  /// # }
+  /// ```
   pub fn cr(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.no_rows == m.no_rows);
     let elems = self.data.len() + m.data.len();
@@ -383,6 +601,24 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Concatenate Matrix `m` below `self` and return the resulting new
+  /// Matrix. The number of columns in `m` and `self` must be equal.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// let b = m!(7, 8);
+  /// println!("{:?}", a.cb(&b));
+  /// // ->
+  /// // | 1 2 |
+  /// // | 3 4 |
+  /// // | 5 6 |
+  /// // | 7 8 |
+  /// # }
+  /// ```
   pub fn cb(&self, m : &Matrix<T>) -> Matrix<T> {
     assert!(self.cols() == m.cols());
     let elems = self.data.len() + m.data.len();
@@ -400,6 +636,20 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Return the transpose as a new Matrix.
+  ///
+  /// # Example
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.t());
+  /// // ->
+  /// // | 1 3 5 |
+  /// // | 2 4 6 |
+  /// # }
+  /// ```
   pub fn t(&self) -> Matrix<T> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
@@ -468,11 +718,31 @@ impl<T : Copy> Matrix<T> {
     }
   }
 
+  /// Return a Matrix containing the referenced columns. See `get_rows()`
+  /// for examples of the syntax.
   #[inline]
   pub fn get_columns<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, columns : RC) -> Matrix<T> {
     self.sub_matrix(.., columns)
   }
 
+  /// Return a Matrix containing the referenced rows.
+  ///
+  /// # Examples
+  /// ```
+  /// # #[macro_use] extern crate la;
+  /// # use la::Matrix;
+  /// # fn main() {
+  /// let a = m!(1, 2; 3, 4; 5, 6);
+  /// println!("{:?}", a.get_rows(0));
+  /// // ->
+  /// // | 1 2 |
+  /// let indices = [1, 2];
+  /// println!("{:?}", a.get_rows(&indices[..]));
+  /// // ->
+  /// // | 3 4 |
+  /// // | 5 6 |
+  /// # }
+  /// ```
   #[inline]
   pub fn get_rows<RCI : MatrixRangeIterator, RC : MatrixRange<RCI>>(&self, row : RC) -> Matrix<T> {
     self.sub_matrix(row, ..)
@@ -1313,6 +1583,36 @@ fn test_is_square() {
   let v = m!(1; 2; 3);
   assert!(!v.is_square());
   assert!(v.is_not_square());
+}
+
+#[test]
+fn test_row_iter() {
+  let mat = m!(1, 2; 3, 4; 5, 6);
+
+  let mut iter = mat.row_iter();
+
+  let row1 = iter.next();
+  assert_eq!(row1, Some(m![1, 2]));
+  let row2 = iter.next();
+  assert_eq!(row2, Some(m![3, 4]));
+  let row3 = iter.next();
+  assert_eq!(row3, Some(m![5, 6]));
+
+  assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn test_col_iter() {
+  let mat = m!(1, 2; 3, 4; 5, 6);
+
+  let mut iter = mat.col_iter();
+
+  let col1 = iter.next();
+  assert_eq!(col1, Some(m![1; 3; 5])); // column format
+  let col2 = iter.next();
+  assert_eq!(col2, Some(m![2; 4; 6]));
+
+  assert_eq!(iter.next(), None);
 }
 
 #[test]
