@@ -15,4 +15,5 @@ crate-type = ["rlib", "dylib"]
 rand = "0.3"
 num = "0.1"
 simd = { git = "https://github.com/huonw/simd" }
+opencl = { git = "https://github.com/luqmana/rust-opencl" }
 

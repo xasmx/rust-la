@@ -1,5 +1,6 @@
 mod mmatrix;
 mod simd;
+pub mod gpu;
 
 use std::cmp;
 #[cfg(test)]

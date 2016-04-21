@@ -4,7 +4,7 @@ use matrix::Matrix;
 use internalutil::{alloc_dirty_vec};
 
 impl Matrix<f32> {
-  pub fn scale(self, factor : f32) -> Matrix<f32> {
+  pub fn simd_scale(self, factor : f32) -> Matrix<f32> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
 
@@ -28,7 +28,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn add(self, m: &Matrix<f32>) -> Matrix<f32> {
+  pub fn simd_add(self, m: &Matrix<f32>) -> Matrix<f32> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
@@ -56,7 +56,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn sub(self, m: &Matrix<f32>) -> Matrix<f32> {
+  pub fn simd_sub(self, m: &Matrix<f32>) -> Matrix<f32> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
@@ -84,7 +84,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn elem_mul(self, m: &Matrix<f32>) -> Matrix<f32> {
+  pub fn simd_elem_mul(self, m: &Matrix<f32>) -> Matrix<f32> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
@@ -112,7 +112,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn elem_div(self, m: &Matrix<f32>) -> Matrix<f32> {
+  pub fn simd_elem_div(self, m: &Matrix<f32>) -> Matrix<f32> {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols());
 
@@ -140,7 +140,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn neg(self) -> Matrix<f32> {
+  pub fn simd_neg(self) -> Matrix<f32> {
     let elems = self.data.len();
     let mut d = alloc_dirty_vec(elems);
 
@@ -163,7 +163,7 @@ impl Matrix<f32> {
     }
   }
 
-  pub fn dot(&self, m : &Matrix<f32>) -> f32 {
+  pub fn simd_dot(&self, m : &Matrix<f32>) -> f32 {
     assert!(self.no_rows == m.no_rows);
     assert!(self.cols() == m.cols() && self.cols() == 1);
 
@@ -186,7 +186,7 @@ impl Matrix<f32> {
     sum
   }
 
-  pub fn mul(&self, m2: &Matrix<f32>) -> Matrix<f32> {
+  pub fn simd_mul(&self, m2: &Matrix<f32>) -> Matrix<f32> {
     assert!(self.cols() == m2.rows());
     let elems = self.rows() * m2.cols();
     let mut d = alloc_dirty_vec(elems);

@@ -1,6 +1,7 @@
 extern crate rand;
 extern crate num;
 extern crate simd;
+extern crate opencl;
 
 pub use approxeq::ApproxEq;
 pub use decomp::cholesky::CholeskyDecomposition;
@@ -9,6 +10,7 @@ pub use decomp::lu::LUDecomposition;
 pub use decomp::qr::QRDecomposition;
 pub use decomp::svd::SVD;
 pub use matrix::Matrix;
+pub use matrix::gpu;
 
 pub mod macros;
 mod approxeq;
